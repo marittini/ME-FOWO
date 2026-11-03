@@ -269,6 +269,8 @@ export const RESIDENT_STYLES = `
 
 export const HOME_REACTION_STYLES = `
 .resident-touch { position:absolute; inset:0; width:100%; height:100%; border:0; padding:0; background:none; cursor:pointer; color:inherit; }
+.scene-stage .resident-touch { pointer-events:none; }
+.resident-touch .figure-body, .resident-touch .figure-empty > * { pointer-events:auto; }
 .resident-touch:focus-visible { outline:3px solid var(--fw-accent); border-radius:1em; }
 .ground-stage .resident-spot.filled.left, .ground-stage .resident-spot.filled.right, .ground-stage .resident-spot.filled .figure, .ground-stage .resident-spot.filled .figure-body { animation-delay:-4s; }
 .resident-spot .figure-body { transform-origin:50% 100%; animation:fw-footsteps 18s linear infinite; }

@@ -13,7 +13,7 @@ try {
     bundle = join(temp, "bundle.js");
   await writeFile(
     entry,
-    `import { renderHomeScene } from ${JSON.stringify(join(client, "screens/home/home-scene.ts"))};\nimport { compactWorkReport } from ${JSON.stringify(join(client, "screens/home/work-report.ts"))};\nimport { STYLES } from ${JSON.stringify(join(client, "styles.ts"))};\nimport { RESIDENT_STYLES, HOME_REACTION_STYLES } from ${JSON.stringify(join(client, "styles-residents.ts"))};\nwindow.renderHomeScene=renderHomeScene;window.compactWorkReport=compactWorkReport;window.fwStyles=STYLES+RESIDENT_STYLES+HOME_REACTION_STYLES;`,
+    `import { renderHomeScene } from ${JSON.stringify(join(client, "screens/home/home-scene.ts"))};\nimport { compactWorkReport } from ${JSON.stringify(join(client, "screens/home/work-report.ts"))};\nimport { STYLES } from ${JSON.stringify(join(client, "styles.ts"))};\nimport { RESIDENT_STYLES, HOME_REACTION_STYLES } from ${JSON.stringify(join(client, "styles-residents.ts"))};\nimport { ART_STYLES } from ${JSON.stringify(join(client, "styles-art.ts"))};\nwindow.renderHomeScene=renderHomeScene;window.compactWorkReport=compactWorkReport;window.fwStyles=STYLES+RESIDENT_STYLES+ART_STYLES+HOME_REACTION_STYLES;`,
   );
   await build({
     entryPoints: [entry],
@@ -94,6 +94,9 @@ try {
         window.route = route;
       },
       openRegister() {},
+      openDeliveries() {
+        window.deliveriesOpened = true;
+      },
     };
     window.homeTestController = controller;
     const style = document.createElement("style");
@@ -108,6 +111,11 @@ try {
   });
   if (process.env.FW_HOME_SCREENSHOT) await page.screenshot({ path: process.env.FW_HOME_SCREENSHOT });
   assert.equal(await page.locator(".spot-name").count(), 0);
+  const board = page.getByRole("button", { name: "공방 게시판 — 오늘의 납품", exact: true });
+  await board.click();
+  assert.equal(await page.evaluate(() => window.deliveriesOpened), true, "the scene prop opens delivery requests");
+  assert.equal(await board.evaluate((node) => Boolean(node.closest(".scene-scenery"))), true);
+
   const resident = page.getByRole("button", { name: "숲 주민에게 인사하기" });
   const before = await resident.evaluate((node) => node.getBoundingClientRect().x);
   await page.waitForTimeout(1000);
@@ -184,7 +192,26 @@ try {
     return [a !== b, a !== c];
   });
   assert.deepEqual(weatherKeys, [true, true], "preserved scenes refresh when weather preferences change");
-  console.log("Home motion, reduced motion and resident target: OK");
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  const overlap = await board.evaluate((node) => {
+    const root = node.getRootNode(),
+      scene = node.closest(".scene"),
+      ground = scene.querySelector(".ground-stage"),
+      spot = ground.querySelector(".resident-spot.filled");
+    const rect = node.getBoundingClientRect(),
+      sceneRect = scene.getBoundingClientRect();
+    const oldGround = ground.style.cssText,
+      oldSpot = spot.style.cssText;
+    ground.style.cssText = "left:0;top:0;width:100%;height:100%;right:auto;bottom:auto;padding:0;";
+    spot.style.cssText = `animation:none;left:${rect.x + rect.width / 2 - sceneRect.x}px;top:${rect.bottom - sceneRect.y}px;`;
+    const hit = root.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+    const residentIsInFront = Boolean(hit?.closest(".resident-touch"));
+    ground.style.cssText = oldGround;
+    spot.style.cssText = oldSpot;
+    return residentIsInFront;
+  });
+  assert.equal(overlap, true, "residents receive input in front of an overlapping bulletin board");
+  console.log("Home motion, scene bulletin board, resident foreground and reduced motion: OK");
 } finally {
   await browser?.close();
   await rm(temp, { recursive: true, force: true });

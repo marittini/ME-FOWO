@@ -44,6 +44,9 @@ export const STYLES = `
   --fw-blue: #3a6fc0;
   --fw-unavailable: #8a6a12;
   --fw-track: #e4d6b6;
+  --fw-panel-block: clamp(24px, 6cqw, 32px);
+  --fw-panel-inline: clamp(24px, 5.5cqw, 28px);
+  --fw-inset: clamp(14px, 4cqw, 18px);
   display: block;
   box-sizing: border-box;
   height: 100%;
@@ -249,7 +252,7 @@ button.counter { cursor: pointer; }
   display: grid;
   gap: 0.75em;
   align-content: start;
-  padding: 1em;
+  padding: var(--fw-panel-block) var(--fw-panel-inline);
   border-radius: 1.1em;
   border: var(--line) solid var(--ink);
   background: var(--fw-surface);
@@ -767,7 +770,7 @@ label.menu-row:focus-within { outline: 3px solid var(--fw-accent); outline-offse
 
 /* ── Sheets (시작 꾸러미 and the resident sheets) ─────────────────────── */
 .sheet-backdrop { position: absolute; inset: 0; z-index: 10; display: flex; align-items: flex-end; justify-content: center; padding: 0.75em; background: rgba(48, 29, 16, 0.5); }
-.sheet { width: min(100%, 480px); max-height: 100%; overflow-y: auto; gap: 0.75em; padding: 1.25em; }
+.sheet { width: min(100%, 480px); max-height: 100%; overflow-y: auto; gap: 0.75em; padding: var(--fw-panel-block) var(--fw-panel-inline); }
 .kit-heading { display: flex; align-items: center; gap: 0.55em; }
 .kit-heading .section-title { margin: 0; }
 .kit-gift { width: 2.5em; height: 2.5em; flex: none; object-fit: contain; }

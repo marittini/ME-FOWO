@@ -440,7 +440,23 @@ try {
                 n.scrollWidth > n.clientWidth + 2,
             )
             .map((n) => n.getAttribute("aria-label") || n.textContent?.slice(0, 35));
+          const board = root.querySelector(".scene-board");
+          const boardRect = board?.getBoundingClientRect(),
+            sceneRect = board?.closest(".scene").getBoundingClientRect();
+          const boardHit = boardRect
+            ? root.elementFromPoint(boardRect.x + boardRect.width / 2, boardRect.y + boardRect.height / 2)
+            : null;
           return {
+            boardOutsideScene: Boolean(
+              boardRect &&
+              (boardRect.width < 44 ||
+                boardRect.height < 44 ||
+                boardRect.left < sceneRect.left ||
+                boardRect.right > sceneRect.right ||
+                boardRect.top < sceneRect.top ||
+                boardRect.bottom > sceneRect.bottom),
+            ),
+            boardBlockedByHud: Boolean(boardHit?.closest(".top-home")),
             offenders: [...scroll.querySelectorAll("*")]
               .filter(
                 (n) =>
@@ -578,6 +594,8 @@ try {
     (row) =>
       row.error ||
       row.horizontal ||
+      row.boardOutsideScene ||
+      row.boardBlockedByHud ||
       row.controls?.length ||
       row.squeezed?.length ||
       row.reachable === false ||

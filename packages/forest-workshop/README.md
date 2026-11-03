@@ -10,7 +10,7 @@ name 숲결 공방 is provisional. The design contract is *Development_Plan_FINA
 - Five production fields with all recipes already listed. Existing priorities and targets stay as they were; additional recipes start switched off. Use targets or counted queues, assign residents, protect stock, and sell goods.
 - Pair-specific three-episode story plans, followed by scenes that use the canonical workshop profiles and shared memories. Already published scenes remain unchanged.
 - Survey and patrol activities prepare a resident letter automatically when their result reaches the game. Open the mailbox to read it; generation failures retain the activity record and offer a retry.
-- The Home bulletin board opens today's delivery requests. Touching a resident shows a mood mark while movement continues.
+- Click the bulletin board standing beside the Home workshop to open today's delivery requests; residents stay in front of the board. Touching a resident shows a mood mark while movement continues.
 - Real weather from Open-Meteo for the selected preset city, refreshed every 15 minutes. Choose the city under Settings → 내 공방; Seoul is the default. Weather effects can be disabled separately.
 - Bundled, licensed Jua typography, readable profile paragraphs, responsive mobile spacing, and three quiet outdoor story backgrounds.
 - Multiple worlds, memory and AI guideline management, invitations, automatic selling, and backups that carry resident pictures and stored stories.
