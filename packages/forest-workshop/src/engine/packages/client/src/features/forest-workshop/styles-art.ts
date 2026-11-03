@@ -252,6 +252,9 @@ img.emotion-bubble.emotion-art { min-width: 0; width: 2.6em; height: 2.6em; padd
 .weather-choice-art { width: 1.6em; height: 1.6em; object-fit: contain; }
 .weather-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; opacity: 0.6; }
 .weather-layer img { object-fit: contain; }
+.scene-night .scene-scenery { filter: brightness(0.62) saturate(0.8); }
+.scene-night .scene-stage { filter: brightness(0.85); }
+.weather-moon { position: absolute; right: 18%; top: 23%; width: 2em; height: 2em; border-radius: 50%; background: #fff3c4; box-shadow: 0 0 1.5em #fff3c488; }
 .weather-sun { position: absolute; width: 3em; height: 3em; right: 18%; top: 23%; }
 .weather-cloud { position: absolute; width: 4.5em; height: 3em; left: 12%; top: 24%; animation: fw-cloud-drift 12s ease-in-out infinite alternate; }
 .weather-particle { position: absolute; left: var(--weather-x); top: -10%; width: 0.8em; height: 0.8em; animation: fw-weather-fall var(--weather-duration) linear var(--weather-delay) infinite; }

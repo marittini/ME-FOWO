@@ -31,7 +31,7 @@ import {
   writeSeasonChoice,
   type StoredSeasonChoice,
 } from "./preferences";
-import { resolveSeason } from "./season";
+import { localEnvironment } from "./local-environment";
 import { frameArt, probeAsset, type Season } from "./assets";
 import type { Loadable } from "./dom";
 import { errorCode, errorMessage, newRequestId, newWorldId } from "./host-api";
@@ -665,11 +665,10 @@ export function createController() {
 export type Controller = ReturnType<typeof createController>;
 
 /** The season the screens draw now (visual only). */
-export function currentSeason(state: Pick<AppState, "seasonChoice" | "liveWeather">): Season {
-  const season = resolveSeason(state.seasonChoice);
-  return state.seasonChoice === "auto" && state.liveWeather?.state === "ready" && state.liveWeather.value.latitude < 0
-    ? ({ spring: "autumn", summer: "winter", autumn: "spring", winter: "summer" } as const)[season]
-    : season;
+export function currentSeason(
+  state: Pick<AppState, "seasonChoice" | "liveWeather"> & Partial<Pick<AppState, "content" | "weatherCity">>,
+): Season {
+  return state.seasonChoice === "auto" ? localEnvironment(state).season : state.seasonChoice;
 }
 
 /** Shell classes for the frame art of the current season that has loaded. */

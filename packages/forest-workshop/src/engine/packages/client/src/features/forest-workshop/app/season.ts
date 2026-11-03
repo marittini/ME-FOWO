@@ -1,6 +1,4 @@
-// The season the workshop shows. Until the city weather of P5 decides it (plan §8: 도시 직접 지정 → 현실 계절), it
-// follows today's date in the northern hemisphere, or the season the viewer picked in 설정 → 표시. Purely visual: it
-// never touches production, sales, deliveries, gifts or any daily limit (those use the server's UTC day).
+// Visual seasons only; production and daily limits still follow server UTC.
 import type { Season } from "./assets";
 
 export type SeasonChoice = "auto" | Season;

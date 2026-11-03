@@ -408,10 +408,13 @@ export interface LiveWeather {
   observedAt: string;
   fetchedAt: string;
   latitude: number;
+  timeZone: string;
+  sunrise?: string;
+  sunset?: string;
 }
 
 export interface GameContent {
-  weatherCities?: { id: string; name: string; latitude: number; longitude: number }[];
+  weatherCities?: { id: string; name: string; latitude: number; longitude: number; timeZone?: string }[];
   items: ItemDefinition[];
   starterKit: { gold: number; tickets: number; items: Record<string, number> };
   relationStages: Array<{ from: number; label: string }>;

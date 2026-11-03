@@ -8,6 +8,7 @@ import type { AppState, Controller } from "../../app/controller";
 import { h } from "../../app/dom";
 import type { Resident, WorldState } from "../../app/types";
 import { BACKGROUND_ART, EMOTION_ART, UI_ART, assetImage } from "../../app/assets";
+import { localEnvironment } from "../../app/local-environment";
 import { currentSeason } from "../../app/controller";
 import { ICONS } from "../chrome/icons";
 import { residentFigure } from "../residents/resident-figure";
@@ -156,7 +157,10 @@ export function renderHomeScene(state: AppState, controller: Controller) {
     cast.style.cssText = `left:${ground.left}%;top:${ground.top}%;width:${ground.right - ground.left}%;height:${ground.bottom - ground.top}%;right:auto;bottom:auto;padding:0;`;
   const scene = h(
     "section",
-    { className: `scene${editingGround(state) ? " editing-ground" : ""}`, attrs: { "aria-label": "공방 장면" } },
+    {
+      className: `scene scene-${localEnvironment(state).phase}${editingGround(state) ? " editing-ground" : ""}`,
+      attrs: { "aria-label": "공방 장면" },
+    },
     [
       // The painted world and its prop share one camera; weather and residents paint above them.
       h("div", { className: "scene-scenery" }, [
@@ -187,6 +191,7 @@ export function renderHomeScene(state: AppState, controller: Controller) {
   scene.dataset.homeScene = JSON.stringify([
     state.world?.state === "ready" ? state.world.value.worldId : null,
     currentSeason(state),
+    localEnvironment(state).phase,
     normalizeWeatherEffects(state.weatherEffects),
     residents,
     ground,

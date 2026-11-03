@@ -8,7 +8,8 @@
 //   screens/<area>/   one folder per mockup area (home, work, residents, settings), one render function per screen
 //   styles*.ts        scoped portrait styles (styles-residents.ts for the resident boards), sized from the player's
 //                     text size
-import { createController, type AppState, type Controller } from "./app/controller";
+import { localEnvironment } from "./app/local-environment";
+import { currentSeason, createController, type AppState, type Controller } from "./app/controller";
 import { screenPageKey } from "./app/screen-page";
 import { measureStoryPages } from "./app/story-pages";
 import { renderFrame } from "./screens/chrome/frame";
@@ -110,8 +111,17 @@ class ForestWorkshopElement extends HTMLElement {
     clearInterval(this.ticker);
   }
 
-  /** Moves countdowns and progress bars without re-rendering; asks the server once when a run should have ended. */
+  private environmentKey = "";
+  /** Refresh lighting/calendar only at a boundary; update countdowns without rebuilding the screen. */
   private tick() {
+    const state = this.controller?.store.get();
+    if (state) {
+      const key = `${currentSeason(state)}:${localEnvironment(state).phase}`;
+      if (key !== this.environmentKey) {
+        this.environmentKey = key;
+        this.controller?.store.set({});
+      }
+    }
     const now = Date.now();
     for (const node of this.root.querySelectorAll<HTMLElement>("[data-countdown-end]")) {
       const end = Number(node.dataset.countdownEnd);

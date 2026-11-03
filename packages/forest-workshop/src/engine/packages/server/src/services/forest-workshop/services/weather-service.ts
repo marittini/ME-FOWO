@@ -8,6 +8,9 @@ export interface LiveWeather {
   observedAt: string;
   fetchedAt: string;
   latitude: number;
+  timeZone: string;
+  sunrise?: string;
+  sunset?: string;
 }
 export function weatherKind(code: number): LiveWeather["kind"] {
   if (code === 0) return "clear";
@@ -34,13 +37,15 @@ export function createWeatherService(request: typeof fetch = fetch, now = Date.n
             latitude: String(city.latitude),
             longitude: String(city.longitude),
             current: "temperature_2m,weather_code",
-            timezone: "auto",
+            daily: "sunrise,sunset",
+            timezone: city.timeZone,
             forecast_days: "1",
           }).toString();
           const response = await request(url, { signal: AbortSignal.timeout(8000), redirect: "error" });
           if (!response.ok) throw new Error("weather upstream failed");
           const data = (await response.json()) as {
             current?: { temperature_2m?: unknown; weather_code?: unknown; time?: unknown };
+            daily?: { sunrise?: unknown[]; sunset?: unknown[] };
           };
           const current = data.current;
           if (
@@ -61,6 +66,8 @@ export function createWeatherService(request: typeof fetch = fetch, now = Date.n
             cityId: city.id,
             city: city.name,
             latitude: city.latitude,
+            timeZone: city.timeZone,
+            ...solarTimes(data.daily),
             temperature: Math.round(current.temperature_2m),
             kind: weatherKind(current.weather_code),
             observedAt: current.time,
@@ -78,3 +85,14 @@ export function createWeatherService(request: typeof fetch = fetch, now = Date.n
   };
 }
 export type WeatherService = ReturnType<typeof createWeatherService>;
+
+/** Missing solar data falls back to local 06–18; never parse timezone-free times as server time. */
+function solarTimes(daily: { sunrise?: unknown[]; sunset?: unknown[] } | undefined) {
+  const sunrise = daily?.sunrise?.[0],
+    sunset = daily?.sunset?.[0];
+  const valid = (value: unknown): value is string =>
+    typeof value === "string" && /^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d$/u.test(value);
+  return valid(sunrise) && valid(sunset) && sunrise < sunset && sunrise.slice(0, 10) === sunset.slice(0, 10)
+    ? { sunrise, sunset }
+    : {};
+}
