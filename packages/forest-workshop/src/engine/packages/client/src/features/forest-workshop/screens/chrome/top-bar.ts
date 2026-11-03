@@ -73,7 +73,7 @@ export function renderTopBar(state: AppState, controller: Controller, bar: TopBa
       (state.world.value.state.mailbox?.letters.some((letter) => !letter.readAt && !letter.archived) ?? false);
     const live = state.liveWeather?.state === "ready" ? state.liveWeather.value : null;
     const weatherLabel = live
-      ? `${live.city} ${live.temperature}° · ${WEATHER_LABELS[live.kind]}${state.weatherError ? " (이전 정보)" : ""}`
+      ? `${live.temperature}° · ${WEATHER_LABELS[live.kind]}${state.weatherError ? " (이전 정보)" : ""}`
       : "날씨 확인 중";
     return h("header", { className: "top top-home" }, [
       h("div", { className: "top-row" }, [

@@ -4,6 +4,12 @@
     "forest-workshop": {
       "versions": [
         {
+          "version": "0.7.1",
+          "date": "2026-11-03",
+          "notes": "- 선택한 지역의 현지 날짜·반구로 자동 계절을 계산합니다. 수동 계절 설정은 유지합니다.\n- 현지 일출·일몰에 맞춰 홈 장면을 낮·밤으로 전환합니다. 맑은 밤에는 태양 대신 달을 표시하며, 화면을 터치하지 않아도 시간이 반영됩니다.\n- 일출·일몰 정보가 없으면 현지 06–18시를 낮으로 표시합니다. 날씨 오류 시 마지막 정보를 유지하고 이전 정보임을 표시합니다.\n- 홈에는 온도와 날씨만 표시하고 지역명은 설정에서만 확인합니다. 게임의 생산·일일 보상 시간 규칙은 변경하지 않습니다.",
+          "highlight": false
+        },
+        {
           "version": "0.7.0",
           "date": "2026-11-03",
           "notes": "- 주민 선택 시 공방 프로필을 자동으로 준비합니다. 200자 요약 대신 원본의 성격·말투·배경을 보존하며 세계관을 공방에 맞게 재구축합니다. 이전 프로필은 필요할 때 보완하고 직접 수정한 설정은 보존합니다.\n- 활동 완료 시 주민 편지를 자동으로 준비합니다. 편지와 이야기는 같은 공방 프로필을 사용하며 원본의 다른 세계관을 다시 섞지 않습니다.\n- 페어마다 제목과 3편의 전개를 생성하고 저장합니다. 읽은 장면은 바꾸지 않으며 탐험 시간·준비물·참여 조건은 기존 규칙을 유지합니다.\n- 시설의 모든 제작법이 자동으로 목록에 나타납니다. 기존 우선순위·켜짐·목표 재고를 보존하고 새 항목은 꺼진 상태로 추가합니다.\n- 홈 게시판을 집 옆의 배경 소품으로 배치했습니다. 그림을 누르면 납품 의뢰가 열리며 캐릭터는 게시판보다 앞에 표시됩니다. 별도 카드 버튼은 제거했습니다. 주민 터치는 기분 아이콘만 표시하고 이동과 모핑은 계속됩니다.\n- 조사·순찰 화면에 장소 그림·주민·진행률을 표시하고 최근 완료 기록을 제거했습니다. 주민 효과 설명과 긴 프로필의 읽기 구성을 정리했습니다.\n- Open-Meteo 현재 날씨를 선택한 도시에 연동합니다. Jua 폰트를 라이선스와 함께 패키지에 포함하고 조용한 이야기 배경 3종, 모바일 폭에 맞는 간격을 적용했습니다.\n- 카드·상세 창·대화 영역의 내부 여백을 상하 24–32px, 좌우 24–28px로 넓혔습니다. 작은 박스의 여백도 보완하고 장식 테두리와 내용이 붙지 않게 했습니다.\n- 저장 스키마 12로 순차 이전합니다. 실제 모델의 최종 문체와 실제 휴대폰 조작감은 별도 확인이 필요합니다.",
@@ -115,12 +121,6 @@
           "version": "0.6.3",
           "date": "2026-10-28",
           "notes": "- Home includes the latest layout and visual improvements. Other screens and the actual mobile layout have not yet been verified.",
-          "highlight": false
-        },
-        {
-          "version": "0.6.2",
-          "date": "2026-10-27",
-          "notes": "- The workshop now has its own art: a picture for every item and facility, the season's backdrop and workshop scene, emotion marks in stories, the wooden title sign, and paper, wood and button panels. A picture that cannot load falls back to the drawn look.\n- 설정 → 표시 → 계절: follow today's date or pick spring, summer, autumn or winter. Only the current season's pictures are loaded; the season changes the look only.\n- Story emotions are now joy, affection, curiosity, fluster, inspiration and annoyance; scenes written earlier keep showing with the nearest mark.",
           "highlight": false
         }
       ]

@@ -13,7 +13,7 @@ try {
     bundle = join(temp, "bundle.js");
   await writeFile(
     entry,
-    `import { renderHomeScene } from ${JSON.stringify(join(client, "screens/home/home-scene.ts"))};\nimport { compactWorkReport } from ${JSON.stringify(join(client, "screens/home/work-report.ts"))};\nimport { STYLES } from ${JSON.stringify(join(client, "styles.ts"))};\nimport { RESIDENT_STYLES, HOME_REACTION_STYLES } from ${JSON.stringify(join(client, "styles-residents.ts"))};\nimport { ART_STYLES } from ${JSON.stringify(join(client, "styles-art.ts"))};\nwindow.renderHomeScene=renderHomeScene;window.compactWorkReport=compactWorkReport;window.fwStyles=STYLES+RESIDENT_STYLES+ART_STYLES+HOME_REACTION_STYLES;`,
+    `import ${JSON.stringify(join(client, "client-entry.ts"))};\nimport { renderHomeScene } from ${JSON.stringify(join(client, "screens/home/home-scene.ts"))};\nimport { renderTopBar } from ${JSON.stringify(join(client, "screens/chrome/top-bar.ts"))};\nimport { compactWorkReport } from ${JSON.stringify(join(client, "screens/home/work-report.ts"))};\nimport { STYLES } from ${JSON.stringify(join(client, "styles.ts"))};\nimport { RESIDENT_STYLES, HOME_REACTION_STYLES } from ${JSON.stringify(join(client, "styles-residents.ts"))};\nimport { ART_STYLES } from ${JSON.stringify(join(client, "styles-art.ts"))};\nwindow.renderTopBar=renderTopBar;window.renderHomeScene=renderHomeScene;window.compactWorkReport=compactWorkReport;window.fwStyles=STYLES+RESIDENT_STYLES+ART_STYLES+HOME_REACTION_STYLES;`,
   );
   await build({
     entryPoints: [entry],
@@ -37,6 +37,15 @@ try {
     args: ["--no-sandbox"],
   });
   const page = await browser.newPage({ viewport: { width: 390, height: 740 }, isMobile: true, hasTouch: true });
+  await page.route("http://forest.test/**", async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    const prefix = "/api/capability-packages/forest-workshop/assets/";
+    if (path.startsWith(prefix)) {
+      const file = resolve("packages/forest-workshop", path.slice(prefix.length));
+      await route.fulfill({ body: await readFile(file), contentType: "image/webp" });
+    } else await route.fulfill({ body: "<!doctype html><html><body></body></html>", contentType: "text/html" });
+  });
+  await page.goto("http://forest.test/");
   await page.setContent('<meta name="viewport" content="width=device-width, initial-scale=1"><div id="host"></div>');
   await page.addScriptTag({ content: await readFile(bundle, "utf8") });
   await page.evaluate(() => {
@@ -211,6 +220,75 @@ try {
     return residentIsInFront;
   });
   assert.equal(overlap, true, "residents receive input in front of an overlapping bulletin board");
+  // Isolated component behavior only. Full-home screenshots and layout proof live in layout.browser.mjs.
+  await page.clock.setFixedTime(new Date("2026-11-03T03:00:00Z"));
+  const paintEnvironment = async () =>
+    page.evaluate(() => {
+      const state = {
+        ...window.homeTestState,
+        weatherCity: "seoul",
+        seasonChoice: "auto",
+        liveWeather: {
+          state: "ready",
+          value: {
+            cityId: "seoul",
+            city: "서울",
+            latitude: 37.57,
+            timeZone: "Asia/Seoul",
+            temperature: 8,
+            kind: "clear",
+            sunrise: "2026-11-03T07:00",
+            sunset: "2026-11-03T17:30",
+          },
+        },
+        weatherEffects: { enabled: true, kind: "clear" },
+      };
+      state.world.value.state.wallet = { gold: 100, tickets: 1 };
+      const root = document.querySelector("#host").shadowRoot;
+      root.querySelector(".scene").replaceWith(window.renderHomeScene(state, window.homeTestController));
+      root.querySelector("header")?.remove();
+      root.append(window.renderTopBar(state, window.homeTestController, { kind: "home" }));
+      return root.querySelector(".scene").dataset.homeScene;
+    });
+  await page.clock.install({ time: new Date("2026-11-03T03:00:00Z") });
+  await page.evaluate(() => {
+    const element = document.createElement("marinara-capability-forest-workshop");
+    window.environmentChanges = 0;
+    element.controller = {
+      store: {
+        get: () => ({
+          seasonChoice: "auto",
+          liveWeather: {
+            state: "ready",
+            value: {
+              cityId: "seoul",
+              timeZone: "Asia/Seoul",
+              latitude: 37.57,
+              sunrise: "2026-11-03T07:00",
+              sunset: "2026-11-03T17:30",
+            },
+          },
+        }),
+        set: () => window.environmentChanges++,
+      },
+    };
+    window.environmentTimer = setInterval(() => element.tick(), 1000);
+  });
+  await page.clock.runFor(2000);
+  assert.equal(await page.evaluate(() => window.environmentChanges), 1, "idle ticks avoid repeated renders");
+  const dayKey = await paintEnvironment();
+  assert.equal(await page.locator(".scene-day .weather-sun").count(), 1);
+  assert.equal(await page.locator(".weather").innerText(), "8° · 맑음");
+  assert.equal((await page.locator(".top-home").textContent()).includes("서울"), false);
+  assert.equal((await page.locator(".weather").getAttribute("aria-label")).includes("서울"), false);
+  await page.clock.setFixedTime(new Date("2026-11-03T09:00:00Z"));
+  await page.clock.runFor(1000);
+  assert.equal(await page.evaluate(() => window.environmentChanges), 2, "lighting notifies the view without touch");
+  await page.evaluate(() => clearInterval(window.environmentTimer));
+  assert.notEqual(await paintEnvironment(), dayKey, "night invalidates the retained scene");
+  assert.equal(await page.locator(".scene-night .weather-moon").count(), 1);
+  assert.equal(await page.locator(".weather-sun").count(), 0);
+  assert.match(await page.locator(".scene-scenery").evaluate((n) => getComputedStyle(n).filter), /brightness\(0.62\)/);
   console.log("Home motion, scene bulletin board, resident foreground and reduced motion: OK");
 } finally {
   await browser?.close();

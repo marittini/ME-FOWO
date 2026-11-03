@@ -409,6 +409,34 @@ try {
       worldReceivedAt: Date.now(),
     },
   });
+  // Solar fixtures share a clock and city; only sunset differs. Render the real home frame.
+  await page.clock.setFixedTime(new Date("2026-11-03T03:00:00Z"));
+  for (const phase of ["day", "night"])
+    cases.push({
+      name: `home-weather-${phase}`,
+      route: "home",
+      phase,
+      patch: {
+        seasonChoice: "auto",
+        artReady: [...base.artReady, "backgrounds/workshop-base-autumn.webp"],
+        weatherCity: "seoul",
+        weatherEffects: { enabled: true, kind: "clear" },
+        liveWeather: {
+          state: "ready",
+          value: {
+            ...live,
+            cityId: "seoul",
+            city: "서울",
+            latitude: 37.57,
+            timeZone: "Asia/Seoul",
+            kind: "clear",
+            temperature: 8,
+            sunrise: "2026-11-03T06:00",
+            sunset: phase === "day" ? "2026-11-03T17:30" : "2026-11-03T11:00",
+          },
+        },
+      },
+    });
   const findings = [];
   for (const config of [
     { width: 320, height: 640, font: 22 },
@@ -424,6 +452,37 @@ try {
     for (const test of cases) {
       try {
         await page.evaluate((test) => window.auditRender(test.route, test.patch), test);
+        if (test.phase) {
+          const proof = await page.locator("fw-audit-host").evaluate((host, phase) => {
+            const root = host.shadowRoot,
+              header = root.querySelector(".top-home"),
+              scene = root.querySelector(".scene"),
+              nav = root.querySelector(".tabbar");
+            const bounds = host.getBoundingClientRect(),
+              top = header.getBoundingClientRect(),
+              bottom = nav.getBoundingClientRect();
+            return {
+              phase: scene.classList.contains(`scene-${phase}`),
+              headerBeforeScene: Boolean(header.compareDocumentPosition(scene) & Node.DOCUMENT_POSITION_FOLLOWING),
+              headerInside: top.top >= bounds.top - 1 && top.right <= bounds.right + 1,
+              navInside: bottom.bottom <= bounds.bottom + 1,
+              weather: root.querySelector(".weather").textContent.trim(),
+              cityHidden:
+                !header.textContent.includes("서울") &&
+                !root.querySelector(".weather").getAttribute("aria-label").includes("서울"),
+              celestial: Boolean(scene.querySelector(phase === "day" ? ".weather-sun" : ".weather-moon")),
+            };
+          }, test.phase);
+          assert.deepEqual(proof, {
+            phase: true,
+            headerBeforeScene: true,
+            headerInside: true,
+            navInside: true,
+            weather: "8° · 맑음",
+            cityHidden: true,
+            celestial: true,
+          });
+        }
         const result = await page.locator("fw-audit-host").evaluate((host) => {
           const root = host.shadowRoot,
             shell = root.querySelector(".shell"),
