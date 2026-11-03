@@ -18,13 +18,13 @@ function storyLine(world: WorldState, content: GameContent | null): string {
   for (const stories of Object.values(world.stories.pairs)) {
     const current = stories.current;
     if (current?.episodes.some((episode) => episode.state === "unlocked")) {
-      return `새 이야기가 열렸어요 · ${arcTitle(current.arcId)}`;
+      return `새 이야기가 열렸어요 · ${current.generated?.title ?? arcTitle(current.arcId)}`;
     }
   }
   const expedition = world.stories.expedition;
   if (expedition) {
     const current = world.stories.pairs[expedition.pairId]?.current;
-    return `탐험 중 · ${current ? arcTitle(current.arcId) : "이야기 탐험"}`;
+    return `탐험 중 · ${current ? (current.generated?.title ?? arcTitle(current.arcId)) : "이야기 탐험"}`;
   }
   return Object.keys(world.pairs).length
     ? "탐사에서 이야기 탐험을 떠날 수 있어요"

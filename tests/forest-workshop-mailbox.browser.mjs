@@ -147,10 +147,25 @@ try {
       archiveLetter() {},
       closeSheet() {},
     };
+    window.activityMailState = state;
+    window.activityMailController = controller;
     root.replaceChildren(window.renderMailboxSheet(state, controller));
   });
-  await page.getByRole("button", { name: "주민 편지 쓰기 · AI 사용" }).click();
+  await page.getByRole("button", { name: "편지 다시 불러오기" }).click();
   assert.equal(await page.evaluate(() => window.requestedActivity), "test-activity");
+  await page.evaluate(() => {
+    window.activityMailState.busy["letter:test-activity"] = true;
+    document
+      .querySelector("#host")
+      .shadowRoot.replaceChildren(window.renderMailboxSheet(window.activityMailState, window.activityMailController));
+  });
+  assert.equal(
+    await page.getByText("활동 결과", { exact: true }).count(),
+    0,
+    "a pending letter does not present the system record as completed character prose",
+  );
+  assert.equal(await page.getByText("주민의 편지를 준비하고 있어요. 완성되면 바로 보여드릴게요.").isVisible(), true);
+
   console.log("Inbox, letter reading, archive and return to inbox: OK");
 } finally {
   await browser?.close();

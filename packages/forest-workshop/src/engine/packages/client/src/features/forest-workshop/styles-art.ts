@@ -36,7 +36,39 @@ ${seasonBases}
 .facility-lock .icon { width: 1.1em; height: 1.1em; }
 .facility-entry:has(.facility-image) { padding: 0.35em 0.5em; }
 .facility-entry:has(.facility-image) .facility-text strong { white-space: nowrap; }
-img.scene-art { object-fit: cover; object-position: 50% 60%; }
+img.scene-art { object-fit: cover; object-position: 50% 20%; }
+.scene { isolation: isolate; }
+.scene-scenery { position: absolute; inset: 0; z-index: 0; overflow: hidden; container-type: size; pointer-events: none; }
+.scene-props {
+  --scene-image-left: calc((100cqw - max(100cqw, 66.6667cqh)) * .5);
+  --scene-image-top: calc((100cqh - max(150cqw, 100cqh)) * .2);
+  position: absolute;
+  width: max(100cqw, 66.6667cqh);
+  height: max(150cqw, 100cqh);
+  left: var(--scene-image-left);
+  top: var(--scene-image-top);
+  pointer-events: none;
+}
+.scene-board {
+  position: absolute;
+  left: clamp(calc(12px - var(--scene-image-left)), 84%, calc(100cqw - var(--scene-image-left) - clamp(56px, 16%, 96px) - 12px));
+  top: max(31%, calc(12em - var(--scene-image-top)));
+  width: clamp(56px, 16%, 96px);
+  aspect-ratio: 1;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  font: inherit;
+}
+.scene-board:disabled { cursor: default; opacity: 1; }
+.scene-board .board-art { display: block; width: 100%; height: 100%; object-fit: contain; }
+.scene-board:focus-visible { outline: 3px solid var(--fw-accent); outline-offset: 4px; border-radius: 8px; }
+
 .story-stage .stage-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 60%; display: block; }
 .art-sign .reader-tools .chip-button { white-space: nowrap; }
 img.emotion-bubble.emotion-art { min-width: 0; width: 2.6em; height: 2.6em; padding: 0; border: 0; border-radius: 0; background: none; object-fit: contain; }
@@ -103,14 +135,14 @@ img.emotion-bubble.emotion-art { min-width: 0; width: 2.6em; height: 2.6em; padd
   background: transparent;
   box-shadow: none;
 }
-.art-paper .card { padding: 1.1em 1.2em; }
-.art-paper .resident-board { padding: 0.8em 1em; }
+.art-paper .card { padding: var(--fw-panel-block) var(--fw-panel-inline); }
+.art-paper .resident-board { padding: var(--fw-panel-block) var(--fw-panel-inline); }
 /* Inside the paper, rows and boxes use a light tan line and no ink frame, as on the boards. */
 .art-paper .card :is(.facility-entry, .recipe, .plan-row, .plan-block, .setting-block, .detail-grid, .report-slot, .kit-item, .completed-arc, .segmented, .episode-tile:not(.selected)) {
   border-color: #dcc49a;
   border-width: 2px;
 }
-.art-paper .sheet, .art-paper .dialogue-box { padding: 1.5em 1.6em; }
+.art-paper .sheet, .art-paper .dialogue-box { padding: var(--fw-panel-block) var(--fw-panel-inline); }
 /* With the 96 px picture the facility text needs the row: the action button wraps under it on phones. */
 .facility-entry:has(.facility-image) { flex-wrap: wrap; }
 .facility-entry:has(.facility-image) .facility-open { flex: 1 1 13em; }
@@ -225,7 +257,8 @@ img.emotion-bubble.emotion-art { min-width: 0; width: 2.6em; height: 2.6em; padd
 .weather-particle { position: absolute; left: var(--weather-x); top: -10%; width: 0.8em; height: 0.8em; animation: fw-weather-fall var(--weather-duration) linear var(--weather-delay) infinite; }
 .weather-snow .weather-particle { width: 1em; height: 1em; }
 .weather-sprite { width: 100%; height: 100%; }
-.scene-stage { z-index: 2; }
+.scene-stage { z-index: 3; pointer-events: none; }
+.scene-stage button { pointer-events: auto; }
 .ground-launch, .scene-caption { z-index: 2; }
 @keyframes fw-weather-fall { from { transform: translate(0, 0); } to { transform: translate(0.8em, calc(60vh + 4em)); } }
 @keyframes fw-cloud-drift { from { transform: translateX(0); } to { transform: translateX(1em); } }
@@ -301,9 +334,9 @@ img.emotion-bubble.emotion-art { min-width: 0; width: 2.6em; height: 2.6em; padd
 }
 
 /* Detail panels retain the paper artwork while reserving width for large text. */
-.art-paper .sheet { padding: 16px; }
-.sheet { scroll-padding-block: 76px 16px; }
-.sheet > .sheet-head { position: sticky; top: -16px; z-index: 3; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding-block: 8px; background: var(--fw-surface); border-bottom: 1px solid var(--fw-wood-dark); }
+.art-paper .sheet { padding: var(--fw-panel-block) var(--fw-panel-inline); }
+.sheet { scroll-padding-block: calc(var(--fw-panel-block) + 60px) var(--fw-panel-block); }
+.sheet > .sheet-head { position: sticky; top: calc(-1 * var(--fw-panel-block)); z-index: 3; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; padding-block: 12px; background: var(--fw-surface); border-bottom: 1px solid var(--fw-wood-dark); }
 .sheet-head .section-title { min-width: 0; margin: 0; font-size: calc(var(--fs) * 1.1); overflow-wrap: anywhere; }
 .sheet-head > .button { min-height: 44px; white-space: nowrap; padding: 8px 12px; }
 .sheet .stepper.wide:not(.compact) { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; padding: 4px; border: 0; background: transparent; overflow: visible; }
@@ -311,22 +344,22 @@ img.emotion-bubble.emotion-art { min-width: 0; width: 2.6em; height: 2.6em; padd
 .sheet .stepper.wide:not(.compact) > :nth-child(n+4) { grid-column: span 3; }
 .sheet .stepper.wide .step { min-width: 0; min-height: 44px; border: 2px solid var(--ink); border-radius: 8px; white-space: nowrap; }
 .sheet .step-value { min-width: 0; display: grid; place-items: center; }
-.sheet .protect-row { grid-template-columns: 48px minmax(0, 1fr); grid-template-areas: "tile name" "picker picker" "save save"; padding: 8px; gap: 8px; }
+.sheet .protect-row { grid-template-columns: 48px minmax(0, 1fr); grid-template-areas: "tile name" "picker picker" "save save"; padding: var(--fw-inset); gap: 12px; }
 .sheet .protect-row > .button { width: 100%; min-height: 44px; white-space: nowrap; }
 .sheet .protect-name { min-width: 0; overflow-wrap: anywhere; }
-.sheet .profile-identity { gap: 12px; padding: 8px; }
+.sheet .profile-identity { gap: 12px; padding: var(--fw-inset); }
 .sheet .profile-identity .avatar.large { width: 64px; height: 64px; }
 .sheet .profile-identity-text { flex: 1; gap: 6px; }
 .sheet .profile-identity-text .outline-button { white-space: nowrap; padding-inline: 8px; }
 .sheet .profile-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.sheet .compare-box { padding: 8px; }
+.sheet .compare-box { padding: var(--fw-inset); }
 .sheet .compare-box .button { justify-self: stretch; min-height: 44px; }
 .detail-help summary { min-height: 44px; display: list-item; padding-block: 10px; cursor: pointer; }
 .detail-help p { margin-block: 8px; }
 .memory-text { font-weight: 700; line-height: 1.65; white-space: pre-wrap; }
 .memory-filters { display: grid; gap: 8px; }
 .sheet select.input { min-height: 44px; width: 100%; min-width: 0; padding: 8px; border: 2px solid var(--ink); border-radius: 8px; background: var(--fw-surface); color: var(--fw-text); font: inherit; }
-.art-paper .image-card { padding: 16px; gap: 12px; }
+.art-paper .image-card { padding: var(--fw-panel-block) var(--fw-panel-inline); gap: 16px; }
 .image-card .target-ribbon { display: flex; flex-wrap: nowrap; width: 100%; gap: 8px; padding: 8px; margin: 0; }
 .image-card .target-ribbon strong { min-width: 0; overflow-wrap: anywhere; font-size: var(--fs); }
 .image-card .image-stage { max-height: 220px; }
@@ -336,7 +369,7 @@ img.emotion-bubble.emotion-art { min-width: 0; width: 2.6em; height: 2.6em; padd
 .image-card .rule-actions.even { grid-template-columns: 1fr; }
 
 /* Composition pass: prioritize production state, pictures and a single reading surface. */
-.production-summary { display: grid; gap: 8px; padding: 12px; background: var(--fw-leaf-soft); border-radius: 12px; }
+.production-summary { display: grid; gap: 12px; padding: var(--fw-inset); background: var(--fw-leaf-soft); border-radius: 12px; }
 .production-summary .plan-row { padding: 0; border: 0; background: transparent; }
 .production-summary .waiting-guide { margin: 0; }
 .production-order { display: grid; gap: 6px; }
@@ -358,7 +391,7 @@ img.emotion-bubble.emotion-art { min-width: 0; width: 2.6em; height: 2.6em; padd
 .story-layout .reader-tools .chip-button > span { display: none; }
 .story-layout .story-stage { border-width: 1px; box-shadow: none; }
 .story-layout .ribbon { padding: 0; border: 0; background: transparent; }
-.story-layout .conversation-panel { flex: none; display: grid; gap: 8px; min-height: 0; padding: 16px 18px; border-radius: 12px; background: var(--fw-surface-3); }
+.story-layout .conversation-panel { flex: none; display: grid; gap: 8px; min-height: 0; padding: var(--fw-panel-block) var(--fw-panel-inline); border-radius: 12px; background: var(--fw-surface-3); }
 .art-paper .conversation-panel { border-image: ${cssAssetUrl(UI_ART.paperPanel)} 105 154 fill / 20px 28px / 0 stretch; }
 .story-layout .conversation-panel .dialogue-box { border: 0; border-image: none; box-shadow: none; border-radius: 0; background: transparent; padding: 0; margin: 0; }
 .story-layout .conversation-panel .dialogue-box .line, .story-layout .conversation-panel .dialogue-box .narration { overflow-wrap: anywhere; align-self: start; }
@@ -372,7 +405,7 @@ img.emotion-bubble.emotion-art { min-width: 0; width: 2.6em; height: 2.6em; padd
 .big-tab > .icon { width: 28px; height: 28px; }
 .big-tab > span { white-space: nowrap; }
 .stock-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.stock-card { display: grid; gap: 10px; padding: 10px; border: 1px solid #c9b18a; border-radius: 12px; background: var(--fw-surface-3); min-width: 0; }
+.stock-card { display: grid; gap: 12px; padding: var(--fw-inset); border: 1px solid #c9b18a; border-radius: 12px; background: var(--fw-surface-3); min-width: 0; }
 .stock-card-head { display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center; gap: 8px; }
 .stock-card-head strong { overflow-wrap: anywhere; }
 .stock-card-head > .item-tile { width: 40px; height: 40px; margin: 0; }
@@ -425,7 +458,7 @@ img.emotion-bubble.emotion-art { min-width: 0; width: 2.6em; height: 2.6em; padd
 .menu-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) 20px; align-items: center; gap: 8px; padding: 12px; min-height: 56px; }
 .menu-row .menu-icon, .menu-row > .manage-art { width: 40px; height: 40px; }
 .menu-row .menu-chevron, .menu-row > .icon:last-child { max-width: 20px; }
-.art-paper .selected-source { padding: 12px; }
+.art-paper .selected-source { padding: var(--fw-panel-block) var(--fw-panel-inline); }
 .selected-source .menu-row { padding: 8px; }
 .usage-row { grid-template-columns: auto minmax(0, 1fr); }
 .usage-label { grid-column: 2; }
@@ -450,4 +483,37 @@ img.emotion-bubble.emotion-art { min-width: 0; width: 2.6em; height: 2.6em; padd
 .restore-details > summary { cursor: pointer; }
 .restore-details > summary::after { content: "▾"; margin-left: auto; color: var(--fw-accent); }
 .restore-details[open] > summary::after { content: "▴"; }
+
+/* Reserve real space inside the paper artwork; border-image itself consumes no layout width. */
+.column { container-type: inline-size; }
+.page { gap: clamp(10px, 3cqw, 14px); padding-inline: clamp(10px, 3cqw, 16px); }
+.card, .art-paper .card { padding: var(--fw-panel-block) var(--fw-panel-inline); }
+.card > .section-title { margin-bottom: 12px; }
+.setting-block, .plan-block, .readonly-box, .kit-item, .detail-grid { padding: var(--fw-inset); }
+.card > p + p, .card > p + .button, .card > .button + p { margin-top: 10px; }
+.profile-panel .compare-box.world { background: transparent; border: 0; padding: 0; }
+.profile-prose { display: grid; gap: 1em; line-height: 1.8; }
+.profile-prose p, .source-field p { white-space: pre-wrap; }
+.profile-edit { margin-top: 16px; display: grid; gap: 10px; }
+.profile-edit > summary { cursor: pointer; min-height: 44px; padding-block: 10px; }
+.profile-edit .textarea { min-height: 12em; line-height: 1.7; }
+.resident-detail { align-items: start; }
+.detail-info { gap: 12px; }
+.resident-benefits { display: grid; gap: 12px; }
+.resident-facts { margin: 0; display: grid; gap: 12px; }
+.resident-facts > div { display: grid; gap: 4px; }
+.resident-facts dt { color: var(--fw-muted); font-size: .85em; }
+.resident-facts dd { margin: 0; line-height: 1.6; }
+.detail-card .detail-actions { margin-top: 14px; }
+.activity-card { display: grid; gap: 14px; }
+.activity-prepare, .activity-running { display: grid; gap: 12px; }
+.activity-landscape { width: 100%; max-height: 150px; object-fit: cover; border-radius: 10px; }
+.activity-resident { display: flex; align-items: center; gap: 12px; }
+.activity-progress { width: 100%; accent-color: var(--fw-accent); }
+@container (max-width: 360px) {
+  .resident-detail { grid-template-columns: 64px minmax(0,1fr); gap: 10px; }
+  .detail-stage { width: 64px; }
+  .detail-info { gap: 10px; }
+  .detail-info .resident-benefits { grid-column: 1 / -1; }
+}
 `;

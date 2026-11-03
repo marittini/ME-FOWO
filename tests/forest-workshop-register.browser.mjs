@@ -109,7 +109,9 @@ try {
   assert.equal(await page.getByRole("button", { name: "다음: 주민 그림" }).isDisabled(), true);
   assert.equal(
     await page
-      .getByText("이 주민이 공방에서 어떤 모습인지 한두 문장으로 적어 주세요. 내용을 적으면 다음으로 갈 수 있어요.")
+      .getByText(
+        "원래 프로필의 성격과 말투를 살려 공방에 맞는 설정을 준비해요. 완성된 내용을 확인하고 필요하면 수정해 주세요.",
+      )
       .isVisible(),
     true,
   );

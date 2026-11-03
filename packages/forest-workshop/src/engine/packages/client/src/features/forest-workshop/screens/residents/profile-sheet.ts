@@ -2,7 +2,7 @@
 // 공방 세계 설정, which can be edited here. The source card itself
 // is never changed.
 import type { AppState, Controller } from "../../app/controller";
-import { button, h } from "../../app/dom";
+import { button, h, statusLine } from "../../app/dom";
 import type { WorldView } from "../../app/types";
 import { ICONS } from "../chrome/icons";
 import { kindTag, residentAvatar } from "./resident-figure";
@@ -21,7 +21,7 @@ function sourceBlock(label: string, text: string) {
 export function renderProfileSheet(world: WorldView, state: AppState, controller: Controller, residentId: string) {
   const resident = world.state.residents[residentId];
   if (!resident) return null;
-  const max = state.content?.residents.worldSettingMax ?? 200;
+  const max = state.content?.residents.worldSettingMax ?? 16000;
   const busy = Boolean(state.busy[`resident-setting:${residentId}`]);
   const profile = state.sheet?.kind === "profile" && state.sheet.residentId === residentId ? state.sheet : null;
   const draft = profile?.draft ?? resident.worldSetting;
@@ -71,14 +71,23 @@ export function renderProfileSheet(world: WorldView, state: AppState, controller
           ICONS.leaf("icon"),
           "공방 세계 설정",
         ]),
-        textarea,
-        counter,
-        h("button", {
-          className: "button small",
-          text: busy ? "저장 중…" : "수정 저장",
-          attrs: { type: "submit" },
-          disabled: busy,
-        }),
+        state.busy[`profile:${residentId}`] ? statusLine("공방 프로필을 준비하고 있어요…") : null,
+        h(
+          "div",
+          { className: "profile-prose" },
+          resident.worldSetting.split(/\n\s*\n/u).map((text) => h("p", { text })),
+        ),
+        h("details", { className: "profile-edit", attrs: profile?.draft !== undefined ? { open: "" } : {} }, [
+          h("summary", { text: "공방 설정 수정" }),
+          textarea,
+          counter,
+          h("button", {
+            className: "button small",
+            text: busy ? "저장 중…" : "수정 저장",
+            attrs: { type: "submit" },
+            disabled: busy || Boolean(state.busy[`profile:${residentId}`]),
+          }),
+        ]),
       ],
     ),
   ]);

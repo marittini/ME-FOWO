@@ -90,6 +90,13 @@ export const BACKGROUND_ART: Readonly<Record<Season, { base: string; scene: stri
   winter: { base: "backgrounds/workshop-base-winter.webp", scene: "backgrounds/workshop-scene-winter.webp" },
 };
 
+export const STORY_BACKGROUND_ART: Readonly<Record<string, string>> = {
+  "forest-clearing": "backgrounds/story-forest-clearing.webp",
+  "river-bridge": "backgrounds/story-river-bridge.webp",
+  "herb-garden": "backgrounds/story-herb-garden.webp",
+  workshop: "backgrounds/workshop-interior.webp",
+};
+
 /** The six agreed emotion marks (plan §8). "none" has no mark. */
 export const EMOTION_ART: Readonly<Record<Exclude<Emotion, "none">, string>> = {
   joy: "emotions/joy.webp",
@@ -134,6 +141,7 @@ export const UI_ART = {
   primaryButton: "ui/primary-button.webp",
   paperPanel: "ui/paper-panel.webp",
   woodPanel: "ui/wood-panel.webp",
+  deliveryBoard: "ui/delivery-board.webp",
 } as const;
 
 export function assetUrl(path: string): string {

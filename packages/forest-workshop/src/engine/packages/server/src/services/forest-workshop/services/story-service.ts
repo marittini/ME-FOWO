@@ -17,13 +17,15 @@ import { arcView } from "../domain/stories/arcs";
 import { sharedBy } from "../domain/stories/memory";
 import type { HostPersistence, HostRuntime } from "../host/engine-adapter";
 import { STORY_PROMPT_VERSION, SceneRefused, buildSceneMessages, parseScene } from "../prompts/story-scene";
+import { parseModelConnection } from "./model-connection";
+import { createChapterPlanService } from "./chapter-plan-service";
+import { createProfileService, type ProfileService } from "./profile-service";
 import { createStory, findStory } from "../store/story-repository";
 import { loadWorld } from "../store/world-repository";
 
 const MAX_OUTPUT_TOKENS = 1600;
 /** Input budget when the connection does not say its context size (plan §7.7: 보수적 설정값). */
 const FALLBACK_INPUT_TOKENS = 6000;
-const SOURCE_NOTES_MAX = 300;
 
 function parseRequest(body: unknown) {
   const raw = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
@@ -41,30 +43,47 @@ function parseRequest(body: unknown) {
     pairId: raw.pairId,
     episode,
     connectionId: (raw.connectionId as string | null | undefined) ?? null,
+    profileConnectionId: parseModelConnection(raw.profileConnectionId),
   };
 }
 
-export function createStoryService(runtime: HostRuntime, persistence: HostPersistence) {
+export function createStoryService(
+  runtime: HostRuntime,
+  persistence: HostPersistence,
+  profiles: ProfileService = createProfileService(runtime, persistence),
+) {
   const documents = persistence.documents;
+  const plans = createChapterPlanService(runtime, persistence, profiles);
   const logger = runtime.logger;
-  const inFlight = new Map<string, { connectionId: string | null; promise: Promise<StoryDocument> }>();
+  const inFlight = new Map<
+    string,
+    { connectionId: string | null; profileConnectionId: string | null; promise: Promise<StoryDocument> }
+  >();
 
   async function write(
     worldId: string,
     pairId: string,
     episode: number,
     connectionId: string | null,
+    profileConnectionId: string | null,
   ): Promise<StoryDocument> {
-    const world = await loadWorld(documents, worldId);
-    const state = world.state;
-    const view = arcView(state, pairId);
-    if (!view || !view.stored) throw new FwError("story_locked");
-    const progress = view.stored.episodes[episode]!;
-    if (progress.state !== "unlocked" && progress.state !== "read") throw new FwError("story_locked");
-    const existing = await findStory(documents, worldId, progress.storyId);
+    let world = await loadWorld(documents, worldId);
+    let view = arcView(world.state, pairId);
+    if (!view?.stored) throw new FwError("story_locked");
+    const initialProgress = view.stored.episodes[episode]!;
+    if (initialProgress.state !== "unlocked" && initialProgress.state !== "read") throw new FwError("story_locked");
+    const existing = await findStory(documents, worldId, initialProgress.storyId);
     if (existing) return existing;
+    await profiles.ensure(worldId, view.pair.residentIds, profileConnectionId);
+    await plans.ensure(worldId, pairId, connectionId, profileConnectionId);
+    world = await loadWorld(documents, worldId);
+    const state = world.state;
+    view = arcView(state, pairId);
+    if (!view?.stored || view.stored.episodes[episode]!.storyId !== initialProgress.storyId)
+      throw new FwError("story_locked");
+    const progress = view.stored.episodes[episode]!;
 
-    const arc = arcDefinition(view.stored.arcId)!;
+    const arc = view.arc;
     const definition = arc.episodes[episode]!;
     const participants = view.episodes[episode]!.participants;
     const residents = participants.map((id) => state.residents[id]!);
@@ -89,7 +108,6 @@ export function createStoryService(runtime: HostRuntime, persistence: HostPersis
         name: resident.displayName,
         kind: resident.kind,
         worldSetting: resident.worldSetting,
-        sourceNotes: (resident.source.personality || resident.source.description).slice(0, SOURCE_NOTES_MAX),
       })),
       relationLabel,
       sharedFacts: shared,
@@ -159,6 +177,7 @@ export function createStoryService(runtime: HostRuntime, persistence: HostPersis
       episode,
       title: definition.title,
       place: arc.place,
+      background: definition.background ?? "workshop",
       participants,
       segments: scene.segments,
       memories: scene.memories,
@@ -182,20 +201,27 @@ export function createStoryService(runtime: HostRuntime, persistence: HostPersis
   }
 
   return {
+    async prepare(body: unknown) {
+      const request = parseRequest({ ...(body as Record<string, unknown>), episode: 0 });
+      await plans.ensure(request.worldId, request.pairId, request.connectionId, request.profileConnectionId);
+      return this.overview(request.worldId);
+    },
     async generate(body: unknown): Promise<StoryDocument> {
-      const { worldId, pairId, episode, connectionId } = parseRequest(body);
+      const { worldId, pairId, episode, connectionId, profileConnectionId } = parseRequest(body);
       // Same world, pair and episode → one model call shared by every waiting request (plan §7.4 중복 키).
       const key = `${worldId}:${pairId}:${episode}:${STORY_PROMPT_VERSION}`;
       const running = inFlight.get(key);
       if (running) {
-        if (running.connectionId !== connectionId)
+        if (running.connectionId !== connectionId || running.profileConnectionId !== profileConnectionId)
           throw new FwError("invalid_request", {
             message: "다른 연결로 이야기를 생성 중이에요. 완료 후 다시 확인해 주세요.",
           });
         return running.promise;
       }
-      const work = write(worldId, pairId, episode, connectionId).finally(() => inFlight.delete(key));
-      inFlight.set(key, { connectionId, promise: work });
+      const work = write(worldId, pairId, episode, connectionId, profileConnectionId).finally(() =>
+        inFlight.delete(key),
+      );
+      inFlight.set(key, { connectionId, profileConnectionId, promise: work });
       return work;
     },
 
@@ -242,7 +268,7 @@ export function createStoryService(runtime: HostRuntime, persistence: HostPersis
           })),
           completed: (state.stories.pairs[pairId]?.completed ?? []).map((arc) => ({
             arcId: arc.arcId,
-            title: arcDefinition(arc.arcId)?.title ?? arc.arcId,
+            title: arc.generated?.title ?? arcDefinition(arc.arcId)?.title ?? arc.arcId,
             storyIds: arc.episodes.map((episode) => episode.storyId),
           })),
         });

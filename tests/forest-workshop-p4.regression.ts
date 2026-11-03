@@ -75,6 +75,19 @@ function scriptedModel(options: { trimmed?: boolean } = {}) {
         maxContext: 32000,
         maxOutputTokens: 4000,
         async chatComplete(messages) {
+          if (messages[0]?.content.includes("3편짜리"))
+            return {
+              content: JSON.stringify({
+                title: "페어의 작은 발견",
+                place: "공방 텃밭",
+                discovery: "풀잎 사이 무언가 반짝여요",
+                episodes: [0, 1, 2].map((index) => ({
+                  title: `작은 발견 ${index + 1}`,
+                  beat: "주민들이 작은 발견을 따라 이야기를 잇는다.",
+                  background: "herb-garden",
+                })),
+              }),
+            };
           state.calls += 1;
           prompts.push(messages);
           await new Promise((resolve) => setTimeout(resolve, 5));
@@ -346,7 +359,8 @@ async function main() {
       .join("\n");
     assert.match(prompt, /차분하고 짧은 대화/u);
     assert.match(prompt, /이 페어는 간결하게/u);
-    assert.match(prompt, /<source_notes resident="[^"]+">\n조용하다\.\n<\/source_notes>/u);
+    assert.ok(!prompt.includes("source_notes"), "raw source lore never mixes into the canonical workshop profile");
+    assert.match(prompt, /world_setting/u);
 
     // Choice once: trust +1 with the asker; a memory only the asker holds.
     const ref = { pairId: env.pairAB, episode: 0, storyId };

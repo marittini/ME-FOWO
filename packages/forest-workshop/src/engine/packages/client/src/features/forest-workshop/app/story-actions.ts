@@ -40,6 +40,8 @@ export interface ReaderState {
 export function createStoryActions(core: ControllerCore) {
   const { store } = core;
   let autoTimer: ReturnType<typeof setInterval> | undefined;
+  let overviewRequest = 0;
+  const attemptedPlans = new Set<string>();
   let seenRevision = -1;
   let seenRoute = "";
 
@@ -54,16 +56,39 @@ export function createStoryActions(core: ControllerCore) {
   async function loadOverview(silent = false) {
     const world = core.currentWorld();
     if (!world) return;
+    const request = ++overviewRequest;
     if (!silent) patchExplore({ overview: { state: "loading" } });
+    let preparingKey: string | null = null;
     try {
-      const overview = await gameApi.getStoryOverview(world.worldId);
-      const pairId = store.get().explore.pairId;
+      let overview = await gameApi.getStoryOverview(world.worldId);
+      if (request !== overviewRequest || core.currentWorld()?.worldId !== world.worldId) return;
+      let pairId = store.get().explore.pairId;
+      pairId = overview.pairs.some((pair) => pair.pairId === pairId) ? pairId : (overview.pairs[0]?.pairId ?? null);
+      const pair = pairId ? world.state.pairs[pairId] : null;
+      const key = `${world.worldId}:${pairId}:${pairId ? (world.state.stories.pairs[pairId]?.completed.length ?? 0) : 0}`;
+      if (
+        pairId &&
+        pair &&
+        !pair.archived &&
+        pair.residentIds.some((id) => world.state.residents[id]?.recruited) &&
+        !world.state.stories.pairs[pairId]?.current?.generated &&
+        !attemptedPlans.has(key) &&
+        store.get().route === "explore"
+      ) {
+        attemptedPlans.add(key);
+        preparingKey = key;
+        patchExplore({ overview: { state: "loading" } });
+        overview = await gameApi.prepareStory(world.worldId, pairId);
+        if (request !== overviewRequest || core.currentWorld()?.worldId !== world.worldId) return;
+      }
       patchExplore({
         overview: { state: "ready", value: overview },
         pairId: overview.pairs.some((pair) => pair.pairId === pairId) ? pairId : (overview.pairs[0]?.pairId ?? null),
       });
     } catch (error) {
-      if (!silent)
+      if (preparingKey) attemptedPlans.delete(preparingKey);
+      if (request !== overviewRequest || core.currentWorld()?.worldId !== world.worldId) return;
+      if (!silent || preparingKey)
         patchExplore({ overview: { state: "error", message: errorMessage(error, "이야기를 불러오지 못했습니다.") } });
     }
   }
@@ -222,6 +247,7 @@ export function createStoryActions(core: ControllerCore) {
 
     selectStoryPair(pairId: string) {
       patchExplore({ pairId, historyPage: 0, selectedEpisode: undefined });
+      void loadOverview();
     },
 
     selectStoryEpisode(selectedEpisode: number) {

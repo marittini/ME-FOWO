@@ -292,10 +292,10 @@ async function main() {
       run(env, "residents.register", {
         residentId: RES_D,
         source: { kind: "character", id: "char-lion" },
-        worldSetting: "a".repeat(201),
+        worldSetting: "a".repeat(16001),
       }),
       "invalid_payload",
-      "200-character limit",
+      "full-profile storage limit",
     );
   }
 
@@ -632,8 +632,9 @@ async function main() {
     );
     assert.equal(cleanRebuildSuggestion('공방 세계 설정: "숲에서 산다."'), "숲에서 산다.");
     const long = `${"가".repeat(150)}다. ${"나".repeat(150)}다.`;
-    assert.equal(cleanRebuildSuggestion(long), `${"가".repeat(150)}다.`);
-    assert.ok(cleanRebuildSuggestion("나".repeat(400)).length <= 200);
+    assert.equal(cleanRebuildSuggestion(long), long, "profile paragraphs are preserved");
+    assert.equal(cleanRebuildSuggestion("나".repeat(400)).length, 400);
+    assert.equal(cleanRebuildSuggestion("나".repeat(16001)), "", "oversize output is refused, never truncated");
 
     await rejects(
       env.rebuild.suggest({ worldId: WORLD, source: { kind: "character", id: "char-lion" } }),
@@ -665,7 +666,7 @@ async function main() {
       source: { kind: "character", id: "char-lion" },
     });
     assert.equal(chosenConnection, "profile-test");
-    assert.ok(suggestion.suggestion.length <= 200 && suggestion.suggestion.length > 0);
+    assert.ok(suggestion.suggestion.length === 260);
     assert.ok(JSON.stringify(seen).includes("금빛 귀의 기사"));
     assert.equal(withModel.host.count("fw-world"), 1);
     assert.equal(withModel.host.count("fw-command"), 0, "a suggestion saves nothing");

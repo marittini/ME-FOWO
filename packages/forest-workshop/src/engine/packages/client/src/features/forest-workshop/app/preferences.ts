@@ -131,3 +131,18 @@ export function writeModelConnection(purpose: GenerationPurpose, value: string |
     return false;
   }
 }
+
+export function readWeatherCity(): string {
+  try {
+    return localStorage.getItem("forest-workshop:weather-city") ?? "seoul";
+  } catch {
+    return "seoul";
+  }
+}
+export function writeWeatherCity(city: string) {
+  try {
+    localStorage.setItem("forest-workshop:weather-city", city);
+  } catch {
+    /* session preference still works */
+  }
+}

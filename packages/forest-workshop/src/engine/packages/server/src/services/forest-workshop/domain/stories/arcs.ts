@@ -67,7 +67,20 @@ export function arcView(state: WorldState, pairId: string) {
   if (!pair) return null;
   const stored = state.stories.pairs[pairId]?.current ?? null;
   const leadId = stored?.leadId ?? leadOf(state, pairId);
-  const arc = stored ? arcDefinition(stored.arcId)! : nextArc(state, pairId);
+  const base = stored ? arcDefinition(stored.arcId)! : nextArc(state, pairId);
+  const generated = stored?.generated;
+  const arc: ArcDefinition = generated
+    ? {
+        ...base,
+        title: generated.title,
+        place: generated.place,
+        discovery: generated.discovery,
+        episodes: base.episodes.map((episode, index) => ({
+          ...episode,
+          ...generated.episodes[index],
+        })) as unknown as ArcDefinition["episodes"],
+      }
+    : base;
   const plan = stored ?? (leadId ? planArc(state, pairId, leadId, "1970-01-01T00:00:00.000Z") : null);
   const busy = state.stories.expedition;
   const episodes: EpisodeView[] = arc.episodes.map((definition, index) => {

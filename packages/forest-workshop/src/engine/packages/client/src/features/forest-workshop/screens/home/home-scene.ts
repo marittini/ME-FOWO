@@ -7,7 +7,7 @@
 import type { AppState, Controller } from "../../app/controller";
 import { h } from "../../app/dom";
 import type { Resident, WorldState } from "../../app/types";
-import { BACKGROUND_ART, EMOTION_ART, assetImage } from "../../app/assets";
+import { BACKGROUND_ART, EMOTION_ART, UI_ART, assetImage } from "../../app/assets";
 import { currentSeason } from "../../app/controller";
 import { ICONS } from "../chrome/icons";
 import { residentFigure } from "../residents/resident-figure";
@@ -71,6 +71,7 @@ function sceneResidents(world: WorldState): Resident[] {
 function spot(side: "left" | "right", resident: Resident | null, world: WorldState, controller: Controller) {
   if (resident) {
     const reaction = h("div", { className: "resident-reaction", attrs: { hidden: "" } });
+    let hideReaction: ReturnType<typeof setTimeout> | undefined;
     const figure = h(
       "button",
       {
@@ -78,8 +79,11 @@ function spot(side: "left" | "right", resident: Resident | null, world: WorldSta
         attrs: { type: "button", "aria-label": `${resident.displayName}에게 인사하기` },
         on: {
           click: () => {
-            reaction.hidden = !reaction.hidden;
-            container.classList.toggle("reacting", !reaction.hidden);
+            reaction.hidden = false;
+            clearTimeout(hideReaction);
+            hideReaction = setTimeout(() => {
+              reaction.hidden = true;
+            }, 1600);
           },
         },
       },
@@ -90,17 +94,6 @@ function spot(side: "left" | "right", resident: Resident | null, world: WorldSta
         className: "resident-greeting",
         alt: "반가움",
         fallback: () => h("span", { className: "resident-greeting", text: "♪", attrs: { "aria-label": "반가움" } }),
-      }),
-      h("button", {
-        className: "outline-button",
-        text: "프로필",
-        attrs: { type: "button" },
-        on: {
-          click: () => {
-            controller.openResidents(resident.residentId);
-            controller.openSheet({ kind: "profile", residentId: resident.residentId });
-          },
-        },
       }),
     );
     const container = h("div", { className: `resident-spot filled ${side}` }, [figure, reaction]);
@@ -133,6 +126,22 @@ function spot(side: "left" | "right", resident: Resident | null, world: WorldSta
   );
 }
 
+/** A prop in the painted world, behind the residents, rather than another card below the scene. */
+function deliveryBoard(controller: Controller, editing: boolean) {
+  return h("div", { className: "scene-props" }, [
+    h(
+      "button",
+      {
+        className: "scene-board",
+        disabled: editing,
+        attrs: { type: "button", "aria-label": "공방 게시판 — 오늘의 납품", title: "오늘의 납품 의뢰" },
+        on: { click: () => controller.openDeliveries() },
+      },
+      [assetImage(UI_ART.deliveryBoard, { className: "board-art", fallback: () => ICONS.document("icon board-art") })],
+    ),
+  ]);
+}
+
 export function renderHomeScene(state: AppState, controller: Controller) {
   const world = state.world?.state === "ready" ? state.world.value.state : null;
   const residents = world ? sceneResidents(world) : [];
@@ -149,8 +158,11 @@ export function renderHomeScene(state: AppState, controller: Controller) {
     "section",
     { className: `scene${editingGround(state) ? " editing-ground" : ""}`, attrs: { "aria-label": "공방 장면" } },
     [
-      // Layers (plan §8): the season's workshop picture → residents (their own picture) → DOM UI.
-      assetImage(BACKGROUND_ART[currentSeason(state)].scene, { className: "scene-art", fallback: drawnBackdrop }),
+      // The painted world and its prop share one camera; weather and residents paint above them.
+      h("div", { className: "scene-scenery" }, [
+        assetImage(BACKGROUND_ART[currentSeason(state)].scene, { className: "scene-art", fallback: drawnBackdrop }),
+        world ? deliveryBoard(controller, editingGround(state)) : null,
+      ]),
       editingGround(state) ? null : weatherLayer(state),
       cast,
       editingGround(state)

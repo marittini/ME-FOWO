@@ -134,20 +134,15 @@ function passiveBlock(resident: Resident, world: WorldView, content: GameContent
       : facility.field === resident.field
         ? `${facility.name}에서 처리 속도 +${percent(now)}`
         : `${facility.name}에 있지만 분야가 달라 효과가 없어요.`;
-  return h("div", { className: "passive-block" }, [
-    h("p", { className: "passive" }, [
-      ICONS.leaf("icon tiny"),
-      h("strong", { text: "패시브" }),
-      ` ${FIELD_LABELS[resident.field]} 시설 처리 속도`,
+  return h("div", { className: "passive-block resident-benefits" }, [
+    h("dl", { className: "resident-facts" }, [
+      h("div", {}, [
+        h("dt", { text: "배치 효과" }),
+        h("dd", { text: `${FIELD_LABELS[resident.field]} 처리 속도 +${percent(now)}` }),
+      ]),
+      talent ? h("div", {}, [h("dt", { text: `특기 · ${talent.name}` }), h("dd", { text: talent.description })]) : null,
+      h("div", {}, [h("dt", { text: "현재 배치" }), h("dd", { text: where })]),
     ]),
-    talent
-      ? h("p", { className: "talent-line" }, [
-          ICONS.sparkle("icon tiny"),
-          h("strong", { text: `특기 ${talent.name}` }),
-          ` ${talent.description}`,
-        ])
-      : null,
-    h("p", { className: "muted", text: `기본 효과 ${percent(base)} → 현재 ${percent(now)} · ${where}` }),
     h("p", { className: "breakthrough" }, [
       h("span", { text: `돌파 ${resident.breakthrough}/${max}` }),
       h(
@@ -158,6 +153,7 @@ function passiveBlock(resident: Resident, world: WorldView, content: GameContent
         ),
       ),
     ]),
+    h("p", { className: "muted", text: `기본 +${percent(base)} · 돌파에 따라 효과가 올라가요` }),
   ]);
 }
 
@@ -170,9 +166,9 @@ function detail(resident: Resident, world: WorldView, content: GameContent | nul
         h("div", { className: "detail-info" }, [
           h("strong", { className: "detail-name", text: resident.displayName }),
           h("span", { className: "tag-row" }, [kindTag(resident), fieldTag(resident, controller)]),
-          passiveBlock(resident, world, content),
         ]),
       ]),
+      passiveBlock(resident, world, content),
       h("div", { className: "detail-actions" }, [
         actionButton(ICONS.image, "주민 그림", () => controller.openResidentImage(resident.residentId)),
         actionButton(ICONS.document, "프로필", () =>

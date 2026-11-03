@@ -63,6 +63,12 @@ try {
     const root = document.querySelector("#host").attachShadow({ mode: "open" });
     window.testState = {
       route: "settings",
+      content: {
+        weatherCities: [
+          { id: "seoul", name: "서울" },
+          { id: "busan", name: "부산" },
+        ],
+      },
       world: { state: "ready", value: { worldId: "world", state: { settings: { playerNickname: "기존" } } } },
       fontSize: 16,
       seasonChoice: "spring",
@@ -84,6 +90,10 @@ try {
       rememberSettingsNickname(worldId, value) {
         window.testState.settingsNicknameDraft = { worldId, value };
       },
+      setWeatherCity(city) {
+        window.chosenCity = city;
+      },
+      refreshWeather() {},
       setWeatherEffects(value) {
         window.testState.weatherEffects = value;
         window.testRender();
@@ -141,15 +151,17 @@ try {
   await page.getByLabel("닉네임").fill("새 이름");
   await page.getByRole("button", { name: "표시", exact: true }).click();
   assert.equal(await page.getByText("글자 크기").isVisible(), true);
-  await page.getByRole("button", { name: "눈", exact: true }).click();
-  assert.deepEqual(await page.evaluate(() => window.testState.weatherEffects), { enabled: true, kind: "snow" });
+  assert.equal(
+    await page.getByRole("button", { name: "눈", exact: true }).count(),
+    0,
+    "weather follows the city instead of a manual effect picker",
+  );
   await page.getByRole("switch", { name: "날씨 효과", exact: true }).click();
   assert.equal(
     await page.getByRole("switch", { name: "날씨 효과", exact: true }).getAttribute("aria-checked"),
     "false",
   );
-  await page.getByRole("button", { name: "비", exact: true }).click();
-  assert.deepEqual(await page.evaluate(() => window.testState.weatherEffects), { enabled: false, kind: "rain" });
+  assert.deepEqual(await page.evaluate(() => window.testState.weatherEffects), { enabled: false, kind: "clear" });
   await page.getByRole("switch", { name: "이야기 자동 넘기기" }).click();
   assert.equal(await page.getByRole("switch", { name: "이야기 자동 넘기기" }).getAttribute("aria-checked"), "true");
   await page.getByLabel("이야기 자동 넘기기 간격").selectOption("7");
@@ -157,6 +169,8 @@ try {
 
   await page.getByRole("button", { name: "내 공방", exact: true }).click();
   assert.equal(await page.getByLabel("닉네임").inputValue(), "새 이름");
+  await page.getByLabel("현실 날씨 도시").selectOption("busan");
+  assert.equal(await page.evaluate(() => window.chosenCity), "busan");
   await page.getByRole("button", { name: "수정", exact: true }).click();
   assert.deepEqual(await page.evaluate(() => window.saved), { worldId: "world", value: "새 이름" });
   await page.getByRole("button", { name: "관리", exact: true }).click();

@@ -428,7 +428,9 @@ export const RECOMMENDED_RULES: Readonly<Record<string, readonly RuleTemplate[]>
 export const FACILITY_MAX_LEVEL = 20;
 /** Speed bonus per level above 1 (plan §7.2-F: 시설 20레벨). +2% per level, capped by the max level. */
 export const SPEED_BONUS_PER_LEVEL = 0.02;
-export const MAX_RULES_PER_FACILITY = 5;
+export const MAX_RULES_PER_FACILITY = Math.max(
+  ...FACILITIES.map((facility) => RECIPES.filter((recipe) => recipe.facilityId === facility.id).length),
+);
 export const TARGET_STOCK_RANGE = { min: 1, max: 999 } as const;
 export const PROTECTED_STOCK_RANGE = { min: 0, max: 999 } as const;
 

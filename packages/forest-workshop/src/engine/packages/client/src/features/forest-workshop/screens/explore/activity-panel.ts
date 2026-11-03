@@ -1,5 +1,7 @@
 import type { AppState, Controller } from "../../app/controller";
 import type { WorldView } from "../../app/types";
+import { STORY_BACKGROUND_ART, assetImage } from "../../app/assets";
+import { residentAvatar } from "../residents/resident-figure";
 import { button, h } from "../../app/dom";
 import { card } from "../chrome/frame";
 import { formatDuration } from "../work/production-view";
@@ -27,6 +29,11 @@ export function activityPanel(state: AppState, world: WorldView, controller: Con
   return card(
     "공방 주변",
     [
+      assetImage(STORY_BACKGROUND_ART[kind === "survey" ? "herb-garden" : "river-bridge"]!, {
+        className: "activity-landscape",
+        fallback: () => h("span"),
+        alt: kind === "survey" ? "조사할 공방 텃밭" : "순찰할 숲길 다리",
+      }),
       h("p", {
         text:
           kind === "survey"
@@ -37,6 +44,14 @@ export function activityPanel(state: AppState, world: WorldView, controller: Con
         ? h("div", { className: "activity-running" }, [
             h("strong", {
               text: `${world.state.residents[running.residentId]?.displayName ?? "주민"} · ${running.kind === "survey" ? "조사" : "순찰"} 중`,
+            }),
+            h("progress", {
+              className: "activity-progress",
+              attrs: {
+                max: String(running.endsSim - running.startedSim),
+                value: String(Math.max(0, running.endsSim - running.startedSim - remaining)),
+                "aria-label": "활동 진행률",
+              },
             }),
             h("span", {
               className: "countdown",
@@ -53,7 +68,11 @@ export function activityPanel(state: AppState, world: WorldView, controller: Con
             }),
           ])
         : h("div", { className: "activity-prepare" }, [
-            available.length ? picker : h("p", { text: "영입한 주민 중 이야기 탐험에 참여하지 않은 주민이 필요해요." }),
+            chosen
+              ? h("div", { className: "activity-resident" }, [residentAvatar(chosen), picker])
+              : available.length
+                ? picker
+                : h("p", { text: "영입한 주민 중 이야기 탐험에 참여하지 않은 주민이 필요해요." }),
             h("p", { text: `소요 ${kind === "survey" ? 30 : 15}분 · 주민 1명 · 결과 기록과 편지` }),
             h("p", {
               className: "muted",
@@ -71,20 +90,6 @@ export function activityPanel(state: AppState, world: WorldView, controller: Con
         className: "muted",
         text: "세계당 조사·순찰 한 활동만 진행해요. 미접속 시간은 최대 72시간까지 반영돼요. 남은 시간은 추정치예요.",
       }),
-      h("h3", { text: "최근 완료 기록" }),
-      ...(world.state.activities?.completed ?? []).slice(0, 3).map((r) =>
-        h("div", { className: "activity-record" }, [
-          h("strong", {
-            text: `${r.kind === "survey" ? "조사" : "순찰"} · ${world.state.residents[r.residentId]?.displayName ?? "주민"}`,
-          }),
-          h("p", { text: r.summary }),
-          button("결과 편지 읽기", () => void controller.openActivityLetter(r.mailId), {
-            variant: "secondary",
-            disabled: Boolean(state.busy[`mail:${r.mailId}`]),
-            attrs: { "aria-label": `${r.kind === "survey" ? "조사" : "순찰"} 결과 편지 읽기` },
-          }),
-        ]),
-      ),
       button("우편함 열기", () => controller.openMailbox(), { variant: "secondary" }),
     ],
     { className: "activity-card" },

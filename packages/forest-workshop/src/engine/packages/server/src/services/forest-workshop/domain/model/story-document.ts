@@ -1,6 +1,7 @@
 // A written scene (`fw-story` document, plan §6: 큰 본문은 immutable 저장). Written once when the player first reads an
 // unlocked episode; never rewritten by a later generation. The world points to it by the storyId fixed in the plan.
 import { z } from "zod";
+import { STORY_BACKGROUNDS } from "./stories";
 
 const uuid = z.string().uuid();
 
@@ -77,6 +78,7 @@ export const storyDocumentSchema = z
     episode: z.number().int().min(0).max(2),
     title: z.string().min(1).max(60),
     place: z.string().min(1).max(60),
+    background: z.enum(STORY_BACKGROUNDS).optional(),
     participants: z.array(uuid).min(1).max(2),
     segments: z.array(segmentSchema).min(STORY_LIMITS.segmentsMin).max(STORY_LIMITS.segmentsMax),
     /** Facts the scene leaves, recorded in the ledger when it is read (knowers are participants only). */

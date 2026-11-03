@@ -4,16 +4,15 @@ import { readModelConnection, writeModelConnection, type GenerationPurpose } fro
 // 관리 (주민 그림 관리 · AI 지침 관리 · 기억 관리 · 저장 · 백업), the 72-hour note and the automation footnote.
 // Real now: nickname, text size and 저장 · 백업. The rest keeps its place, locked until its phase.
 import type { StoredSeasonChoice } from "../../app/preferences";
-import { SEASON_LABELS, seasonForDate } from "../../app/season";
-import type { AppState, Controller } from "../../app/controller";
-import { h, statusLine } from "../../app/dom";
-import { normalizeWeatherEffects, WEATHER_KINDS, WEATHER_LABELS } from "../../app/preferences";
-import { MANAGEMENT_ART, WEATHER_ART, assetImage } from "../../app/assets";
+import { SEASON_LABELS } from "../../app/season";
+import { currentSeason, type AppState, type Controller } from "../../app/controller";
+import { button, h, statusLine } from "../../app/dom";
+import { normalizeWeatherEffects, WEATHER_LABELS } from "../../app/preferences";
+import { MANAGEMENT_ART, assetImage } from "../../app/assets";
 import { FONT_SIZE } from "../../app/preferences";
 import type { WorldView } from "../../app/types";
 import { card, renderFrame } from "../chrome/frame";
 import { ICONS } from "../chrome/icons";
-import { featureButton } from "../chrome/locked";
 
 function nicknameRow(view: WorldView, state: AppState, controller: Controller) {
   const busy = Boolean(state.busy["rename-nickname"]);
@@ -68,18 +67,35 @@ function groundEditor(_view: WorldView, _state: AppState, controller: Controller
   ]);
 }
 
-function weatherRow(controller: Controller) {
-  return h("div", { className: "setting-row" }, [
-    ICONS.leaf("icon row-leaf"),
-    h("span", { className: "setting-label", text: "현실 날씨" }),
-    h("span", { className: "setting-field" }, [
-      h("span", { className: "input readonly" }, [ICONS.weather("icon"), h("span", { text: "도시 미설정" })]),
-      featureButton(controller, "weather", {
-        className: "button small",
-        label: "현실 날씨 변경",
-        children: [h("span", { text: "변경" })],
-      }),
-    ]),
+function weatherRow(state: AppState, controller: Controller) {
+  const picker = h(
+    "select",
+    {
+      className: "input",
+      attrs: { "aria-label": "현실 날씨 도시" },
+      on: { change: () => controller.setWeatherCity(picker.value) },
+    },
+    (state.content?.weatherCities ?? [{ id: "seoul", name: "서울" }]).map((city) =>
+      h("option", { text: city.name, attrs: { value: city.id } }),
+    ),
+  );
+  picker.value = state.weatherCity ?? "seoul";
+  return h("div", { className: "setting-block live-weather-settings" }, [
+    h("strong", { text: "현실 날씨" }),
+    picker,
+    h("p", {
+      className: "muted",
+      text:
+        state.weatherError ??
+        (state.liveWeather?.state === "ready"
+          ? `${state.liveWeather.value.city} · ${state.liveWeather.value.temperature}°C · ${WEATHER_LABELS[state.liveWeather.value.kind]} · 현지 ${state.liveWeather.value.observedAt.slice(11, 16)} 기준`
+          : "선택한 도시의 날씨를 확인하고 있어요…"),
+    }),
+    button("날씨 새로고침", () => void controller.refreshWeather(true), { variant: "secondary" }),
+    h("a", {
+      text: "날씨 제공: Open-Meteo",
+      attrs: { href: "https://open-meteo.com/", target: "_blank", rel: "noopener noreferrer" },
+    }),
   ]);
 }
 
@@ -111,7 +127,7 @@ function fontSizeRow(state: AppState, controller: Controller) {
 /** 계절: which season's workshop the screens draw. Visual only; daily limits follow the server's UTC day. */
 function seasonRow(state: AppState, controller: Controller) {
   const choices: Array<{ id: StoredSeasonChoice; label: string }> = [
-    { id: "auto", label: `자동 (${SEASON_LABELS[seasonForDate(new Date())]})` },
+    { id: "auto", label: `자동 (${SEASON_LABELS[currentSeason({ ...state, seasonChoice: "auto" })]})` },
     { id: "spring", label: "봄" },
     { id: "summer", label: "여름" },
     { id: "autumn", label: "가을" },
@@ -136,7 +152,7 @@ function seasonRow(state: AppState, controller: Controller) {
     ),
     h("p", {
       className: "hint",
-      text: "자동은 오늘 날짜(북반구)를 따라요. 도시를 선택하는 현실 날씨는 준비 중이에요. 계절은 그림만 바꾸고 생산 · 판매 · 선물에는 영향이 없어요.",
+      text: "자동은 오늘 날짜와 선택한 도시의 반구를 따라요. 날씨는 선택한 도시의 현재 정보를 따라요. 계절은 그림만 바꾸고 생산 · 판매 · 선물에는 영향이 없어요.",
     }),
   ]);
 }
@@ -209,30 +225,9 @@ function weatherEffectsControls(state: AppState, controller: Controller) {
         ]),
       ],
     ),
-    h(
-      "div",
-      { className: "weather-choices", attrs: { role: "group", "aria-label": "날씨 연출 선택" } },
-      WEATHER_KINDS.map((kind) =>
-        h(
-          "button",
-          {
-            className: `weather-choice${preference.kind === kind ? " current" : ""}`,
-            attrs: { type: "button", "aria-pressed": String(preference.kind === kind) },
-            on: { click: () => controller.setWeatherEffects({ ...preference, kind }) },
-          },
-          [
-            assetImage(WEATHER_ART[kind === "clear" ? "sun" : kind === "cloudy" ? "cloud" : kind], {
-              className: "weather-choice-art",
-              fallback: () => ICONS.weather("icon"),
-            }),
-            h("span", { text: WEATHER_LABELS[kind] }),
-          ],
-        ),
-      ),
-    ),
     h("p", {
       className: "muted",
-      text: "직접 고르는 배경 연출이에요. 현실 날씨·생산에는 영향을 주지 않아요. 동작 줄이기 설정에서는 움직이지 않아요.",
+      text: "선택한 도시의 날씨를 15분마다 확인해 배경에 반영해요. 생산에는 영향을 주지 않으며, 동작 줄이기 설정에서는 움직이지 않아요.",
     }),
   ]);
 }
@@ -329,7 +324,11 @@ export function renderSettingsScreen(state: AppState, controller: Controller) {
         section === "workshop"
           ? card(
               "내 공방",
-              [nicknameRow(world, state, controller), groundEditor(world, state, controller), weatherRow(controller)],
+              [
+                nicknameRow(world, state, controller),
+                groundEditor(world, state, controller),
+                weatherRow(state, controller),
+              ],
               { id: "fw-mine" },
             )
           : null,

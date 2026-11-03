@@ -14,6 +14,7 @@ import {
   FACILITY_ART,
   ITEM_ART,
   NAV_ART,
+  STORY_BACKGROUND_ART,
   SEASONS,
   UI_ART,
   assetUrl,
@@ -47,8 +48,8 @@ const keyPath = (key: string) => manifest.assets[key]?.path;
 
 // 1. Every file on disk is in the manifest and matches it byte for byte.
 const files = readdirSync(ROOT, { recursive: true, encoding: "utf8" }).filter((file) => file.endsWith(".webp"));
-assert.equal(files.length, 100, "100 WebP pictures");
-assert.equal(byPath.size, 100, "the manifest lists 100 pictures");
+assert.equal(files.length, 104, "104 WebP pictures");
+assert.equal(byPath.size, 104, "the manifest lists 104 pictures");
 for (const file of files) {
   const entry = byPath.get(file);
   assert.ok(entry, `${file} is in the manifest`);
@@ -77,6 +78,7 @@ for (const season of SEASONS) {
 assert.equal(UI_ART.gift, keyPath(manifest.uiMap.gift!), "gift action icon");
 for (const path of [
   ...Object.values(UI_ART),
+  ...Object.values(STORY_BACKGROUND_ART),
   ...Object.values(EMOTION_ART),
   ...Object.values(NAV_ART),
   ...Object.values(WEATHER_ART),
@@ -106,9 +108,12 @@ if (statSync(builtManifest, { throwIfNoEntry: false })) {
     files?: Array<{ path: string }>;
     contributions?: { assets?: { paths?: string[] } };
   };
+  assert.ok(shipped.includes("assets/fonts/jua.json"), "licensed Jua travels with the package");
   const builtPaths = new Set((built.files ?? []).map((file) => file.path));
   // The Engine serves a package file at /assets/* only when contributions.assets.paths declares it.
   const servable = new Set(built.contributions?.assets?.paths ?? []);
+  assert.ok(builtPaths.has("assets/fonts/jua.json"));
+  assert.ok(servable.has("assets/fonts/jua.json"), "the Engine may serve the bundled font JSON");
   for (const file of files) {
     assert.ok(builtPaths.has(`assets/${file}`), `the built package carries ${file}`);
     assert.ok(servable.has(`assets/${file}`), `the built package declares ${file} servable`);

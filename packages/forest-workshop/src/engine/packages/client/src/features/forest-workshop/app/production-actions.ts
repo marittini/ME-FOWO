@@ -61,7 +61,15 @@ export function isDraftDirty(state: { work: WorkView }, production: ProductionSt
 function visible(state: WorldState) {
   const { activity, simMs: _simMs, ...production } = state.production;
   // The last absence is shown (미접속 누적); the rest of the activity record is bookkeeping.
-  return JSON.stringify([state.inventory, state.wallet, production, activity.lastAbsence]);
+  return JSON.stringify([
+    state.inventory,
+    state.wallet,
+    production,
+    activity.lastAbsence,
+    state.activities,
+    state.stories,
+    state.mailbox,
+  ]);
 }
 
 export function createProductionActions(core: ControllerCore) {
@@ -209,35 +217,24 @@ export function createProductionActions(core: ControllerCore) {
       });
     },
 
-    addRule(facilityId: string, recipeId: string) {
-      const template = content()?.production.recommendedRules[facilityId]?.find((rule) => rule.recipeId === recipeId);
-      const policyId = newUuid();
-      editDraft(facilityId, (rules) =>
-        renumber([
-          ...rules,
-          { policyId, enabled: true, recipeId, targetStock: template?.targetStock ?? 10, priority: 5 },
-        ]),
-      );
-      patchWork({ selected: { ...store.get().work.selected, [facilityId]: policyId } });
-    },
-
-    removeRule(facilityId: string, policyId: string) {
-      editDraft(facilityId, (rules) => renumber(rules.filter((rule) => rule.policyId !== policyId)));
-    },
-
     /** 추천 설정: the recommended rules as a draft to look at; nothing changes until 운영 규칙 적용. */
     recommendRules(facilityId: string) {
       const world = core.currentWorld();
       const templates = content()?.production.recommendedRules[facilityId] ?? [];
       if (!world) return;
       const saved = world.state.production.facilities[facilityId]?.rules ?? [];
-      const draft = templates.map((template) => ({
+      const recommended = templates.map((template) => ({
         policyId: saved.find((rule) => rule.recipeId === template.recipeId)?.policyId ?? newUuid(),
         enabled: true,
         recipeId: template.recipeId,
         targetStock: template.targetStock,
         priority: template.priority,
       }));
+      const recommendedIds = new Set(recommended.map((rule) => rule.recipeId));
+      const draft = [
+        ...recommended,
+        ...saved.filter((rule) => !recommendedIds.has(rule.recipeId)).map((rule) => ({ ...rule, enabled: false })),
+      ];
       patchWork({ drafts: { ...store.get().work.drafts, [facilityId]: draft } });
       core.notify("추천 설정을 불러왔어요. 확인한 뒤 '운영 규칙 적용'을 누르면 바뀌어요.");
     },

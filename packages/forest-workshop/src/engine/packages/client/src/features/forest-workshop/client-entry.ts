@@ -79,6 +79,9 @@ class ForestWorkshopElement extends HTMLElement {
     this.unsubscribe?.();
     this.unsubscribe = this.controller.store.subscribe((state) => this.render(state));
     this.render(this.controller.store.get());
+    void document.fonts?.ready.then(() => {
+      if (this.isConnected && this.controller) this.render(this.controller.store.get());
+    });
     // Presence (plan §7.6): a heartbeat every minute while this screen is visible and focused, and at once when it
     // becomes so again.
     this.addEventListener("pointerdown", this.onFullscreenGesture);
@@ -88,7 +91,10 @@ class ForestWorkshopElement extends HTMLElement {
     window.addEventListener("focus", this.onPresence);
     window.addEventListener("blur", this.onBlur);
     clearInterval(this.ticker);
-    this.ticker = setInterval(() => this.tick(), 1000);
+    this.ticker = setInterval(() => {
+      this.tick();
+      void this.controller?.refreshWeather();
+    }, 1000);
   }
 
   disconnectedCallback() {

@@ -56,6 +56,7 @@ export type FwErrorCode =
   | "context_too_large"
   | "story_generation_failed"
   // Text generation
+  | "weather_unavailable"
   | "lm_unavailable"
   | "generation_failed"
   // Stored data
@@ -110,6 +111,7 @@ const STATUS: Record<FwErrorCode, number> = {
   resident_busy: 409,
   context_too_large: 422,
   story_generation_failed: 502,
+  weather_unavailable: 503,
   lm_unavailable: 503,
   generation_failed: 502,
   unsupported_schema: 422,
@@ -168,8 +170,9 @@ const MESSAGES: Record<FwErrorCode, string> = {
     "연결된 언어 모델의 컨텍스트가 작아 장면을 쓸 수 없습니다. 더 큰 컨텍스트의 연결을 골라 주세요. 저장된 내용은 바뀌지 않았습니다.",
   story_generation_failed:
     "이야기를 쓰지 못했습니다. 같은 이야기로 다시 시도할 수 있어요. 탐험을 다시 떠나거나 준비물을 다시 쓰지 않아요.",
-  lm_unavailable: "글을 제안할 언어 모델 연결이 없습니다. 엔진 설정에서 연결을 고르거나 직접 써 주세요.",
-  generation_failed: "제안을 받지 못했습니다. 다시 시도하거나 직접 써 주세요. 저장된 내용은 바뀌지 않았습니다.",
+  weather_unavailable: "현재 날씨를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.",
+  lm_unavailable: "주민의 글을 준비할 모델 연결을 찾지 못했어요. 설정 → 관리 → AI 모델 연결을 확인해 주세요.",
+  generation_failed: "주민의 글을 준비하지 못했어요. 잠시 뒤 다시 확인해 주세요. 저장된 내용은 그대로예요.",
   unsupported_schema: "이 저장 데이터는 더 새로운 패키지 버전에서 만들어졌습니다. 패키지를 업데이트해 주세요.",
   corrupt_world: "세계 저장 데이터를 읽을 수 없습니다. 원본은 그대로 두었습니다. 백업에서 복원할 수 있습니다.",
   invalid_backup: "백업 파일 형식이 올바르지 않습니다. 기존 세계는 바뀌지 않았습니다.",

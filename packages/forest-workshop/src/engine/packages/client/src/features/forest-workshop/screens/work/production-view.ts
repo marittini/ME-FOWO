@@ -239,5 +239,5 @@ export function waitingText(content: GameContent | null, waiting: Waiting | null
   if (waiting.reason === "locked") return "아직 열리지 않은 시설이에요.";
   const name = itemName(content, waiting.itemId ?? "");
   const guard = waiting.protectedAmount ? ` (보호 ${waiting.protectedAmount}개는 쓰지 않아요)` : "";
-  return `${name}이(가) 부족해 기다리는 중: 한 번에 ${waiting.needed ?? "?"}개 필요, 쓸 수 있는 양 ${waiting.usable ?? 0}개${guard}.`;
+  return `${name} 부족으로 기다리고 있어요: 한 번에 ${waiting.needed ?? "?"}개 필요, 쓸 수 있는 양 ${waiting.usable ?? 0}개${guard}.`;
 }

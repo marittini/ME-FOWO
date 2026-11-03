@@ -72,6 +72,12 @@ export interface EpisodeProgress {
 }
 
 export interface ArcProgress {
+  generated?: {
+    title: string;
+    place: string;
+    discovery: string;
+    episodes: { title: string; beat: string; background: string }[];
+  };
   arcId: string;
   leadId: string;
   startedAt: string;
@@ -112,6 +118,7 @@ export type Segment =
   | { kind: "choice"; askerId: string; question: string; options: Array<{ optionId: string; text: string }> };
 
 export interface StoryDocument {
+  background?: string;
   storyId: string;
   pairId: string;
   arcId: string;
@@ -334,6 +341,7 @@ export interface Resident {
   source: { name: string; description: string; personality: string; scenario: string; takenAt: string };
   displayName: string;
   worldSetting: string;
+  profileVersion?: number;
   recruited: boolean;
   /** 전문 분야 and 특기, decided at registration. */
   field: FieldId;
@@ -392,7 +400,18 @@ export interface ItemDefinition {
   sellPrice: number;
 }
 
+export interface LiveWeather {
+  cityId: string;
+  city: string;
+  temperature: number;
+  kind: "clear" | "cloudy" | "rain" | "snow";
+  observedAt: string;
+  fetchedAt: string;
+  latitude: number;
+}
+
 export interface GameContent {
+  weatherCities?: { id: string; name: string; latitude: number; longitude: number }[];
   items: ItemDefinition[];
   starterKit: { gold: number; tickets: number; items: Record<string, number> };
   relationStages: Array<{ from: number; label: string }>;

@@ -111,6 +111,11 @@ try {
     '<base href="http://forest.test/"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}</style><button id="fullscreen" style="position:fixed;top:0;right:0;opacity:0;width:1px;height:1px;z-index:9999">Fullscreen</button><div id="mount"></div>',
   );
   await page.addScriptTag({ content: await readFile(bundle, "utf8") });
+  const font = JSON.parse(await readFile("packages/forest-workshop/assets/fonts/jua.json", "utf8"));
+  await page.evaluate(async (data) => {
+    const face = await new FontFace("Jua", `url(${data})`).load();
+    document.fonts.add(face);
+  }, font.data);
   await page.evaluate(() => {
     const api = window.fwAudit;
     customElements.define(
@@ -327,6 +332,83 @@ try {
               : { world: load };
       cases.push({ name: `${route}-${status}`, route, patch });
     }
+  cases.push({
+    name: "register-preparing",
+    route: "register",
+    patch: {
+      register: { ...base.register, step: 2, panel: "setting", draft: "", generationKey: "rebuild-suggestion:proof" },
+      busy: { "rebuild-suggestion:proof": true },
+    },
+  });
+  cases.push({
+    name: "profile-preparing",
+    route: "residents",
+    patch: {
+      sheet: { kind: "profile", residentId: "r" },
+      busy: { "profile:r": true },
+    },
+  });
+  cases.push({
+    name: "profile-long",
+    route: "residents",
+    patch: {
+      ...withWorld((world) => {
+        world.residents.r.worldSetting = Array.from(
+          { length: 12 },
+          (_, i) =>
+            `${i + 1}. 공방에서의 성격과 말투\n차분한 태도를 유지하며 주민에게 존댓말로 인사해요. 작은 풀과 나무를 관찰하고 기억하는 것을 좋아해요.`,
+        ).join("\n\n");
+      }),
+      sheet: { kind: "profile", residentId: "r" },
+    },
+  });
+  const live = {
+    cityId: "new-york",
+    city: "뉴욕",
+    temperature: -12,
+    kind: "snow",
+    observedAt: "2026-11-03T08:00",
+    fetchedAt: "2026-11-03T13:00:00Z",
+    latitude: 40.71,
+  };
+  cases.push({ name: "home-live-weather", route: "home", patch: { liveWeather: { state: "ready", value: live } } });
+  cases.push({
+    name: "settings-weather-error",
+    route: "settings",
+    patch: {
+      settingsSection: "workshop",
+      liveWeather: { state: "ready", value: live },
+      weatherError: "현재 날씨를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.",
+    },
+  });
+  for (const background of ["forest-clearing", "river-bridge", "herb-garden"])
+    cases.push({
+      name: `story-${background}`,
+      route: "story",
+      patch: {
+        reader: { ...base.reader, story: { state: "ready", value: { ...base.reader.story.value, background } } },
+      },
+    });
+  cases.push({
+    name: "explore-running",
+    route: "explore",
+    patch: {
+      ...withWorld((world) => {
+        world.production.simMs = 900000;
+        world.activities.running = {
+          id: "activity-proof",
+          kind: "survey",
+          placeId: "workshop-edge",
+          residentId: "r",
+          startedSim: 0,
+          endsSim: 1800000,
+          startedAt: "2026-11-03T12:00:00Z",
+        };
+      }),
+      explore: { ...base.explore, tab: "survey" },
+      worldReceivedAt: Date.now(),
+    },
+  });
   const findings = [];
   for (const config of [
     { width: 320, height: 640, font: 22 },
@@ -358,7 +440,23 @@ try {
                 n.scrollWidth > n.clientWidth + 2,
             )
             .map((n) => n.getAttribute("aria-label") || n.textContent?.slice(0, 35));
+          const board = root.querySelector(".scene-board");
+          const boardRect = board?.getBoundingClientRect(),
+            sceneRect = board?.closest(".scene").getBoundingClientRect();
+          const boardHit = boardRect
+            ? root.elementFromPoint(boardRect.x + boardRect.width / 2, boardRect.y + boardRect.height / 2)
+            : null;
           return {
+            boardOutsideScene: Boolean(
+              boardRect &&
+              (boardRect.width < 44 ||
+                boardRect.height < 44 ||
+                boardRect.left < sceneRect.left ||
+                boardRect.right > sceneRect.right ||
+                boardRect.top < sceneRect.top ||
+                boardRect.bottom > sceneRect.bottom),
+            ),
+            boardBlockedByHud: Boolean(boardHit?.closest(".top-home")),
             offenders: [...scroll.querySelectorAll("*")]
               .filter(
                 (n) =>
@@ -415,7 +513,7 @@ try {
           return rect.top >= bounds.top - 2 && rect.bottom <= bounds.bottom + 2;
         });
         findings.push({ name: test.name, ...config, ...result, reachable });
-        if (evidence && config.width === 320) {
+        if (evidence && (config.width === 320 || (config.width === 390 && config.height === 844))) {
           const scrollable = await page.locator("fw-audit-host").evaluate((host) => {
             const root = host.shadowRoot,
               panel = root.querySelector(".sheet") ?? root.querySelector(".scroll");
@@ -423,14 +521,14 @@ try {
             panel.scrollTop = 0;
             return more;
           });
-          await page.screenshot({ path: join(evidence, `${test.name}-320.png`) });
+          await page.screenshot({ path: join(evidence, `${test.name}-${config.width}.png`) });
           if (scrollable) {
             await page.locator("fw-audit-host").evaluate((host) => {
               const root = host.shadowRoot,
                 panel = root.querySelector(".sheet") ?? root.querySelector(".scroll");
               panel.scrollTop = panel.scrollHeight;
             });
-            await page.screenshot({ path: join(evidence, `${test.name}-320-end.png`) });
+            await page.screenshot({ path: join(evidence, `${test.name}-${config.width}-end.png`) });
           }
         }
       } catch (error) {
@@ -496,6 +594,8 @@ try {
     (row) =>
       row.error ||
       row.horizontal ||
+      row.boardOutsideScene ||
+      row.boardBlockedByHud ||
       row.controls?.length ||
       row.squeezed?.length ||
       row.reachable === false ||

@@ -1,12 +1,21 @@
 import type { AppState, Controller } from "../../app/controller";
-import { button, h } from "../../app/dom";
+import { button, h, statusLine } from "../../app/dom";
 import { sheetDialog } from "../chrome/sheet";
 import { pagePicker } from "../chrome/page-picker";
 export function renderMailboxSheet(state: AppState, controller: Controller) {
   const view = state.sheet,
     world = state.world?.state === "ready" ? state.world.value : null;
   if (view?.kind !== "mailbox" || !world) return null;
+  const completed = world.state.activities?.completed ?? [];
   const letters = (world.state.mailbox?.letters ?? [])
+    .filter(
+      (letter) =>
+        !completed.some(
+          (activity) =>
+            activity.mailId === letter.id &&
+            world.state.mailbox.letters.some((item) => item.id === `resident-${activity.id}`),
+        ),
+    )
     .filter((l) => l.archived === Boolean(view.archived))
     .slice()
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id));
@@ -35,10 +44,15 @@ export function renderMailboxSheet(state: AppState, controller: Controller) {
       ? h("article", { className: "letter-detail" }, [
           h("h3", { text: selected.title }),
           h("p", { className: "muted", text: `${selected.sender} · ${selected.createdAt.slice(0, 10)}` }),
-          h("p", { className: "letter-body", text: selected.body }),
-          activity
+          activity && !generated && busy
+            ? statusLine("주민의 편지를 준비하고 있어요. 완성되면 바로 보여드릴게요.")
+            : h("div", { className: "letter-content" }, [
+                activity && !generated ? h("h4", { text: "보관된 활동 기록" }) : null,
+                h("p", { className: "letter-body", text: selected.body }),
+              ]),
+          activity && !busy
             ? button(
-                generated ? "주민 편지 보기" : busy ? "편지를 쓰고 있어요…" : "주민 편지 쓰기 · AI 사용",
+                generated ? "주민 편지 보기" : busy ? "편지를 준비하고 있어요…" : "편지 다시 불러오기",
                 () =>
                   generated
                     ? void controller.openActivityLetter(generated.id)

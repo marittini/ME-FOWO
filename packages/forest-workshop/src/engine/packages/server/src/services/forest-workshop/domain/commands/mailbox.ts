@@ -44,7 +44,8 @@ export const archiveMail = defineCommand({
 export const saveResidentLetter = defineCommand({
   type: "mail.saveResidentLetter",
   internal: true,
-  requiresFreshView: true,
+  // Model text belongs to the immutable activity ID; unrelated production heartbeats must not discard it.
+  requiresFreshView: false,
   payloadSchema: z
     .object({
       activityId: z.string().uuid(),

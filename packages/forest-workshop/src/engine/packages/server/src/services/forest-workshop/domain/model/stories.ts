@@ -27,9 +27,28 @@ export const episodeProgressSchema = z
   .strict();
 export type EpisodeProgress = z.infer<typeof episodeProgressSchema>;
 
+export const STORY_BACKGROUNDS = ["forest-clearing", "river-bridge", "herb-garden", "workshop"] as const;
+const plannedEpisodeSchema = z
+  .object({
+    title: z.string().trim().min(1).max(60),
+    beat: z.string().trim().min(1).max(1200),
+    background: z.enum(STORY_BACKGROUNDS),
+  })
+  .strict();
+export const generatedArcSchema = z
+  .object({
+    title: z.string().trim().min(1).max(60),
+    place: z.string().trim().min(1).max(60),
+    discovery: z.string().trim().min(1).max(120),
+    episodes: z.tuple([plannedEpisodeSchema, plannedEpisodeSchema, plannedEpisodeSchema]),
+  })
+  .strict();
+export type GeneratedArc = z.infer<typeof generatedArcSchema>;
+
 export const arcProgressSchema = z
   .object({
     arcId: z.string().min(1).max(64),
+    generated: generatedArcSchema.optional(),
     /** The resident of episode 1 (and the first named in 2–3), fixed when the arc starts. */
     leadId: uuid,
     startedAt: isoTime,

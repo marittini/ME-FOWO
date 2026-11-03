@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "packVersion": "1.4.1",
+  "packVersion": "1.5.0",
   "packageId": "forest-workshop",
   "referenceCodeCommit": "570a64bc7dfd35436ca97a6c6f081214df970009",
   "notes": [
-    "100 images, including four management icons. Resident portraits remain user supplied."
+    "104 images, including three quiet story landscapes and a dedicated delivery bulletin board. Resident portraits remain user supplied."
   ],
   "assets": {
     "backgrounds/workshop-base-autumn": {
@@ -2196,6 +2196,78 @@
         1254,
         1254
       ]
+    },
+    "backgrounds/story-forest-clearing": {
+      "path": "backgrounds/story-forest-clearing.webp",
+      "width": 960,
+      "height": 640,
+      "bytes": 19698,
+      "sha256": "fcc3f3b5f183694c255293d35a8de7456e193bc0527342dcb843311bdaa79623",
+      "hasTransparency": false,
+      "source": {
+        "type": "ai-generated",
+        "method": "built-in-imagegen",
+        "artDirection": "simple-cartoon-low-detail",
+        "original": "exec-10799e57-bba4-4654-8aa5-f8f889738855.png"
+      },
+      "sourceCanvas": [
+        1536,
+        1024
+      ]
+    },
+    "backgrounds/story-river-bridge": {
+      "path": "backgrounds/story-river-bridge.webp",
+      "width": 960,
+      "height": 640,
+      "bytes": 26424,
+      "sha256": "ac21dcc89a49db712a71815b5a114b45b01579325bc1b8ff618d46e8d5763dee",
+      "hasTransparency": false,
+      "source": {
+        "type": "ai-generated",
+        "method": "built-in-imagegen",
+        "artDirection": "simple-cartoon-low-detail",
+        "original": "exec-00a32a60-018a-4e86-89c6-c1b7b35bc32e.png"
+      },
+      "sourceCanvas": [
+        1536,
+        1024
+      ]
+    },
+    "backgrounds/story-herb-garden": {
+      "path": "backgrounds/story-herb-garden.webp",
+      "width": 960,
+      "height": 640,
+      "bytes": 42222,
+      "sha256": "b8cefa83903c43f82835457d1c6c70f458029974a22cdccd36b0594e58fef9ad",
+      "hasTransparency": false,
+      "source": {
+        "type": "ai-generated",
+        "method": "built-in-imagegen",
+        "artDirection": "simple-cartoon-low-detail",
+        "original": "exec-d66b677f-441b-4ca1-8436-f073d8f13c00.png"
+      },
+      "sourceCanvas": [
+        1536,
+        1024
+      ]
+    },
+    "ui/delivery-board": {
+      "path": "ui/delivery-board.webp",
+      "width": 256,
+      "height": 256,
+      "bytes": 13686,
+      "sha256": "d0b916d1ff4f30de59e4e11dd64efbd670434e49c011eabadb874b635d137184",
+      "hasTransparency": true,
+      "source": {
+        "type": "ai-generated",
+        "method": "built-in-imagegen",
+        "artDirection": "simple-cartoon-low-detail",
+        "original": "exec-2ab7332e-8419-4521-b6c8-0fc65c4e6855.png"
+      },
+      "sourceCanvas": [
+        1254,
+        1254
+      ]
     }
   },
   "itemMap": {
@@ -2306,6 +2378,7 @@
     "manage-portrait": "ui/manage-portrait",
     "manage-guidelines": "ui/manage-guidelines",
     "manage-memory": "ui/manage-memory",
-    "manage-backup": "ui/manage-backup"
+    "manage-backup": "ui/manage-backup",
+    "deliveryBoard": "ui/delivery-board"
   }
 }

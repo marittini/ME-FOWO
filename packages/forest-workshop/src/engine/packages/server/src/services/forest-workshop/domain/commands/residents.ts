@@ -60,6 +60,7 @@ export const registerResident = defineCommand({
       source: snapshot,
       displayName: displayNameSchema.parse(snapshot.name.slice(0, 40)),
       worldSetting: payload.worldSetting,
+      profileVersion: 2,
       recruited: false,
       field: talent.field,
       talentId: talent.talentId,
@@ -91,7 +92,7 @@ export const updateResident = defineCommand({
     let resident = requireResident(state, payload.residentId);
     if (payload.worldSetting !== undefined && payload.worldSetting !== resident.worldSetting) {
       resident = withChange(
-        { ...resident, worldSetting: payload.worldSetting },
+        { ...resident, worldSetting: payload.worldSetting, profileVersion: 2 },
         { at: context.now, kind: "setting", detail: excerpt(payload.worldSetting) },
       );
     }
