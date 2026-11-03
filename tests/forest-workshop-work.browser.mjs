@@ -197,7 +197,7 @@ try {
   assert.equal(await page.evaluate(() => window.appliedRules), true);
   assert.equal(await page.getByRole("button", { name: "현재 작업", exact: true }).count(), 0);
   assert.equal(await page.getByRole("heading", { name: "생산 설정" }).count(), 1);
-  assert.equal(await page.getByRole("heading", { name: "제작 우선순위" }).count(), 1);
+  assert.equal(await page.getByRole("heading", { name: "작업 우선순위" }).count(), 1);
   for (const [width, height] of [
     [390, 740],
     [320, 640],
@@ -331,7 +331,7 @@ try {
     };
     window.testRender();
   });
-  assert.match(await page.locator(".production-summary .current-work").innerText(), /제작 0 만드는 중/);
+  assert.match(await page.locator(".production-summary .current-work").innerText(), /제작 0 · 진행 중/);
   assert.ok(await page.locator(".production-summary [data-countdown-end]").count());
   await page.screenshot({ path: join(process.env.FW_ART_SCREENSHOTS ?? temp, "work-active-320.png") });
   await page.evaluate(() => {
@@ -340,9 +340,8 @@ try {
   });
   await page.getByLabel("순서와 켜짐을 바꿀 생산 물품").selectOption("p2");
   assert.equal(await page.getByRole("button", { name: /제작 2 목표 5/ }).count(), 1);
-  await page.getByLabel("추가할 제작법").selectOption("r3");
-  await page.getByRole("button", { name: "제작법 추가" }).click();
-  assert.deepEqual(await page.evaluate(() => window.addedRule), { facilityId: "gather-yard", recipeId: "r3" });
+  assert.equal(await page.getByLabel("추가할 제작법").count(), 0);
+  assert.equal(await page.getByRole("button", { name: "제작법 추가", exact: true }).count(), 0);
   await page.evaluate(() => {
     const state = window.testState;
     state.work.section = "status";

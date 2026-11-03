@@ -6,12 +6,12 @@
   },
   "package": {
     "name": "Forest Workshop",
-    "description": "A portrait cozy workshop game in development. This 0.6 build adds story expeditions: each pair of residents travels through three-episode arcs on the explore screen, and each scene is written by your language model when you first read it, from the plan and only the memories its residents share, with one answer you can give a resident. What residents learn is recorded per resident. On top of the complete workshop: five facilities with 34 materials and goods, rules or counted queues, residents whose field and talent come from their own character text, auto-selling, invitations with tickets from daily deliveries, and backups that carry pictures and scenes; letters, memory management and AI guidelines follow. Install it, restart Marinara Engine when prompted, then open Home → 숲결 공방."
+    "description": "A portrait forest workshop game with automatically prepared resident profiles and letters, per-pair three-episode story plans, five production fields with every recipe already listed, daily deliveries from a home bulletin board, real weather by city, Jua typography, and backups carrying pictures and stories. Resident artwork is uploaded by the player; original character and persona cards are read only. Install it, restart Marinara Engine when prompted, then open Home → 숲결 공방."
   },
   "agents": {
     "forest-workshop": {
       "name": "Forest Workshop",
-      "description": "A portrait cozy workshop game in development. This 0.6 build adds story expeditions: each pair of residents travels through three-episode arcs on the explore screen, and each scene is written by your language model when you first read it, from the plan and only the memories its residents share, with one answer you can give a resident. What residents learn is recorded per resident. On top of the complete workshop: five facilities with 34 materials and goods, rules or counted queues, residents whose field and talent come from their own character text, auto-selling, invitations with tickets from daily deliveries, and backups that carry pictures and scenes; letters, memory management and AI guidelines follow."
+      "description": "A portrait forest workshop game with automatically prepared resident profiles and letters, per-pair three-episode story plans, five production fields with every recipe already listed, daily deliveries from a home bulletin board, real weather by city, Jua typography, and backups carrying pictures and stories. Resident artwork is uploaded by the player; original character and persona cards are read only."
     }
   }
 }

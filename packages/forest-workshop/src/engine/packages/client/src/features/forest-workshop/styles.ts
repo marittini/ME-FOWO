@@ -50,7 +50,8 @@ export const STYLES = `
   overflow: hidden;
   color: var(--fw-text);
   color-scheme: light;
-  font: 500 var(--fs)/1.5 system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  font: 400 var(--fs)/1.6 "Jua", system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  font-synthesis: none;
   -webkit-text-size-adjust: 100%;
   word-break: keep-all;
   overflow-wrap: anywhere;

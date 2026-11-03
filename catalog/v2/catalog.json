@@ -15,8 +15,8 @@
         },
         "id": "forest-workshop",
         "name": "Forest Workshop",
-        "version": "0.6.22",
-        "description": "A portrait cozy workshop game in development. This 0.6 build adds story expeditions: each pair of residents travels through three-episode arcs on the explore screen, and each scene is written by your language model when you first read it, from the plan and only the memories its residents share, with one answer you can give a resident. What residents learn is recorded per resident. On top of the complete workshop: five facilities with 34 materials and goods, rules or counted queues, residents whose field and talent come from their own character text, auto-selling, invitations with tickets from daily deliveries, and backups that carry pictures and scenes; letters, memory management and AI guidelines follow. Install it, restart Marinara Engine when prompted, then open Home → 숲결 공방.",
+        "version": "0.7.0",
+        "description": "A portrait forest workshop game with automatically prepared resident profiles and letters, per-pair three-episode story plans, five production fields with every recipe already listed, daily deliveries from a home bulletin board, real weather by city, Jua typography, and backups carrying pictures and stories. Resident artwork is uploaded by the player; original character and persona cards are read only. Install it, restart Marinara Engine when prompted, then open Home → 숲결 공방.",
         "engine": {
           "min": "2.5.1",
           "maxExclusive": "4.0.0"
@@ -138,30 +138,35 @@
               "assets/ui/manage-portrait.webp",
               "assets/ui/manage-guidelines.webp",
               "assets/ui/manage-memory.webp",
-              "assets/ui/manage-backup.webp"
+              "assets/ui/manage-backup.webp",
+              "assets/backgrounds/story-forest-clearing.webp",
+              "assets/backgrounds/story-river-bridge.webp",
+              "assets/backgrounds/story-herb-garden.webp",
+              "assets/fonts/jua.json",
+              "assets/ui/delivery-board.webp"
             ]
           }
         },
         "files": [
           {
             "path": "agents.json",
-            "sha256": "4d1183900ef72a7378acdc296ba7b113e73d9b29048fb41552458615dfe5d4e0",
-            "bytes": 1158
+            "sha256": "a242138b79d357303f46400a1f644d43e370850892a29035b198eca30fe001e0",
+            "bytes": 849
           },
           {
             "path": "server.mjs",
-            "sha256": "6e91d7f240bd78f0345e41bf292cc41b2560434028a06b0d4a69a2a7e72bf586",
-            "bytes": 153086
+            "sha256": "df403ce7bdfd22c5b8223f4449e96580993e78faddda2aa35135051f4743b22e",
+            "bytes": 167686
           },
           {
             "path": "client.js",
-            "sha256": "e59316ef9d367543442d9ac8dcf03b7e9ead696fefd9300aaafcdb3e0daf329e",
-            "bytes": 357141
+            "sha256": "f0a78849858ecca3979f97687383d198f05deb6db85a3e9cd0b0789ed39f9025",
+            "bytes": 364848
           },
           {
             "path": "assets/asset-manifest.json",
-            "sha256": "daebeee964b6b688436a7261ffb1736fe80791a42fd37e3aba80d68515af1a86",
-            "bytes": 55279
+            "sha256": "90df5412336fd74fe8daf1b474a08fcafd662fe1296f4b328b9700ef1b3a240a",
+            "bytes": 57573
           },
           {
             "path": "assets/backgrounds/workshop-base-autumn.webp",
@@ -662,6 +667,31 @@
             "path": "assets/ui/manage-backup.webp",
             "sha256": "2810137dae560c6abc938f2991a79798c0f376e8c1ec4df0d9b0ea19e1a472a2",
             "bytes": 4080
+          },
+          {
+            "path": "assets/backgrounds/story-forest-clearing.webp",
+            "sha256": "fcc3f3b5f183694c255293d35a8de7456e193bc0527342dcb843311bdaa79623",
+            "bytes": 19698
+          },
+          {
+            "path": "assets/backgrounds/story-river-bridge.webp",
+            "sha256": "ac21dcc89a49db712a71815b5a114b45b01579325bc1b8ff618d46e8d5763dee",
+            "bytes": 26424
+          },
+          {
+            "path": "assets/backgrounds/story-herb-garden.webp",
+            "sha256": "b8cefa83903c43f82835457d1c6c70f458029974a22cdccd36b0594e58fef9ad",
+            "bytes": 42222
+          },
+          {
+            "path": "assets/fonts/jua.json",
+            "sha256": "692fce7590f84b261297f72e3dff4960b6b631103aef7b138b3c6d3c861e385e",
+            "bytes": 2830379
+          },
+          {
+            "path": "assets/ui/delivery-board.webp",
+            "sha256": "d0b916d1ff4f30de59e4e11dd64efbd670434e49c011eabadb874b635d137184",
+            "bytes": 13686
           }
         ],
         "permissions": [
@@ -674,9 +704,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/marittini/ME-personal-A/main/artwork/agent-covers/forest-workshop.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/marittini/ME-personal-A/main/artifacts/forest-workshop-0.6.22.zip",
-        "sha256": "2038f1bc0d28ad3f56da13fcb2373af2e6357efdd64e8c86722f0ace4f33aa57",
-        "bytes": 3743103
+        "url": "https://raw.githubusercontent.com/marittini/ME-personal-A/main/artifacts/forest-workshop-0.7.0.zip",
+        "sha256": "05eb62b236ce519cc97d1bbeb582b0a504a1d26aaac6ebea59e6a16238df7285",
+        "bytes": 6701327
       },
       "documentationUrl": "https://github.com/marittini/ME-personal-A/blob/main/packages/forest-workshop/README.md"
     }

@@ -52,7 +52,7 @@ try {
     window.testState = {
       sheet: { kind: "profile", residentId: "r" },
       busy: {},
-      content: { residents: { worldSettingMax: 200 } },
+      content: { residents: { worldSettingMax: 16000 } },
     };
     window.testController = {
       rememberProfile(patch) {
@@ -85,6 +85,7 @@ try {
   });
   await page.getByRole("button", { name: "관계 보기" }).click();
   assert.equal(await page.evaluate(() => window.related), "r");
+  await page.getByText("공방 설정 수정", { exact: true }).click();
   await page.locator("#host").locator("textarea").fill("새 설정");
   await page.getByRole("button", { name: "관계 보기" }).click();
   assert.match(await page.evaluate(() => window.profileNotice), /저장/);

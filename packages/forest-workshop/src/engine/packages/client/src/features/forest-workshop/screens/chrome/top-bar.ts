@@ -7,7 +7,8 @@ import { currentSeason } from "../../app/controller";
 import { SEASON_LABELS } from "../../app/season";
 import type { AppState, Controller, Route } from "../../app/controller";
 import { h, type Child } from "../../app/dom";
-import { normalizeWeatherEffects, WEATHER_LABELS } from "../../app/preferences";
+import { WEATHER_LABELS } from "../../app/preferences";
+import { WEATHER_ART, assetImage } from "../../app/assets";
 import { ICONS } from "./icons";
 
 /** 초대권: the count, and a tap opens 초대권 받기 (today's 납품 의뢰). */
@@ -70,7 +71,10 @@ export function renderTopBar(state: AppState, controller: Controller, bar: TopBa
     const hasNewMail =
       state.world?.state === "ready" &&
       (state.world.value.state.mailbox?.letters.some((letter) => !letter.readAt && !letter.archived) ?? false);
-    const weather = normalizeWeatherEffects(state.weatherEffects);
+    const live = state.liveWeather?.state === "ready" ? state.liveWeather.value : null;
+    const weatherLabel = live
+      ? `${live.city} ${live.temperature}° · ${WEATHER_LABELS[live.kind]}${state.weatherError ? " (이전 정보)" : ""}`
+      : "날씨 확인 중";
     return h("header", { className: "top top-home" }, [
       h("div", { className: "top-row" }, [
         h("h1", { className: "sign sign-home", attrs: { id: "fw-screen-title" } }, [
@@ -91,16 +95,22 @@ export function renderTopBar(state: AppState, controller: Controller, bar: TopBa
               className: "chip-button weather",
               attrs: {
                 type: "button",
-                "aria-label": `날씨 연출 ${weather.enabled ? WEATHER_LABELS[weather.kind] : "꺼짐"} — 설정`,
+                "aria-label": `${weatherLabel} — 도시 설정`,
               },
               on: {
                 click: () => {
-                  controller.setSettingsSection("display");
+                  controller.setSettingsSection("workshop");
                   controller.navigate("settings");
                 },
               },
             },
-            [ICONS.weather(), h("span", { text: weather.enabled ? WEATHER_LABELS[weather.kind] : "효과 꺼짐" })],
+            [
+              assetImage(
+                WEATHER_ART[live?.kind === "clear" ? "sun" : !live || live.kind === "cloudy" ? "cloud" : live.kind],
+                { className: "icon", fallback: () => ICONS.weather() },
+              ),
+              h("span", { text: weatherLabel }),
+            ],
           ),
         ]),
         h(

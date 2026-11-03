@@ -1,6 +1,6 @@
 // The production state a world starts with: every facility at level 1 in automatic mode with the recommended rules,
 // so the first session already shows a small gather → process loop running by itself (plan §7.2-E).
-import { FACILITIES, RECOMMENDED_RULES, facilityDefinition } from "../../content/production";
+import { FACILITIES, RECIPES, RECOMMENDED_RULES, facilityDefinition } from "../../content/production";
 import { seededUuid } from "../ids";
 import type { FacilityState, ProductionState, Rule } from "../model/production";
 
@@ -15,13 +15,30 @@ export function recommendedRules(worldId: string, facilityId: string): Rule[] {
   }));
 }
 
+/** Every recipe is already listed. Newly discovered recipes start off until the player enables them. */
+export function completeRules(worldId: string, facilityId: string, rules: Rule[]): Rule[] {
+  const used = new Set(rules.map((rule) => rule.recipeId));
+  const policyIds = new Set(rules.map((rule) => rule.policyId));
+  const missing = RECIPES.filter((recipe) => recipe.facilityId === facilityId && !used.has(recipe.id));
+  return [
+    ...rules,
+    ...missing.map((recipe) => {
+      let salt = 0;
+      let policyId = seededUuid(`${worldId}:rule:${facilityId}:${recipe.id}`);
+      while (policyIds.has(policyId)) policyId = seededUuid(`${worldId}:rule:${facilityId}:${recipe.id}:${++salt}`);
+      policyIds.add(policyId);
+      return { policyId, enabled: false, recipeId: recipe.id, targetStock: 10, priority: 5 };
+    }),
+  ];
+}
+
 /** A facility as it starts: level 1, 자동 운영 with the recommended rules, open only if it needs no 해금. */
 export function initialFacility(worldId: string, facilityId: string): FacilityState {
   return {
     unlocked: facilityDefinition(facilityId)?.unlock === null,
     level: 1,
     mode: "auto",
-    rules: recommendedRules(worldId, facilityId),
+    rules: completeRules(worldId, facilityId, recommendedRules(worldId, facilityId)),
     queue: [],
     residentId: null,
     job: null,

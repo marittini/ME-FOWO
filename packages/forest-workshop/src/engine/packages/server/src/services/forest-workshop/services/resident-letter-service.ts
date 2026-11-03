@@ -2,6 +2,8 @@ import { FwError } from "../domain/errors";
 import { assertWorldId } from "../domain/ids";
 import type { HostPersistence, HostRuntime } from "../host/engine-adapter";
 import { buildResidentLetterMessages, parseResidentLetter } from "../prompts/resident-letter";
+import { parseModelConnection } from "./model-connection";
+import { createProfileService, type ProfileService } from "./profile-service";
 import { loadWorld } from "../store/world-repository";
 import type { CommandResponse, CommandService } from "./command-service";
 
@@ -9,8 +11,12 @@ export function createResidentLetterService(
   runtime: HostRuntime,
   persistence: HostPersistence,
   commands: CommandService,
+  profiles: ProfileService = createProfileService(runtime, persistence),
 ) {
-  const inFlight = new Map<string, { connection: string | null; promise: Promise<CommandResponse> }>();
+  const inFlight = new Map<
+    string,
+    { connection: string | null; profileConnection: string | null; promise: Promise<CommandResponse> }
+  >();
   return {
     async generate(body: unknown): Promise<CommandResponse> {
       const raw = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
@@ -27,15 +33,16 @@ export function createResidentLetterService(
       )
         throw new FwError("invalid_request");
       const connection = (raw.connectionId as string | null | undefined) ?? null;
+      const profileConnection = parseModelConnection(raw.profileConnectionId);
       const key = `${worldId}:${activityId}`;
       const active = inFlight.get(key);
       if (active) {
-        if (active.connection !== connection)
+        if (active.connection !== connection || active.profileConnection !== profileConnection)
           throw new FwError("invalid_request", { message: "다른 연결로 편지를 작성 중이에요." });
         return active.promise;
       }
       const task = (async () => {
-        const world = await loadWorld(persistence.documents, worldId);
+        let world = await loadWorld(persistence.documents, worldId);
         const activity = world.state.activities.completed.find((item) => item.id === activityId);
         if (!activity) throw new FwError("invalid_payload", { message: "완료된 활동을 찾지 못했어요." });
         const id = `resident-${activityId}`;
@@ -49,6 +56,8 @@ export function createResidentLetterService(
           };
         if (world.state.mailbox.letters.length + (world.state.activities.running ? 1 : 0) >= 200)
           throw new FwError("invalid_payload", { message: "우편 저장 한도에 도달했어요." });
+        await profiles.ensure(worldId, [activity.residentId], profileConnection);
+        world = await loadWorld(persistence.documents, worldId);
         const resident = world.state.residents[activity.residentId];
         if (!resident) throw new FwError("invalid_payload");
         const resolve = runtime.languageModels?.resolve;
@@ -62,6 +71,7 @@ export function createResidentLetterService(
         const messages = buildResidentLetterMessages({
           residentId: resident.residentId,
           residentName: resident.displayName,
+          playerNickname: world.state.settings.playerNickname,
           worldSetting: resident.worldSetting,
           activitySummary: activity.summary,
           memory: world.state.memory,
@@ -91,7 +101,7 @@ export function createResidentLetterService(
           { internal: true, identity: { activityId } },
         );
       })().finally(() => inFlight.delete(key));
-      inFlight.set(key, { connection, promise: task });
+      inFlight.set(key, { connection, profileConnection, promise: task });
       return task;
     },
   };

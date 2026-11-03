@@ -32,10 +32,16 @@ try {
     '<meta name="viewport" content="width=device-width, initial-scale=1"><div class="story-layout"><div class="dialogue-box"><span class="speaker-tag">주민</span><p class="line">표시 중</p></div></div>',
   );
   await page.addScriptTag({ content: await readFile(bundle, "utf8") });
+  const font = JSON.parse(await readFile("packages/forest-workshop/assets/fonts/jua.json", "utf8"));
+  await page.evaluate(async (data) => {
+    const face = await new FontFace("Jua", `url(${data})`).load();
+    document.fonts.add(face);
+  }, font.data);
   await page.evaluate(() => {
     const style = document.createElement("style");
     style.textContent =
-      ":root{--fs:16px;--line:2px;--ink:#432;--fw-surface-3:#fff;--drop:none} *{box-sizing:border-box}" + window.styles;
+      ":root{font-family:Jua,sans-serif;font-synthesis:none;--fs:16px;--line:2px;--ink:#432;--fw-surface-3:#fff;--drop:none} *{box-sizing:border-box}" +
+      window.styles;
     document.head.append(style);
   });
   const inspect = (text) =>

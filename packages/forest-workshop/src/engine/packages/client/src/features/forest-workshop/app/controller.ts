@@ -1,3 +1,7 @@
+import { createWeatherActions } from "./weather-actions";
+import { readWeatherCity } from "./preferences";
+import type { LiveWeather } from "./types";
+import { loadGameFont } from "./font";
 // Application actions. The only module that writes the store or calls the API; screens call these actions.
 //
 // Retry safety: every change carries a request ID. While an action is pending its button is disabled. If the
@@ -91,6 +95,9 @@ export interface AppState {
   fontSize: number;
   autoReading: AutoReadingPreference;
   weatherEffects?: WeatherEffectsPreference;
+  weatherCity?: string;
+  liveWeather?: Loadable<LiveWeather>;
+  weatherError?: string | null;
   /** 설정 → 표시 → 계절: follow today's date, or one season (per viewer, visual only). */
   seasonChoice: StoredSeasonChoice;
   /** Pack files that loaded (app/assets.ts probeAsset); the frame turns their CSS art on. */
@@ -198,6 +205,7 @@ export function createController() {
     fontSize: readFontSize(),
     autoReading: readAutoReading(),
     weatherEffects: readWeatherEffects(),
+    weatherCity: readWeatherCity(),
     seasonChoice: readSeasonChoice(),
     artReady: [],
     facilitiesTab: "facilities",
@@ -230,6 +238,14 @@ export function createController() {
     }
   }
   loadFrameArt();
+  let artSeason = currentSeason(store.get());
+  store.subscribe((state) => {
+    const season = currentSeason(state);
+    if (season !== artSeason) {
+      artSeason = season;
+      loadFrameArt();
+    }
+  });
 
   // An info toast goes away by itself after a few seconds; an error stays until it is closed.
   const INFO_NOTICE_MS = 4000;
@@ -278,6 +294,8 @@ export function createController() {
     }
   }
 
+  let prepareLetters = () => {};
+
   /** Puts a world on screen (no checks: callers decide). */
   function applyWorld(view: WorldView, content?: GameContent) {
     writeLastWorld(view.worldId);
@@ -295,6 +313,7 @@ export function createController() {
       content: content ?? state.content,
       route: state.route === "worlds" ? "home" : state.route,
     }));
+    prepareLetters();
   }
 
   /** An update of the world on screen: dropped when it is for another world or older than what is shown. */
@@ -318,6 +337,7 @@ export function createController() {
       },
       worldReceivedAt: Date.now(),
     });
+    prepareLetters();
   }
 
   async function loadWorlds() {
@@ -412,15 +432,22 @@ export function createController() {
     notify: (text, kind = "info") => store.set({ notice: { kind, text } }),
   };
 
+  const weatherActions = createWeatherActions(core);
+  const residentActions = createResidentActions(core);
+  prepareLetters = residentActions.prepareLatestLetter;
+
   return {
     store,
-    ...createResidentActions(core),
+    ...residentActions,
+    ...weatherActions,
     ...createRegisterActions(core),
     ...createProductionActions(core),
     ...createInviteActions(core),
     ...createStoryActions(core),
 
     async start() {
+      void loadGameFont().then(() => store.set({}));
+      void weatherActions.refreshWeather();
       const worlds = await loadWorlds();
       const last = readLastWorld();
       if (worlds && last && worlds.some((world) => world.worldId === last && world.readable)) await openWorld(last);
@@ -638,12 +665,15 @@ export function createController() {
 export type Controller = ReturnType<typeof createController>;
 
 /** The season the screens draw now (visual only). */
-export function currentSeason(state: Pick<AppState, "seasonChoice">): Season {
-  return resolveSeason(state.seasonChoice);
+export function currentSeason(state: Pick<AppState, "seasonChoice" | "liveWeather">): Season {
+  const season = resolveSeason(state.seasonChoice);
+  return state.seasonChoice === "auto" && state.liveWeather?.state === "ready" && state.liveWeather.value.latitude < 0
+    ? ({ spring: "autumn", summer: "winter", autumn: "spring", winter: "summer" } as const)[season]
+    : season;
 }
 
 /** Shell classes for the frame art of the current season that has loaded. */
-export function artClasses(state: Pick<AppState, "seasonChoice" | "artReady">): string {
+export function artClasses(state: Pick<AppState, "seasonChoice" | "artReady" | "liveWeather">): string {
   return frameArt(currentSeason(state))
     .filter(({ path }) => state.artReady.includes(path))
     .map(({ flag }) => ` ${flag}`)

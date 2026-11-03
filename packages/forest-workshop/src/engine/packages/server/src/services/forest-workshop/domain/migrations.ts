@@ -5,7 +5,7 @@ import { FwError } from "./errors";
 import { STARTER_KIT } from "../content/starter-kit";
 import { FACILITIES } from "../content/production";
 import { initialInvite } from "./model/invite";
-import { initialFacility, initialProduction } from "./production/initial";
+import { completeRules, initialFacility, initialProduction } from "./production/initial";
 import { assignTalent, type SourceText } from "./residents/talent-assign";
 import type { FieldId } from "../content/production";
 import { CURRENT_SCHEMA_VERSION, worldStateSchema, type WorldState } from "./world-model";
@@ -16,6 +16,23 @@ type RawWorld = Record<string, unknown>;
 
 /** `MIGRATIONS[n]` turns a version-n document into version n+1. Add one entry per schema bump; never edit old ones. */
 const MIGRATIONS: Readonly<Record<number, (world: RawWorld) => RawWorld>> = {
+  11: (world) => {
+    const production = world.production as RawWorld;
+    const facilities = production.facilities as Record<string, { rules: Parameters<typeof completeRules>[2] }>;
+    return {
+      ...world,
+      schemaVersion: 12,
+      production: {
+        ...production,
+        facilities: Object.fromEntries(
+          Object.entries(facilities).map(([id, facility]) => [
+            id,
+            { ...facility, rules: completeRules(String(world.worldId), id, facility.rules) },
+          ]),
+        ),
+      },
+    };
+  },
   10: (world) => ({ ...world, schemaVersion: 11 }),
   9: (world) => ({ ...world, schemaVersion: 10, mailbox: initialMailbox(String(world.createdAt)) }),
   8: (world) => ({ ...world, schemaVersion: 9 }),

@@ -22,11 +22,13 @@ export interface RegisterState {
   /** ③: the resident about to become the starting resident. */
   starterChoice: string | null;
   panel?: "source" | "setting" | "image";
+  generationKey?: string;
   sourcePage?: number;
   starterPage?: number;
 }
 
 export function createRegisterActions(core: ControllerCore) {
+  let selectionVersion = 0;
   const { store } = core;
 
   function patch(update: Partial<RegisterState>) {
@@ -50,9 +52,35 @@ export function createRegisterActions(core: ControllerCore) {
     }
   }
 
+  async function prepareSetting(version: number) {
+    const world = core.currentWorld();
+    const register = store.get().register;
+    const selected = register?.selected;
+    if (!world || !selected) return;
+    const draft = register.draft;
+    const generationKey = `rebuild-suggestion:${version}`;
+    patch({ generationKey });
+    const response = await core.track(
+      generationKey,
+      () => gameApi.rebuildSuggestion(world.worldId, { kind: selected.kind, id: selected.id }),
+      "공방 프로필을 준비하지 못했어요. 연결 설정을 확인한 뒤 다시 준비해 주세요.",
+    );
+    const latest = store.get().register;
+    if (
+      response &&
+      version === selectionVersion &&
+      core.currentWorld()?.worldId === world.worldId &&
+      latest?.selected?.kind === selected.kind &&
+      latest.selected.id === selected.id &&
+      latest.draft === draft
+    )
+      patch({ draft: response.suggestion });
+  }
+
   return {
     /** Opens 주민 등록 at ①, or at ③ when only the starting resident is left to choose. */
     openRegister(step: 1 | 3 = 1) {
+      selectionVersion += 1;
       dropPendingImage();
       store.set({
         register: {
@@ -72,6 +100,7 @@ export function createRegisterActions(core: ControllerCore) {
     },
 
     closeRegister() {
+      selectionVersion += 1;
       dropPendingImage();
       store.set({ register: null });
       core.navigate("residents");
@@ -82,7 +111,10 @@ export function createRegisterActions(core: ControllerCore) {
     setRegisterQuery: (query: string) => patch({ query, sourcePage: 0 }),
     setRegisterSourcePage: (sourcePage: number) => patch({ sourcePage: Math.max(0, sourcePage) }),
     setRegisterStarterPage: (starterPage: number) => patch({ starterPage: Math.max(0, starterPage) }),
-    backToSources: () => patch({ step: 1 }),
+    backToSources: () => {
+      selectionVersion += 1;
+      patch({ step: 1 });
+    },
     setRegisterPanel: (panel: NonNullable<RegisterState["panel"]>) => patch({ panel }),
     /** Typing in 공방 세계 설정: kept without a re-render (see Store.remember). */
     setDraft: (draft: string) =>
@@ -92,27 +124,20 @@ export function createRegisterActions(core: ControllerCore) {
     async chooseSource(source: SourceEntry) {
       const world = core.currentWorld();
       if (!world) return;
-      patch({ step: 2, panel: "source", selected: source, preview: { state: "loading" }, draft: "" });
+      const version = ++selectionVersion;
+      patch({ step: 2, panel: "setting", selected: source, preview: { state: "loading" }, draft: "" });
       try {
         const preview = await gameApi.previewSource(world.worldId, source.kind, source.id);
+        if (version !== selectionVersion || core.currentWorld()?.worldId !== world.worldId) return;
         patch({ preview: { state: "ready", value: preview } });
+        await prepareSetting(version);
       } catch (error) {
-        patch({ preview: { state: "error", message: errorMessage(error, "자료를 읽지 못했어요.") } });
+        if (version === selectionVersion && core.currentWorld()?.worldId === world.worldId)
+          patch({ preview: { state: "error", message: errorMessage(error, "자료를 읽지 못했어요.") } });
       }
     },
 
-    /** 다시 제안: one language-model call; the answer only fills the form. */
-    async suggestSetting() {
-      const world = core.currentWorld();
-      const selected = store.get().register?.selected;
-      if (!world || !selected) return;
-      const response = await core.track(
-        "rebuild-suggestion",
-        () => gameApi.rebuildSuggestion(world.worldId, { kind: selected.kind, id: selected.id }),
-        "제안을 받지 못했어요. 직접 써도 돼요.",
-      );
-      if (response) patch({ draft: response.suggestion });
-    },
+    suggestSetting: () => prepareSetting(selectionVersion),
 
     pickPendingImage(file: File) {
       dropPendingImage();
@@ -152,7 +177,7 @@ export function createRegisterActions(core: ControllerCore) {
       }
       store.set((state) => ({ register: null, residentsView: { ...state.residentsView, selectedId: residentId } }));
       core.navigate("residents");
-      core.notify(`${selected.name}을(를) 주민으로 등록했어요.`);
+      core.notify(`주민으로 맞이했어요 · ${selected.name}`);
     },
 
     /** ③: the one starting resident. */

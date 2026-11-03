@@ -76,7 +76,14 @@ try {
           worldId: "world",
           state: {
             pairs: { a: { residentIds: ["r"], archived: false }, b: { residentIds: ["r"], archived: false } },
-            residents: { r: { residentId: "r", displayName: "주민", recruited: true } },
+            residents: {
+              r: {
+                residentId: "r",
+                displayName: "주민",
+                recruited: true,
+                image: { current: null, placement: { scale: 100, offsetX: 0, markerHeight: 0 } },
+              },
+            },
             inventory: {},
             production: { simMs: 0, protectedStock: {}, facilities: {} },
             activities: { running: null, completed: [] },
@@ -187,6 +194,7 @@ try {
       id: "activity-1",
       kind: "patrol",
       residentId: "r",
+      startedSim: 0,
       endsSim: 900000,
     };
     window.testRender();
@@ -199,8 +207,8 @@ try {
     ];
     window.testRender();
   });
-  await page.getByRole("button", { name: "조사 결과 편지 읽기" }).click();
-  assert.equal(await page.evaluate(() => window.openedActivityLetter), "activity-123");
+  assert.equal(await page.getByRole("button", { name: "조사 결과 편지 읽기" }).count(), 0);
+  assert.equal(await page.getByText("최근 완료 기록", { exact: true }).count(), 0);
   await page.getByRole("button", { name: "우편함 열기", exact: true }).click();
   assert.equal(await page.evaluate(() => window.mailboxOpened), true);
   console.log("Explore sections, history and actions: OK");

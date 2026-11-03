@@ -27,10 +27,12 @@ import { createCommandService } from "./services/command-service";
 import { createResidentLetterService } from "./services/resident-letter-service";
 import { createStoryService } from "./services/story-service";
 import { findStory } from "./store/story-repository";
+import { createProfileService } from "./services/profile-service";
 import { createRebuildService } from "./services/rebuild-service";
 import { createSettlementService } from "./services/settlement-service";
 import { createSourceService } from "./services/source-service";
 import { createStorageService } from "./services/storage-service";
+import { createWeatherService } from "./services/weather-service";
 import { createWorldService } from "./services/world-service";
 
 interface ActivationContext {
@@ -50,7 +52,8 @@ export async function activate({ app, api }: ActivationContext) {
   if (missing.length) throw new Error(`Forest Workshop needs a newer Marinara Engine (missing ${missing.join(", ")})`);
   const persistence = requirePersistence(runtime);
   const sources = createSourceService(runtime, persistence);
-  const stories = createStoryService(runtime, persistence);
+  const profiles = createProfileService(runtime, persistence);
+  const stories = createStoryService(runtime, persistence, profiles);
   // Host reads commands may need before their rule: the source of a registration, a written scene.
   const commandHost = {
     ...sources.host,
@@ -62,13 +65,15 @@ export async function activate({ app, api }: ActivationContext) {
     persistence,
     sources,
     rebuild: createRebuildService(runtime, sources),
+    profiles,
     worlds: createWorldService(persistence),
     settlement: createSettlementService(persistence),
     commands,
-    residentLetters: createResidentLetterService(runtime, persistence, commands),
+    residentLetters: createResidentLetterService(runtime, persistence, commands, profiles),
     stories,
     backups: createBackupService(persistence, PACKAGE_VERSION),
     storage: createStorageService(persistence),
+    weather: createWeatherService(),
     logger: runtime.logger,
   };
 

@@ -158,7 +158,7 @@ try {
   assert.equal(await page.getByText("주민 2", { exact: true }).count(), 0);
   await page.getByLabel("교환 주민 목록 고르기", { exact: true }).click();
   await page.getByLabel("교환 주민 목록 고르기", { exact: true }).locator("..").locator("button").nth(1).click();
-  await page.getByRole("button", { name: "주민 2와(과) 종표 교환" }).click();
+  await page.getByRole("button", { name: "주민 2 선택 · 종표 교환" }).click();
   assert.equal(await page.evaluate(() => window.exchanged), "2");
   await page.evaluate(() => {
     window.testState.sheet = { kind: "invite-wish" };

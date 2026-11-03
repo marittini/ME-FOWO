@@ -147,9 +147,12 @@ try {
   await resident.click({ force: true });
   assert.equal(await page.evaluate(() => window.selected), undefined);
   assert.equal(await page.locator(".resident-reaction").isVisible(), true);
-  await page.getByRole("button", { name: "프로필", exact: true }).click();
-  assert.equal(await page.evaluate(() => window.selected), "r");
-  assert.deepEqual(await page.evaluate(() => window.sheet), { kind: "profile", residentId: "r" });
+  assert.equal(await page.getByRole("button", { name: "프로필", exact: true }).count(), 0);
+  assert.equal(await resident.evaluate((node) => getComputedStyle(node.parentElement).animationPlayState), "running");
+  assert.equal(
+    await resident.locator(".figure-body").evaluate((node) => getComputedStyle(node).animationPlayState),
+    "running",
+  );
   assert.equal(
     await resident.locator(".figure").evaluate((node) => getComputedStyle(node).animationName),
     "fw-facing-left",

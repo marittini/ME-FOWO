@@ -14,6 +14,7 @@ import type {
   StorageUsage,
   WorldSummary,
   WorldView,
+  LiveWeather,
 } from "./types";
 
 const ROOT = "/forest-workshop";
@@ -27,11 +28,19 @@ export interface CommandInput {
 }
 
 export const gameApi = {
+  getWeather: (city: string) => hostApi().get<LiveWeather>(`${ROOT}/weather?city=${encodeURIComponent(city)}`),
   listWorlds: () => hostApi().get<{ worlds: WorldSummary[] }>(`${ROOT}/worlds`),
   createWorld: (input: { worldId: string; worldName: string; playerNickname: string }) =>
     hostApi().post<WorldView & { created: boolean; content: GameContent }>(`${ROOT}/worlds`, input),
   getState: (worldId: string) =>
     hostApi().get<WorldView & { content: GameContent }>(`${ROOT}/state?worldId=${encodeURIComponent(worldId)}`),
+  prepareStory: (worldId: string, pairId: string) =>
+    hostApi().post<StoryOverview>(`${ROOT}/stories/prepare`, {
+      worldId,
+      pairId,
+      connectionId: readModelConnection("story"),
+      profileConnectionId: readModelConnection("profile"),
+    }),
   getStoryOverview: (worldId: string) =>
     hostApi().get<StoryOverview>(`${ROOT}/stories?worldId=${encodeURIComponent(worldId)}`),
   getStory: (worldId: string, storyId: string) =>
@@ -45,12 +54,14 @@ export const gameApi = {
       pairId,
       episode,
       connectionId: readModelConnection("story"),
+      profileConnectionId: readModelConnection("profile"),
     }),
   generateResidentLetter: (worldId: string, activityId: string) =>
     hostApi().post<CommandResponse>(`${ROOT}/mail/generate`, {
       worldId,
       activityId,
       connectionId: readModelConnection("letter"),
+      profileConnectionId: readModelConnection("profile"),
     }),
   getDeliveries: (worldId: string) =>
     hostApi().get<DeliveryList>(`${ROOT}/deliveries?worldId=${encodeURIComponent(worldId)}`),
@@ -68,6 +79,12 @@ export const gameApi = {
     hostApi().get<SourcePreview>(
       `${ROOT}/sources/preview?worldId=${encodeURIComponent(worldId)}&kind=${kind}&id=${encodeURIComponent(id)}`,
     ),
+  prepareProfile: (worldId: string, residentId: string) =>
+    hostApi().post<WorldView>(`${ROOT}/residents/prepare`, {
+      worldId,
+      residentId,
+      profileConnectionId: readModelConnection("profile"),
+    }),
   rebuildSuggestion: (worldId: string, source: { kind: ResidentKind; id: string }) =>
     hostApi().post<{ suggestion: string }>(`${ROOT}/rebuild-suggestion`, {
       worldId,

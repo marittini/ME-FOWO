@@ -141,7 +141,7 @@ function pairAddSheet(resident: Resident, world: WorldView, state: AppState, con
   return sheetDialog("fw-pair-add", "페어 추가", [
     h("p", {
       className: "muted",
-      text: `${resident.displayName}와(과) 이어질 주민을 골라 주세요. 캐릭터든 페르소나든 괜찮아요. 지난 기억이 새로 생기지는 않아요.`,
+      text: `${resident.displayName}의 페어가 될 주민을 골라 주세요. 페어를 만들어도 지난 기억이나 연애 관계가 새로 생기지는 않아요.`,
     }),
     candidates.length === 0
       ? h("p", {

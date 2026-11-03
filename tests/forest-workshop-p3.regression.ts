@@ -355,7 +355,8 @@ async function main() {
       facilityId: "gather-yard",
       rules: [{ ...yardRules[0]!, targetStock: 12 }],
     });
-    assert.equal(changed.state.production.facilities["gather-yard"]!.rules.length, 1);
+    assert.equal(changed.state.production.facilities["gather-yard"]!.rules.filter((rule) => rule.enabled).length, 1);
+    assert.equal(changed.state.production.facilities["gather-yard"]!.rules[0]!.targetStock, 12);
 
     // Upgrade: the server's cost, once even if the same tap is sent twice.
     const claimed = await run("onboarding.claimStarterKit", {});

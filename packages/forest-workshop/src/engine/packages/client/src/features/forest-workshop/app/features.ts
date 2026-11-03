@@ -4,9 +4,7 @@
 
 export type LockedFeature = "weather";
 
-const LOCKED: Readonly<Record<LockedFeature, { label: string; phase: "P4b" | "P5" }>> = {
-  weather: { label: "현실 날씨", phase: "P5" },
-};
+const LOCKED: Readonly<Partial<Record<LockedFeature, { label: string; phase: "P4b" | "P5" }>>> = {};
 
 export function isLocked(feature: LockedFeature): boolean {
   return feature in LOCKED;

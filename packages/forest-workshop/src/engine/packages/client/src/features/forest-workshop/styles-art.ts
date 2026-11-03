@@ -450,4 +450,38 @@ img.emotion-bubble.emotion-art { min-width: 0; width: 2.6em; height: 2.6em; padd
 .restore-details > summary { cursor: pointer; }
 .restore-details > summary::after { content: "▾"; margin-left: auto; color: var(--fw-accent); }
 .restore-details[open] > summary::after { content: "▴"; }
+
+/* Spacing follows the game column, not the desktop viewport. Nested cards do not multiply gutters. */
+.column { container-type: inline-size; }
+.page { gap: clamp(10px, 3cqw, 14px); padding-inline: clamp(10px, 3cqw, 16px); }
+.card, .art-paper .card { padding: clamp(12px, 3.8cqw, 20px); }
+.card > .section-title { margin-bottom: 12px; }
+.card > p + p, .card > p + .button, .card > .button + p { margin-top: 10px; }
+.profile-panel .compare-box.world { background: transparent; border: 0; padding: 0; }
+.profile-prose { display: grid; gap: 1em; line-height: 1.8; }
+.profile-prose p, .source-field p { white-space: pre-wrap; }
+.profile-edit { margin-top: 16px; display: grid; gap: 10px; }
+.profile-edit > summary { cursor: pointer; min-height: 44px; padding-block: 10px; }
+.profile-edit .textarea { min-height: 12em; line-height: 1.7; }
+.resident-detail { align-items: start; }
+.detail-info { gap: 12px; }
+.resident-benefits { display: grid; gap: 12px; }
+.resident-facts { margin: 0; display: grid; gap: 12px; }
+.resident-facts > div { display: grid; gap: 4px; }
+.resident-facts dt { color: var(--fw-muted); font-size: .85em; }
+.resident-facts dd { margin: 0; line-height: 1.6; }
+.detail-card .detail-actions { margin-top: 14px; }
+.delivery-board { display: grid; grid-template-columns: 44px minmax(0,1fr) 32px; gap: 12px; align-items: center; padding: 12px 16px; }
+.board-art { width: 44px; height: 44px; object-fit: contain; }
+.activity-card { display: grid; gap: 14px; }
+.activity-prepare, .activity-running { display: grid; gap: 12px; }
+.activity-landscape { width: 100%; max-height: 150px; object-fit: cover; border-radius: 10px; }
+.activity-resident { display: flex; align-items: center; gap: 12px; }
+.activity-progress { width: 100%; accent-color: var(--fw-accent); }
+@container (max-width: 360px) {
+  .resident-detail { grid-template-columns: 64px minmax(0,1fr); gap: 10px; }
+  .detail-stage { width: 64px; }
+  .detail-info { gap: 10px; }
+  .detail-info .resident-benefits { grid-column: 1 / -1; }
+}
 `;

@@ -4,20 +4,20 @@ A portrait cozy workshop game for ME-personal, in development. `forest-workshop`
 name 숲결 공방 is provisional. The design contract is *Development_Plan_FINAL_v1_6* (숲속 공방 독립 에이전트 최종
 개발계획서 v1.6); `docs/forest-workshop/` in this repository records what has been implemented and verified.
 
-## What 0.2.0 is
+## What 0.7.0 includes
 
-Not the full game yet. It is the storage foundation (plan P1) with the screens it needs:
+- Register characters and personas as workshop residents. Selecting a source automatically prepares a full adapted profile; confirm it or edit it before registering. Original cards stay unchanged.
+- Five production fields with all recipes already listed. Existing priorities and targets stay as they were; additional recipes start switched off. Use targets or counted queues, assign residents, protect stock, and sell goods.
+- Pair-specific three-episode story plans, followed by scenes that use the canonical workshop profiles and shared memories. Already published scenes remain unchanged.
+- Survey and patrol activities prepare a resident letter automatically when their result reaches the game. Open the mailbox to read it; generation failures retain the activity record and offer a retry.
+- The Home bulletin board opens today's delivery requests. Touching a resident shows a mood mark while movement continues.
+- Real weather from Open-Meteo for the selected preset city, refreshed every 15 minutes. Choose the city under Settings → 내 공방; Seoul is the default. Weather effects can be disabled separately.
+- Bundled, licensed Jua typography, readable profile paragraphs, responsive mobile spacing, and three quiet outdoor story backgrounds.
+- Multiple worlds, memory and AI guideline management, invitations, automatic selling, and backups that carry resident pictures and stored stories.
 
-- Worlds: create several, switch between them, rename the world and your nickname (the player has a nickname only).
-- Every change is a server-decided command: a resent command never applies twice, a failed save changes nothing,
-  and concurrent tabs cannot grant anything twice.
-- The one-time welcome package and the storeroom.
-- Settings → 저장 · 백업: JSON backup without secrets, and restore with a preview that always makes a new world.
-- Settings → 연결 점검: the P0 checks (Engine members, storage/model probe, resident picture path to the Global Gallery).
+Choose Engine model connections under Settings → 관리 → AI 모델 연결 설정. Profile, story and letter connections remain separate. A failed generation does not consume another expedition or replace saved stories. Legacy profiles explicitly edited by the player are preserved; existing published chapters retain their original plan until the next chapter.
 
-Residents and pairs, production and automation, invitations, expeditions, stories and letters follow in later phases.
-The package never calls character avatar generation or `integrations.images.*`, never copies a character or persona
-avatar, and never edits a character card or persona.
+The package never calls character avatar generation or `integrations.images.*`, never copies a character or persona avatar, and never edits a character card or persona. Resident pictures are uploaded by the player.
 
 ## Install
 
@@ -39,7 +39,7 @@ Engine versions below 2.5.1 are not offered the package.
 
 ## Data
 
-Package documents use kinds `fw-world` (one per world), `fw-command` (one per accepted command, for idempotency), `fw-p0` (the connection-check picture slot) and `fw-p0-probe` (temporary, removed by each check).
+Package documents use kinds `fw-world` (one per world), `fw-command` (one per accepted command, for idempotency), `fw-story` (one immutable generated scene), `fw-p0` (the connection-check picture slot) and `fw-p0-probe` (temporary, removed by each check).
 Uninstalling the package does not delete the gallery picture; the Global Gallery protects a picture while a package
 document references it.
 

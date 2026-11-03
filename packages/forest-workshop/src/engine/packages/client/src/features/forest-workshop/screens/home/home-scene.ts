@@ -71,6 +71,7 @@ function sceneResidents(world: WorldState): Resident[] {
 function spot(side: "left" | "right", resident: Resident | null, world: WorldState, controller: Controller) {
   if (resident) {
     const reaction = h("div", { className: "resident-reaction", attrs: { hidden: "" } });
+    let hideReaction: ReturnType<typeof setTimeout> | undefined;
     const figure = h(
       "button",
       {
@@ -78,8 +79,11 @@ function spot(side: "left" | "right", resident: Resident | null, world: WorldSta
         attrs: { type: "button", "aria-label": `${resident.displayName}에게 인사하기` },
         on: {
           click: () => {
-            reaction.hidden = !reaction.hidden;
-            container.classList.toggle("reacting", !reaction.hidden);
+            reaction.hidden = false;
+            clearTimeout(hideReaction);
+            hideReaction = setTimeout(() => {
+              reaction.hidden = true;
+            }, 1600);
           },
         },
       },
@@ -90,17 +94,6 @@ function spot(side: "left" | "right", resident: Resident | null, world: WorldSta
         className: "resident-greeting",
         alt: "반가움",
         fallback: () => h("span", { className: "resident-greeting", text: "♪", attrs: { "aria-label": "반가움" } }),
-      }),
-      h("button", {
-        className: "outline-button",
-        text: "프로필",
-        attrs: { type: "button" },
-        on: {
-          click: () => {
-            controller.openResidents(resident.residentId);
-            controller.openSheet({ kind: "profile", residentId: resident.residentId });
-          },
-        },
       }),
     );
     const container = h("div", { className: `resident-spot filled ${side}` }, [figure, reaction]);

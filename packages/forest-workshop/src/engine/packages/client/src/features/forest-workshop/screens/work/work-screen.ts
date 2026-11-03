@@ -1,5 +1,5 @@
 // 공방 작업 (board 01-2): field tabs (채집 · 재배 · 조사 · 가공 · 제작), 자동 운영 / 지정 횟수, the facility card with
-// 배치 변경, the recipe, 목표 재고 with 현재 / 목표, 재료 사용 설정 (보유 · 보호 · 사용 가능), 제작 우선순위, 현재 작업
+// 배치 변경, the recipe, 목표 재고 with 현재 / 목표, 재료 사용 설정 (보유 · 보호 · 사용 가능), 작업 우선순위, 현재 작업
 // with its countdown, the waiting hint, and 운영 규칙 적용 · 추천 설정.
 // A facility not open yet shows its 해금 condition in place of the plan. 지정 횟수 swaps the rule plan for the queue
 // (queue-panel.ts); 배치 변경 opens the placement sheet (assign-sheet.ts).
@@ -332,8 +332,6 @@ function priorityList(
   selectedId: string | undefined,
   controller: Controller,
 ) {
-  const used = new Set(rules.map((rule) => rule.recipeId));
-  const addable = content.recipes.filter((recipe) => recipe.facilityId === facilityId && !used.has(recipe.id));
   const selectedRule = rules.find((rule) => rule.policyId === selectedId) ?? rules[0];
   const prioritySelect = h(
     "select",
@@ -350,15 +348,10 @@ function priorityList(
     ),
   );
   prioritySelect.value = selectedRule?.policyId ?? "";
-  const addSelect = h(
-    "select",
-    { className: "input", attrs: { "aria-label": "추가할 제작법" } },
-    addable.map((recipe) => h("option", { text: recipe.name, attrs: { value: recipe.id } })),
-  );
   return h("div", { className: "plan-block" }, [
     h("span", { className: "plan-label" }, [
-      "제작 우선순위 ",
-      h("small", { text: "(위의 아이템부터 순서대로 제작해요)" }),
+      "작업 우선순위 ",
+      h("small", { text: "(위의 작업부터 차례대로 진행해요)" }),
     ]),
     rules.length ? prioritySelect : null,
     ...rules
@@ -425,17 +418,10 @@ function priorityList(
           ],
         );
       }),
-    addable.length
-      ? h("div", { className: "add-rules" }, [
-          addSelect,
-          h("button", {
-            className: "outline-button",
-            text: "제작법 추가",
-            attrs: { type: "button" },
-            on: { click: () => controller.addRule(facilityId, addSelect.value) },
-          }),
-        ])
-      : null,
+    h("p", {
+      className: "muted",
+      text: "이 시설의 제작법은 모두 등록되어 있어요. 사용할 제작법을 켜고 목표 재고를 정해 주세요.",
+    }),
   ]);
 }
 
@@ -456,7 +442,7 @@ function currentWork(state: AppState, content: GameContent, world: WorldView, fa
     h("span", { className: "plan-label", text: "현재 작업" }),
     itemTile(output),
     h("span", { className: "plan-progress" }, [
-      h("span", { className: "muted", text: `${recipe?.name ?? ""} 만드는 중…` }),
+      h("span", { className: "muted", text: `${recipe?.name ?? "작업"} · 진행 중` }),
       progress.bar,
     ]),
     progress.countdown,
@@ -599,7 +585,7 @@ function body(state: AppState, content: GameContent, world: WorldView, controlle
               recipeCard(content, selected, facility.level, crew),
               selected ? targetRow(content, world, facilityId, selected, controller) : null,
               materialsBlock(content, world, selected),
-              h("h2", { className: "section-title", text: "제작 우선순위" }),
+              h("h2", { className: "section-title", text: "작업 우선순위" }),
               priorityList(content, facilityId, rules, selected?.policyId, controller),
             ]
           : [queuePanel(state, content, world, facilityId, controller)]),

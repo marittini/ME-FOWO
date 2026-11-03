@@ -1,5 +1,5 @@
 // 주민 등록 (board 05-3): back + sign, the ① 자료 선택 → ② 재구축 → ③ 시작 주민 steps, 선택한 자료, 원래 설정,
-// 공방 세계 설정 with its n / 200 counter, 수정 · 다시 제안, 주민 그림 직접 등록 (PNG · WebP → WebP 저장),
+// full 공방 profile with its character counter, 수정 · 다시 제안, 주민 그림 직접 등록 (PNG · WebP → WebP 저장),
 // "원본 프로필은 바뀌지 않아요.", 재구축 확정 and 나중에 그림 등록. ① and ③ use the same frame for the two steps the
 // board shows only in its step bar. This is a form, so the bottom bar is hidden and 뒤로 is explicit (plan §15.6).
 import { MANAGEMENT_ART, assetImage } from "../../app/assets";
@@ -204,8 +204,8 @@ function imagePicker(register: RegisterState, controller: Controller, maxBytes: 
 
 function stepTwo(register: RegisterState, state: AppState, controller: Controller) {
   const selected = register.selected!;
-  const max = state.content?.residents.worldSettingMax ?? 200;
-  const suggesting = Boolean(state.busy["rebuild-suggestion"]);
+  const max = state.content?.residents.worldSettingMax ?? 16000;
+  const suggesting = Boolean(register.generationKey && state.busy[register.generationKey]);
   const registering = Boolean(state.busy[`register:${selected.kind}:${selected.id}`]);
   const uploading = Object.keys(state.busy).some((key) => key.startsWith("image-upload:") && state.busy[key]);
   const busy = registering || uploading;
@@ -219,7 +219,7 @@ function stepTwo(register: RegisterState, state: AppState, controller: Controlle
     attrs: {
       id: "fw-world-setting",
       maxlength: String(max),
-      rows: "4",
+      rows: "10",
       placeholder: "이 세계에서 어떤 주민인지 적어 주세요.",
       "aria-describedby": "fw-world-setting-help fw-draft-count",
     },
@@ -265,9 +265,10 @@ function stepTwo(register: RegisterState, state: AppState, controller: Controlle
           h("label", { className: "section-title", text: "공방 세계 설정", attrs: { for: "fw-world-setting" } }),
           h("p", {
             className: "muted",
-            text: "이 주민이 공방에서 어떤 모습인지 한두 문장으로 적어 주세요. 내용을 적으면 다음으로 갈 수 있어요.",
+            text: "원래 프로필의 성격과 말투를 살려 공방에 맞는 설정을 준비해요. 완성된 내용을 확인하고 필요하면 수정해 주세요.",
             attrs: { id: "fw-world-setting-help" },
           }),
+          suggesting ? statusLine("주민의 공방 프로필을 준비하고 있어요…") : null,
           h("div", { className: "textarea-wrap" }, [textarea, counter]),
           h("div", { className: "rule-actions even" }, [
             h(
@@ -292,12 +293,12 @@ function stepTwo(register: RegisterState, state: AppState, controller: Controlle
                 disabled: suggesting || !ready,
                 on: { click: () => void controller.suggestSetting() },
               },
-              [ICONS.sparkle("icon"), h("span", { text: suggesting ? "제안 받는 중…" : "다시 제안" })],
+              [suggesting ? null : ICONS.sparkle("icon"), h("span", { text: suggesting ? "준비 중…" : "다시 준비" })],
             ),
           ]),
           h("p", {
             className: "hint",
-            text: "다시 제안은 엔진의 기본 언어 모델에 한 번 요청해요. 확정하기 전에는 저장되지 않아요.",
+            text: "확인한 프로필은 편지와 이야기에서 함께 사용해요. 원본 캐릭터·페르소나는 바꾸지 않아요.",
           }),
           h("div", { className: "rule-actions even" }, [
             button("이전", () => controller.setRegisterPanel("source"), { variant: "secondary" }),

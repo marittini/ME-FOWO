@@ -1,4 +1,4 @@
-// 이야기 탐험 (plan §7.3): a pair's stories come in arcs of three episodes. Each arc here is the stored plan — place,
+// 이야기 탐험 (plan §7.3): a pair's stories come in arcs of three episodes. Each arc here supplies legacy story defaults and fixed mechanics — place,
 // episode titles, abstract beats, who takes part, time, preparations and the relation change an episode may bring.
 // The words of a scene are written when the player reads it (prompts/story-scene.ts), from the world's memory at that
 // moment. Beats name roles ({lead}, {partner}) and never decide feelings, confessions or endings.
@@ -8,6 +8,7 @@ export interface EpisodeDefinition {
   title: string;
   /** What happens, for the scene writer. Roles: {lead}, {partner}. Never shown to the player before reading. */
   beat: string;
+  background?: "forest-clearing" | "river-bridge" | "herb-garden" | "workshop";
   /** "lead" = the lead resident alone; "pair" = both residents of the pair. */
   cast: "lead" | "pair";
   minutes: number;

@@ -10,7 +10,7 @@ export const RESIDENT_KINDS = ["character", "persona"] as const;
 export type ResidentKind = (typeof RESIDENT_KINDS)[number];
 
 export const MAX_RESIDENTS = 100;
-export const WORLD_SETTING_MAX = 200;
+export const WORLD_SETTING_MAX = 16000;
 export const DISPLAY_NAME_MAX = 40;
 export const SOURCE_NAME_MAX = 80;
 export const SNAPSHOT_FIELD_MAX = { description: 8000, personality: 4000, scenario: 4000 } as const;
@@ -118,6 +118,8 @@ export const residentSchema = z
     source: sourceSnapshotSchema,
     displayName: displayNameSchema,
     worldSetting: worldSettingSchema,
+    /** 0: legacy condensed setting; 2: full adapted profile or a player-approved edit. */
+    profileVersion: z.number().int().min(0).max(2).default(0),
     /** Recruited residents live in the workshop; the others are registered and wait for an invitation (P3). */
     recruited: z.boolean(),
     /** 전문 분야, decided at registration (domain/residents/talent-assign.ts). A placed resident helps only in a

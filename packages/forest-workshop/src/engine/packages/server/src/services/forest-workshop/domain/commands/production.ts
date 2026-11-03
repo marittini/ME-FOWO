@@ -28,6 +28,7 @@ import {
 } from "../../content/production";
 import { FwError } from "../errors";
 import { FACILITY_MODES, ruleSchema, type FacilityState } from "../model/production";
+import { completeRules } from "../production/initial";
 import { unlockParts } from "../production/unlock";
 import type { WorldState } from "../world-model";
 import { defineCommand } from "./command";
@@ -63,7 +64,7 @@ export const setRules = defineCommand({
       recipes.add(rule.recipeId);
       policies.add(rule.policyId);
     }
-    const next = { ...facility, rules: payload.rules };
+    const next = { ...facility, rules: completeRules(state.worldId, payload.facilityId, payload.rules) };
     return { state: putFacility(state, payload.facilityId, next), result: { facilityId: payload.facilityId } };
   },
 });

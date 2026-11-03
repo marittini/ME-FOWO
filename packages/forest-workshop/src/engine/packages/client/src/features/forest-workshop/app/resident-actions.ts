@@ -72,6 +72,62 @@ export function createResidentActions(core: ControllerCore) {
     store.set((state) => ({ residentsView: { ...state.residentsView, ...patch } }));
   }
 
+  const attempted = new Set<string>();
+  const running = new Map<string, Promise<string | null>>();
+  async function prepareLetter(activityId: string, open = false): Promise<string | null> {
+    const world = core.currentWorld();
+    if (!world) return null;
+    const key = `${world.worldId}:${activityId}`;
+    const id = `resident-${activityId}`;
+    let task = running.get(key);
+    if (!task) {
+      task = (async () => {
+        if (core.currentWorld()?.state.mailbox.letters.some((letter) => letter.id === id)) return id;
+        const response = await core.track(
+          `letter:${activityId}`,
+          () => gameApi.generateResidentLetter(world.worldId, activityId),
+          "편지를 준비하지 못했어요. 활동 결과는 보관되어 있어요. 편지를 다시 열어 확인해 주세요.",
+        );
+        if (!response || core.currentWorld()?.worldId !== world.worldId) return null;
+        core.showWorld({
+          worldId: world.worldId,
+          revision: response.revision,
+          updatedAt: new Date().toISOString(),
+          state: response.state,
+        });
+        return String(response.result.id);
+      })().finally(() => running.delete(key));
+      running.set(key, task);
+    }
+    const result = await task;
+    if (open && result && core.currentWorld()?.worldId === world.worldId) await showLetter(result);
+    return result;
+  }
+  async function showLetter(id: string) {
+    const letter = core.currentWorld()?.state.mailbox.letters.find((item) => item.id === id);
+    if (!letter) return;
+    const response = letter.readAt ? true : await core.runCommand(`mail:${id}`, "mail.read", { id });
+    if (response)
+      store.set((state) =>
+        state.sheet?.kind === "mailbox" ? { sheet: { ...state.sheet, archived: letter.archived, id } } : {},
+      );
+  }
+  async function openLetter(id: string) {
+    const world = core.currentWorld();
+    if (!world) return;
+    const activity = world.state.activities?.completed?.find((item) => item.mailId === id);
+    if (activity) {
+      store.set({ sheet: { kind: "mailbox", id } });
+      const generated = await prepareLetter(activity.id);
+      if (core.currentWorld()?.worldId !== world.worldId) return;
+      // Do not reopen mail after the player closed it or selected a different letter.
+      const sheet = store.get().sheet;
+      if (generated && sheet?.kind === "mailbox" && sheet.id === id) await showLetter(generated);
+      return;
+    }
+    await showLetter(id);
+  }
+
   return {
     openGuidelines(pairId?: string) {
       store.set({ sheet: { kind: "guidelines", pairId } });
@@ -107,38 +163,22 @@ export function createResidentActions(core: ControllerCore) {
         return;
       }
       store.set({ sheet: { kind: "mailbox", archived: letter.archived } });
-      const response = letter.readAt ? true : await core.runCommand(`mail:${id}`, "mail.read", { id });
-      if (response) store.set((state) => (state.sheet?.kind === "mailbox" ? { sheet: { ...state.sheet, id } } : {}));
+      await openLetter(id);
     },
     setMailboxView(patch: { archived?: boolean; page?: number; id?: string }) {
       store.set((state) => (state.sheet?.kind === "mailbox" ? { sheet: { ...state.sheet, ...patch } } : {}));
     },
-    async openLetter(id: string) {
-      const response = await core.runCommand(`mail:${id}`, "mail.read", { id });
-      if (response) store.set((state) => (state.sheet?.kind === "mailbox" ? { sheet: { ...state.sheet, id } } : {}));
-    },
-    async generateResidentLetter(activityId: string) {
+    openLetter,
+    generateResidentLetter: (activityId: string) => prepareLetter(activityId, true),
+    prepareLatestLetter() {
       const world = core.currentWorld();
-      if (!world) return;
-      const response = await core.track(
-        `letter:${activityId}`,
-        () => gameApi.generateResidentLetter(world.worldId, activityId),
-        "편지를 쓰지 못했어요. 활동 결과는 그대로 있으니 다시 시도해 주세요.",
-      );
-      if (!response || core.currentWorld()?.worldId !== world.worldId) return;
-      core.showWorld({
-        worldId: world.worldId,
-        revision: response.revision,
-        updatedAt: new Date().toISOString(),
-        state: response.state,
-      });
-      const id = String(response.result.id);
-      const letter = response.state.mailbox.letters.find((item) => item.id === id);
-      if (letter && !letter.readAt) await core.runCommand(`mail:${id}`, "mail.read", { id });
-      if (core.currentWorld()?.worldId !== world.worldId) return;
-      store.set((state) =>
-        state.sheet?.kind === "mailbox" ? { sheet: { ...state.sheet, archived: Boolean(letter?.archived), id } } : {},
-      );
+      const activity = world?.state.activities?.completed?.[0];
+      if (!world || !activity || world.state.mailbox.letters.some((letter) => letter.id === `resident-${activity.id}`))
+        return;
+      const key = `${world.worldId}:${activity.id}`;
+      if (attempted.has(key)) return;
+      attempted.add(key);
+      void prepareLetter(activity.id);
     },
     async archiveLetter(id: string, archived: boolean) {
       const response = await core.runCommand(`mail:${id}`, "mail.archive", { id, archived });
@@ -213,6 +253,21 @@ export function createResidentActions(core: ControllerCore) {
 
     openSheet(sheet: Sheet) {
       store.set({ sheet, notice: null });
+      if (sheet.kind === "profile") {
+        const world = core.currentWorld();
+        const resident = world?.state.residents[sheet.residentId];
+        if (world && resident && (resident.profileVersion ?? 0) < 2) {
+          void core
+            .track(
+              `profile:${resident.residentId}`,
+              () => gameApi.prepareProfile(world.worldId, resident.residentId),
+              "프로필을 준비하지 못했어요. 잠시 후 다시 열어 주세요.",
+            )
+            .then((response) => {
+              if (response) core.showWorld(response);
+            });
+        }
+      }
     },
 
     closeSheet() {

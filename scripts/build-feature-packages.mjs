@@ -600,14 +600,14 @@ const features = [
   },
   {
     id: "forest-workshop",
-    version: "0.6.22",
+    version: "0.7.0",
     assetPaths: forestWorkshopAssetPaths,
     // Built and proven against ME-personal (the owner's Engine fork), which reports 2.5.1.
     minEngineVersion: "2.5.1",
     maxEngineExclusive: MAX_ENGINE_EXCLUSIVE,
     name: "Forest Workshop",
     description:
-      "A portrait cozy workshop game in development. This 0.6 build adds story expeditions: each pair of residents travels through three-episode arcs on the explore screen, and each scene is written by your language model when you first read it, from the plan and only the memories its residents share, with one answer you can give a resident. What residents learn is recorded per resident. On top of the complete workshop: five facilities with 34 materials and goods, rules or counted queues, residents whose field and talent come from their own character text, auto-selling, invitations with tickets from daily deliveries, and backups that carry pictures and scenes; letters, memory management and AI guidelines follow.",
+      "A portrait forest workshop game with automatically prepared resident profiles and letters, per-pair three-episode story plans, five production fields with every recipe already listed, daily deliveries from a home bulletin board, real weather by city, Jua typography, and backups carrying pictures and stories. Resident artwork is uploaded by the player; original character and persona cards are read only.",
     category: "misc",
     kind: ["agent"],
     modes: ["conversation", "roleplay"],
@@ -628,7 +628,11 @@ const features = [
       slots: ["home-browser-tab"],
       homeBrowserTab: { label: "숲결 공방", ariaLabel: "숲결 공방 열기 (개발용 연결 점검)" },
       // The Engine serves only declared paths at /api/capability-packages/forest-workshop/assets/*: the pictures.
-      assets: { paths: forestWorkshopAssetPaths.filter((assetPath) => assetPath.endsWith(".webp")) },
+      assets: {
+        paths: forestWorkshopAssetPaths.filter(
+          (assetPath) => assetPath.endsWith(".webp") || assetPath === "assets/fonts/jua.json",
+        ),
+      },
     },
   },
   {

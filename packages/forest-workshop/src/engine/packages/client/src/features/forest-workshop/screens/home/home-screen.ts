@@ -18,13 +18,13 @@ function storyLine(world: WorldState, content: GameContent | null): string {
   for (const stories of Object.values(world.stories.pairs)) {
     const current = stories.current;
     if (current?.episodes.some((episode) => episode.state === "unlocked")) {
-      return `새 이야기가 열렸어요 · ${arcTitle(current.arcId)}`;
+      return `새 이야기가 열렸어요 · ${current.generated?.title ?? arcTitle(current.arcId)}`;
     }
   }
   const expedition = world.stories.expedition;
   if (expedition) {
     const current = world.stories.pairs[expedition.pairId]?.current;
-    return `탐험 중 · ${current ? arcTitle(current.arcId) : "이야기 탐험"}`;
+    return `탐험 중 · ${current ? (current.generated?.title ?? arcTitle(current.arcId)) : "이야기 탐험"}`;
   }
   return Object.keys(world.pairs).length
     ? "탐사에서 이야기 탐험을 떠날 수 있어요"
@@ -46,6 +46,25 @@ function storyCard(world: WorldState, content: GameContent | null, controller: C
       h("span", { className: "story-text" }, [
         h("strong", { text: "주민 이야기" }),
         h("span", { text: storyLine(world, content) }),
+      ]),
+      h("span", { className: "round-arrow" }, [ICONS.chevron()]),
+    ],
+  );
+}
+
+function deliveryBoard(controller: Controller) {
+  return h(
+    "button",
+    {
+      className: "strip delivery-board",
+      attrs: { type: "button", "aria-label": "공방 게시판 — 오늘의 납품" },
+      on: { click: () => controller.openDeliveries() },
+    },
+    [
+      assetImage(UI_ART.deliveryBoard, { className: "board-art", fallback: () => ICONS.document("icon") }),
+      h("span", { className: "story-text" }, [
+        h("strong", { text: "공방 게시판" }),
+        h("span", { text: "오늘의 납품 의뢰 확인하기" }),
       ]),
       h("span", { className: "round-arrow" }, [ICONS.chevron()]),
     ],
@@ -79,6 +98,7 @@ export function renderHomeScreen(state: AppState, controller: Controller) {
       : [
           workReportCard(world.value, state.content, controller),
           storyCard(world.value.state, state.content, controller),
+          deliveryBoard(controller),
           absenceStrip(world.value, state.content, controller),
         ],
     nav: true,

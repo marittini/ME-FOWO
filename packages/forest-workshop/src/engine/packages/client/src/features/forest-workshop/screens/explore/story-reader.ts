@@ -5,7 +5,7 @@
 // (plan §15.6). The first open of an unlocked episode writes the scene: that is a language-model call, so the box
 // says so, and a failure offers the same plan again (no new expedition, no cost).
 import { currentSeason, type AppState, type Controller } from "../../app/controller";
-import { UI_ART, EMOTION_ART, assetImage, type Season } from "../../app/assets";
+import { STORY_BACKGROUND_ART, UI_ART, EMOTION_ART, assetImage, type Season } from "../../app/assets";
 import { button, h } from "../../app/dom";
 import { storyTextPages } from "../../app/story-pages";
 
@@ -51,7 +51,7 @@ function stage(_season: Season, world: WorldView, story: StoryDocument | null, c
   const ids = story?.participants ?? [];
   const speaking = current?.kind === "line" ? current.speakerId : current?.kind === "choice" ? current.askerId : null;
   return h("section", { className: "story-stage", attrs: { "aria-hidden": "true" } }, [
-    assetImage(UI_ART.interior, {
+    assetImage(STORY_BACKGROUND_ART[story?.background ?? "workshop"] ?? UI_ART.interior, {
       className: "stage-art",
       fallback: () => h("span", { className: "stage-shelf" }),
     }),
@@ -80,7 +80,7 @@ function dialogue(state: AppState, world: WorldView, reader: ReaderState, contro
   if (reader.story.state === "loading") {
     return h("div", { className: "dialogue-box loading", attrs: { role: "status" } }, [
       h("p", { text: "이야기를 쓰는 중이에요…" }),
-      h("p", { className: "muted", text: "처음 여는 이야기는 언어 모델이 지금 써요. 잠시 걸릴 수 있어요." }),
+      h("p", { className: "muted", text: "주민들의 이야기를 준비하고 있어요. 완성되면 바로 보여드릴게요." }),
     ]);
   }
   if (reader.story.state === "error") {

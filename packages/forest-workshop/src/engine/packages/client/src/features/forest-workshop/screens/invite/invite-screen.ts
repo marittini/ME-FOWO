@@ -179,7 +179,7 @@ function exchangeRow(
     h("button", {
       className: "button small",
       text: busy ? "교환 중…" : "교환",
-      attrs: { type: "button", "aria-label": `${resident.displayName}와(과) 종표 교환` },
+      attrs: { type: "button", "aria-label": `${resident.displayName} 선택 · 종표 교환` },
       disabled: busy || maxed || tokens < content.invite.tokensPerExchange,
       on: { click: () => void controller.exchange(resident.residentId) },
     }),

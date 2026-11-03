@@ -52,6 +52,12 @@ import { MAX_INPUT_BYTES } from "../images/image-input";
 import { UploadRefused, releaseGalleryImages, uploadResidentImage } from "../images/resident-image-upload";
 import type { HostPersistence } from "../host/engine-adapter";
 import type { BackupService } from "../services/backup-service";
+import { WEATHER_CITIES } from "../content/weather";
+import type { WeatherService } from "../services/weather-service";
+import type { ProfileService } from "../services/profile-service";
+import { assertWorldId } from "../domain/ids";
+import { loadWorld } from "../store/world-repository";
+import { FwError } from "../domain/errors";
 import type { RebuildService } from "../services/rebuild-service";
 import type { SettlementService } from "../services/settlement-service";
 import type { ResidentLetterService } from "../services/resident-letter-service";
@@ -71,6 +77,8 @@ export interface GameRouteServices {
   storage: StorageService;
   sources: SourceService;
   rebuild: RebuildService;
+  profiles: ProfileService;
+  weather: WeatherService;
   settlement: SettlementService;
   stories: StoryService;
   residentLetters: ResidentLetterService;
@@ -79,6 +87,7 @@ export interface GameRouteServices {
 
 /** Static content the client renders with; the server stays the authority on amounts and rules. */
 const CONTENT = {
+  weatherCities: WEATHER_CITIES,
   items: ITEMS,
   facilities: FACILITIES,
   recipes: RECIPES,
@@ -121,6 +130,10 @@ export function registerGameRoutes(router: FastifyInstance, services: GameRouteS
   const { app, worlds, commands, backups, storage, sources, rebuild, settlement, logger } = services;
   const query = (request: FastifyRequest) => (request.query ?? {}) as Record<string, unknown>;
 
+  router.get("/weather", async (request: FastifyRequest, reply: FastifyReply) =>
+    respond(reply, logger, "live weather", async () => services.weather.current(query(request).city)),
+  );
+
   router.get("/worlds", async (_request: FastifyRequest, reply: FastifyReply) =>
     respond(reply, logger, "list worlds", async () => ({ worlds: await worlds.list() })),
   );
@@ -143,6 +156,10 @@ export function registerGameRoutes(router: FastifyInstance, services: GameRouteS
 
   router.post("/mail/generate", async (request: FastifyRequest, reply: FastifyReply) =>
     respond(reply, logger, "resident letter generate", async () => services.residentLetters.generate(request.body)),
+  );
+
+  router.post("/stories/prepare", async (request: FastifyRequest, reply: FastifyReply) =>
+    respond(reply, logger, "story plan", async () => services.stories.prepare(request.body)),
   );
 
   router.post("/stories/generate", async (request: FastifyRequest, reply: FastifyReply) =>
@@ -193,6 +210,17 @@ export function registerGameRoutes(router: FastifyInstance, services: GameRouteS
     respond(reply, logger, "preview source", async () => {
       const { worldId, kind, id } = query(request);
       return sources.preview(worldId, kind, id);
+    }),
+  );
+
+  router.post("/residents/prepare", async (request: FastifyRequest, reply: FastifyReply) =>
+    respond(reply, logger, "prepare profile", async () => {
+      const raw = (request.body ?? {}) as Record<string, unknown>;
+      const worldId = assertWorldId(raw.worldId);
+      if (typeof raw.residentId !== "string") throw new FwError("invalid_request");
+      await services.profiles.ensure(worldId, [raw.residentId], raw.profileConnectionId);
+      const world = await loadWorld(services.persistence.documents, worldId);
+      return { worldId, revision: world.revision, updatedAt: world.updatedAt, state: world.state };
     }),
   );
 
