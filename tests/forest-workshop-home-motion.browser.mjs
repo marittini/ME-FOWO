@@ -220,7 +220,7 @@ try {
     return residentIsInFront;
   });
   assert.equal(overlap, true, "residents receive input in front of an overlapping bulletin board");
-  // Actual mobile DOM: no city name leaks, and day/night changes the scene and clear-sky sprite.
+  // Isolated component behavior only. Full-home screenshots and layout proof live in layout.browser.mjs.
   await page.clock.setFixedTime(new Date("2026-11-03T03:00:00Z"));
   const paintEnvironment = async () =>
     page.evaluate(() => {
@@ -281,7 +281,6 @@ try {
   assert.equal(await page.locator(".weather").innerText(), "8° · 맑음");
   assert.equal((await page.locator(".top-home").textContent()).includes("서울"), false);
   assert.equal((await page.locator(".weather").getAttribute("aria-label")).includes("서울"), false);
-  if (process.env.FW_DAY_SCREENSHOT) await page.screenshot({ path: process.env.FW_DAY_SCREENSHOT });
   await page.clock.setFixedTime(new Date("2026-11-03T09:00:00Z"));
   await page.clock.runFor(1000);
   assert.equal(await page.evaluate(() => window.environmentChanges), 2, "lighting notifies the view without touch");
@@ -290,7 +289,6 @@ try {
   assert.equal(await page.locator(".scene-night .weather-moon").count(), 1);
   assert.equal(await page.locator(".weather-sun").count(), 0);
   assert.match(await page.locator(".scene-scenery").evaluate((n) => getComputedStyle(n).filter), /brightness\(0.62\)/);
-  if (process.env.FW_NIGHT_SCREENSHOT) await page.screenshot({ path: process.env.FW_NIGHT_SCREENSHOT });
   console.log("Home motion, scene bulletin board, resident foreground and reduced motion: OK");
 } finally {
   await browser?.close();
