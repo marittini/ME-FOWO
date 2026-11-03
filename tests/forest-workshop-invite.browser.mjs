@@ -7,6 +7,14 @@ import { build } from "esbuild";
 import { chromium } from "playwright";
 const temp = await mkdtemp(join(tmpdir(), "forest-invite-"));
 const client = resolve("packages/forest-workshop/src/engine/packages/client/src/features/forest-workshop");
+async function goToPage(scope, label, target) {
+  const picker = scope.getByRole("navigation", { name: label, exact: true });
+  const current = Number((await picker.locator("strong").innerText()).split("/")[0]) - 1;
+  for (let index = current; index !== target; index += index < target ? 1 : -1)
+    await scope
+      .getByRole("button", { name: `${label} · ${index < target ? "다음" : "이전"} 페이지`, exact: true })
+      .click();
+}
 let browser;
 try {
   const entry = join(temp, "entry.ts"),
@@ -156,9 +164,8 @@ try {
 
   assert.equal(await page.getByText("주민 0", { exact: true }).isVisible(), true);
   assert.equal(await page.getByText("주민 2", { exact: true }).count(), 0);
-  await page.getByLabel("교환 주민 목록 고르기", { exact: true }).click();
-  await page.getByLabel("교환 주민 목록 고르기", { exact: true }).locator("..").locator("button").nth(1).click();
-  await page.getByRole("button", { name: "주민 2 선택 · 종표 교환" }).click();
+  await goToPage(page, "교환 주민 목록 고르기", 1);
+  await page.getByRole("button", { name: "주민 2 선택 · 증표 교환" }).click();
   assert.equal(await page.evaluate(() => window.exchanged), "2");
   await page.evaluate(() => {
     window.testState.sheet = { kind: "invite-wish" };
@@ -166,8 +173,7 @@ try {
   });
   const dialog = page.getByRole("dialog", { name: "희망 주민 설정" });
   assert.equal(await dialog.getByText("주민 2", { exact: true }).count(), 0);
-  await dialog.getByLabel("초대 목록 고르기", { exact: true }).click();
-  await dialog.getByLabel("초대 목록 고르기", { exact: true }).locator("..").locator("button").nth(1).click();
+  await goToPage(dialog, "초대 목록 고르기", 1);
   await dialog.getByRole("button", { name: /주민 2/ }).click();
   assert.equal(await page.evaluate(() => window.wished), "2");
   await page.evaluate(() => {

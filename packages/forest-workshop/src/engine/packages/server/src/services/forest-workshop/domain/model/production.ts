@@ -8,7 +8,6 @@ import {
   MAX_RULES_PER_FACILITY,
   PROTECTED_STOCK_RANGE,
   QUEUE_COUNT_RANGE,
-  QUEUE_SLOT_LEVELS,
   TARGET_STOCK_RANGE,
 } from "../../content/production";
 
@@ -69,7 +68,7 @@ export const queueEntrySchema = z
   .refine((entry) => entry.started < entry.total, { message: "finished entry" });
 export type QueueEntry = z.infer<typeof queueEntrySchema>;
 
-export const FACILITY_MODES = ["auto", "count"] as const;
+export const FACILITY_MODES = ["auto"] as const;
 export type FacilityMode = (typeof FACILITY_MODES)[number];
 
 export const facilityStateSchema = z
@@ -77,10 +76,10 @@ export const facilityStateSchema = z
     /** Opened by its 해금 condition (or from the start). A closed facility never runs. */
     unlocked: z.boolean(),
     level: z.number().int().min(1).max(FACILITY_MAX_LEVEL),
-    /** 자동 운영 (rules) or 지정 횟수 (queue). Only one runs; the other's settings wait unchanged (plan §7.2-B). */
-    mode: z.enum(FACILITY_MODES),
+    /** Automatic production only; pre-v13 count requests are retired by migration. */
+    mode: z.literal("auto"),
     rules: z.array(ruleSchema).max(MAX_RULES_PER_FACILITY),
-    queue: z.array(queueEntrySchema).max(QUEUE_SLOT_LEVELS.length),
+    queue: z.array(queueEntrySchema).max(0),
     /** The resident placed here (배치), or null. Facilities work without one. */
     residentId: z.string().uuid().nullable(),
     job: jobSchema.nullable(),

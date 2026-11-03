@@ -139,10 +139,10 @@ try {
   });
   assert.equal(await page.getByRole("button", { name: "주민 0 자세히 보기" }).count(), 1);
   assert.equal(await page.getByRole("button", { name: "주민 2 자세히 보기" }).count(), 0);
-  await page.getByLabel("주민 목록 고르기", { exact: true }).click();
-  await page.getByLabel("주민 목록 고르기", { exact: true }).locator("..").locator("button").nth(1).click();
+  await page.getByRole("button", { name: "주민 목록 고르기 · 다음 페이지" }).click();
   assert.equal(await page.getByRole("button", { name: "주민 2 자세히 보기" }).count(), 1);
   await page.getByRole("button", { name: "주민 2 자세히 보기" }).click();
+  assert.equal(await page.getByRole("dialog", { name: "주민 2 주민 상세" }).isVisible(), true);
   assert.equal(await page.getByRole("button", { name: "프로필", exact: true }).isVisible(), true);
   assert.equal(await page.getByRole("button", { name: "주민 2 자세히 보기" }).getAttribute("aria-pressed"), "true");
   assert.equal(await page.getByLabel("주민 종류").count(), 1, "list remains alongside selected details");

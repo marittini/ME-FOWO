@@ -2,7 +2,7 @@
 // 공방 세계 설정, which can be edited here. The source card itself
 // is never changed.
 import type { AppState, Controller } from "../../app/controller";
-import { button, h, statusLine } from "../../app/dom";
+import { h, statusLine } from "../../app/dom";
 import type { WorldView } from "../../app/types";
 import { ICONS } from "../chrome/icons";
 import { kindTag, residentAvatar } from "./resident-figure";
@@ -38,6 +38,45 @@ export function renderProfileSheet(world: WorldView, state: AppState, controller
   });
   textarea.value = draft;
   counter.id = "fw-profile-count";
+  const name = h("input", {
+    className: "input",
+    attrs: { id: "fw-resident-name", maxlength: "40", "aria-label": "공방 주민 이름" },
+    on: {
+      input: () =>
+        controller.rememberProfile({
+          nameDraft: name.value,
+          expectedName: profile?.expectedName ?? resident.displayName,
+        }),
+    },
+  });
+  name.value = profile?.nameDraft ?? resident.displayName;
+  const rename = h(
+    "form",
+    {
+      className: "setting-block",
+      on: {
+        submit: (event) => {
+          event.preventDefault();
+          if (name.value.trim())
+            void controller.renameResident(
+              residentId,
+              name.value.trim(),
+              profile?.expectedName ?? resident.displayName,
+            );
+        },
+      },
+    },
+    [
+      h("label", { text: "공방에서 부를 이름", attrs: { for: "fw-resident-name" } }),
+      name,
+      h("button", {
+        className: "button secondary",
+        text: "이름 저장",
+        attrs: { type: "submit" },
+        disabled: Boolean(state.busy[`resident-name:${residentId}`]),
+      }),
+    ],
+  );
   const { source } = resident;
   const original = h("div", { className: "compare-box source" }, [
     h("h3", { className: "compare-title" }, [ICONS.document("icon"), "원래 설정"]),
@@ -111,14 +150,19 @@ export function renderProfileSheet(world: WorldView, state: AppState, controller
     tabs.forEach((tab, index) => tab.setAttribute("aria-pressed", index === selected ? "true" : "false"));
   }
   selectPanel(profile?.panel === 1 ? 1 : 0);
-  return h("div", { className: "sheet-backdrop" }, [
+  return h("div", { className: "sheet-backdrop player-popup" }, [
     h(
       "section",
       { className: "sheet card", attrs: { role: "dialog", "aria-modal": "true", "aria-labelledby": "fw-profile" } },
       [
         h("div", { className: "sheet-head" }, [
           h("h2", { className: "section-title", text: "주민 프로필", attrs: { id: "fw-profile" } }),
-          button("닫기", () => controller.closeSheet(), { variant: "secondary" }),
+          h("button", {
+            className: "popup-close",
+            text: "×",
+            attrs: { type: "button", "aria-label": "프로필 닫기" },
+            on: { click: () => controller.closeSheet() },
+          }),
         ]),
         h("div", { className: "profile-identity" }, [
           residentAvatar(resident, "large"),
@@ -143,6 +187,7 @@ export function renderProfileSheet(world: WorldView, state: AppState, controller
           ]),
         ]),
         h("div", { className: "profile-tabs", attrs: { "aria-label": "프로필 내용 선택" } }, tabs),
+        rename,
         ...panels,
       ],
     ),

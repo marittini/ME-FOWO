@@ -27,7 +27,7 @@ export type ResidentSheet =
       residentId?: string;
       status?: "all" | "active" | "corrected" | "invalidated";
     }
-  | { kind: "profile"; residentId: string; panel?: number; draft?: string }
+  | { kind: "profile"; residentId: string; panel?: number; draft?: string; nameDraft?: string; expectedName?: string }
   | { kind: "pair-add"; residentId: string }
   | { kind: "image-history"; residentId: string }
   | { kind: "history-cleanup" }
@@ -219,7 +219,7 @@ export function createResidentActions(core: ControllerCore) {
     setResidentsFilter: (filter: ResidentsView["filter"]) => patchView({ filter, page: 0 }),
     setResidentsPage: (page: number) => patchView({ page: Math.max(0, page) }),
     showResidentsList: () => patchView({ detailOpen: false }),
-    selectResident: (residentId: string) => patchView({ selectedId: residentId }),
+    selectResident: (residentId: string) => patchView({ selectedId: residentId, detailOpen: true }),
 
     openResidents(residentId?: string) {
       if (residentId) {
@@ -274,7 +274,7 @@ export function createResidentActions(core: ControllerCore) {
       store.set({ sheet: null });
     },
 
-    rememberProfile(patch: { panel?: number; draft?: string }) {
+    rememberProfile(patch: { panel?: number; draft?: string; nameDraft?: string; expectedName?: string }) {
       store.remember((state) => (state.sheet?.kind === "profile" ? { sheet: { ...state.sheet, ...patch } } : {}));
     },
 
@@ -282,6 +282,25 @@ export function createResidentActions(core: ControllerCore) {
       store.set((state) => ({ relationsEditing: !state.relationsEditing }));
     },
 
+    async renameResident(residentId: string, displayName: string, expectedName?: string) {
+      const resident = residentIn(residentId);
+      if (!resident) return null;
+      const response = await core.runCommand(`resident-name:${residentId}`, "residents.rename", {
+        residentId,
+        displayName,
+        expectedName: expectedName ?? resident.displayName,
+      });
+      if (response)
+        store.remember((state) =>
+          state.sheet?.kind === "profile" &&
+          state.sheet.residentId === residentId &&
+          state.sheet.nameDraft?.trim() === displayName
+            ? { sheet: { ...state.sheet, nameDraft: undefined, expectedName: displayName } }
+            : {},
+        );
+      if (response) core.notify("공방에서 부를 이름을 바꿨어요.");
+      return response;
+    },
     async updateWorldSetting(residentId: string, worldSetting: string) {
       const response = await core.runCommand(`resident-setting:${residentId}`, "residents.update", {
         residentId,

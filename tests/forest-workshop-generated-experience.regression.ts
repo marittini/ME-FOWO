@@ -182,6 +182,31 @@ async function main() {
       "플레이어가 직접 수정한 프로필",
     );
   }
+  // A resident name edit compares the name, so unrelated production revisions cannot reject it.
+  {
+    const env = await setup();
+    const before = await loadWorld(env.host.documents, W);
+    await env.change((state) => ({ ...state, wallet: { ...state.wallet, gold: state.wallet.gold + 1 } }));
+    const commands = createCommandService(env.host.persistence, () => new Date(NOW));
+    const request = {
+      worldId: W,
+      commandId: "rename-target-only",
+      expectedRevision: before.revision,
+      type: "residents.rename",
+      payload: { residentId: A, expectedName: "다람", displayName: "소나무" },
+    };
+    const renamed = await commands.execute(request);
+    assert.equal(renamed.state.residents[A]!.displayName, "소나무");
+    assert.equal(renamed.state.residents[A]!.source.name, "다람");
+    await assert.rejects(
+      commands.execute({
+        ...request,
+        commandId: "rename-conflict",
+        payload: { ...request.payload, displayName: "겹친 수정" },
+      }),
+      { code: "stale_view" },
+    );
+  }
   // Planner writes one stable plan; mechanics and future retry IDs are unchanged.
   {
     const env = await setup();
@@ -205,6 +230,29 @@ async function main() {
       (await loadWorld(env.host.documents, W)).state.stories.expedition,
       null,
       "planning spends no materials and starts no expedition",
+    );
+  }
+  // Two pairs sharing a resident retain separate plans, even when prepared concurrently.
+  {
+    const env = await setup();
+    const C = "aaaaaaaa-0000-4000-8000-000000000003",
+      Q = "bbbbbbbb-0000-4000-8000-000000000002";
+    await env.change((state) => ({
+      ...state,
+      residents: {
+        ...state.residents,
+        [C]: { ...state.residents[B]!, residentId: C, sourceId: C, displayName: "셋째 주민" },
+      },
+      pairs: { ...state.pairs, [Q]: { ...state.pairs[P]!, pairId: Q, residentIds: [A, C] } },
+    }));
+    const planner = createChapterPlanService(env.runtime, env.host.persistence);
+    await Promise.all([planner.ensure(W, P, null), planner.ensure(W, Q, null)]);
+    const saved = (await loadWorld(env.host.documents, W)).state;
+    assert.ok(saved.stories.pairs[P]!.current!.generated);
+    assert.ok(saved.stories.pairs[Q]!.current!.generated);
+    assert.notEqual(
+      saved.stories.pairs[P]!.current!.episodes[0].storyId,
+      saved.stories.pairs[Q]!.current!.episodes[0].storyId,
     );
   }
   // Bad plans are never published and can be retried without changing progress.
@@ -255,7 +303,7 @@ async function main() {
   {
     const env = await setup();
     const raw = structuredClone((await loadWorld(env.host.documents, W)).state);
-    raw.schemaVersion = 11 as 12;
+    raw.schemaVersion = 11 as 13;
     raw.production.facilities["gather-yard"]!.rules = [
       { ...raw.production.facilities["gather-yard"]!.rules[0]!, enabled: false, targetStock: 37 },
     ];
@@ -263,7 +311,7 @@ async function main() {
     const rules = migrated.production.facilities["gather-yard"]!.rules;
     assert.equal(rules.length, RECIPES.filter((recipe) => recipe.facilityId === "gather-yard").length);
     assert.equal(rules[0]!.targetStock, 37);
-    assert.ok(rules.every((rule) => !rule.enabled));
+    assert.ok(rules.every((rule) => rule.enabled));
     assert.deepEqual(migrateWorld(migrated), migrated);
   }
   // Weather validates the city before any request and caches/coalesces calls to a fixed host.

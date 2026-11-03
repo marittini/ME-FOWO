@@ -235,7 +235,7 @@ export function waitingText(content: GameContent | null, waiting: Waiting | null
   if (!waiting) return "";
   if (waiting.reason === "no_rules") return "켜 둔 운영 규칙이 없어 쉬고 있어요.";
   if (waiting.reason === "target_reached") return "모든 목표 재고를 채워 쉬고 있어요. 재고가 줄면 다시 시작해요.";
-  if (waiting.reason === "queue_empty") return "지정 횟수 대기열이 비어 쉬고 있어요.";
+  if (waiting.reason === "queue_empty") return "생산 설정에서 켜진 제작법을 확인해 주세요.";
   if (waiting.reason === "locked") return "아직 열리지 않은 시설이에요.";
   const name = itemName(content, waiting.itemId ?? "");
   const guard = waiting.protectedAmount ? ` (보호 ${waiting.protectedAmount}개는 쓰지 않아요)` : "";

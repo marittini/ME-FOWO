@@ -1,6 +1,14 @@
 import type { AppState, Controller } from "../../app/controller";
 import { button, h } from "../../app/dom";
 
+/** Stored coordinates refer to the visible scene, independent of the backdrop camera crop. */
+export function positionBoard(prop: HTMLElement, value: { x: number; y: number }) {
+  prop.style.cssText = "inset:0;width:100%;height:100%;left:0;top:0;";
+  const board = prop.querySelector<HTMLElement>(".scene-board");
+  if (board)
+    board.style.cssText = `left:clamp(12px,calc(${value.x}% - 32px),calc(100% - 76px));top:clamp(12px,calc(${value.y}% - 32px),calc(100% - 76px));width:64px;`;
+}
+
 export function editingGround(state: AppState) {
   return (
     Boolean(state.groundEditingWorld) &&
@@ -85,7 +93,56 @@ export function groundOverlay(state: AppState, controller: Controller, cast: HTM
     });
     area.append(handle);
   }
-  overlay.append(area);
+  const boardPosition = {
+    ...((state.settingsBoardDraft?.worldId === world.worldId
+      ? state.settingsBoardDraft.value
+      : world.state.settings.board) ?? { x: 86, y: 72 }),
+  };
+  const marker = h("button", {
+    className: "board-handle",
+    text: "게시판 이동",
+    attrs: { type: "button", "aria-label": "게시판 위치 조절" },
+  });
+  const drawBoard = () => {
+    marker.style.left = `${boardPosition.x}%`;
+    marker.style.top = `${boardPosition.y}%`;
+    const prop = overlay.parentElement?.querySelector<HTMLElement>(".scene-props");
+    if (prop) positionBoard(prop, boardPosition);
+  };
+  const moveBoard = (x: number, y: number) => {
+    boardPosition.x = Math.round(Math.min(90, Math.max(10, x)));
+    boardPosition.y = Math.round(Math.min(90, Math.max(40, y)));
+    controller.rememberBoard(world.worldId, boardPosition);
+    drawBoard();
+  };
+  marker.addEventListener("pointerdown", (event) => {
+    if (event.button === 0) {
+      event.preventDefault();
+      marker.setPointerCapture(event.pointerId);
+    }
+  });
+  marker.addEventListener("pointermove", (event) => {
+    if (!marker.hasPointerCapture(event.pointerId)) return;
+    const bounds = overlay.getBoundingClientRect();
+    if (bounds.width && bounds.height)
+      moveBoard(
+        ((event.clientX - bounds.left) * 100) / bounds.width,
+        ((event.clientY - bounds.top) * 100) / bounds.height,
+      );
+  });
+  marker.addEventListener("pointerup", (event) => {
+    if (marker.hasPointerCapture(event.pointerId)) marker.releasePointerCapture(event.pointerId);
+  });
+  marker.addEventListener("keydown", (event) => {
+    const delta = { ArrowLeft: [-2, 0], ArrowRight: [2, 0], ArrowUp: [0, -2], ArrowDown: [0, 2] }[event.key];
+    if (delta) {
+      event.preventDefault();
+      moveBoard(boardPosition.x + delta[0]!, boardPosition.y + delta[1]!);
+    }
+  });
+  marker.style.left = `${boardPosition.x}%`;
+  marker.style.top = `${boardPosition.y}%`;
+  overlay.append(area, marker);
   draw();
   return overlay;
 }
@@ -95,7 +152,9 @@ export function groundActions(state: AppState, controller: Controller) {
   if (!world) return null;
   const busy = Boolean(state.busy["ground-save"]);
   return h("div", { className: "ground-actions" }, [
-    h("p", { text: "배경 위 경계를 끌어 주민이 다닐 곳을 정해 주세요. 저장 전에는 적용되지 않아요." }),
+    h("p", {
+      text: "경계로 주민 이동 영역을, 게시판 손잡이로 게시판 위치를 조정해 주세요. 저장 전에는 적용되지 않아요.",
+    }),
     h("div", { className: "ground-action-row" }, [
       button("기본 범위", () => controller.resetGroundEditor(), { variant: "secondary", disabled: busy }),
       button("취소", () => controller.cancelGroundEditor(), { variant: "secondary", disabled: busy }),

@@ -122,8 +122,16 @@ try {
     .evaluate((sheet) => {
       sheet.scrollTop = sheet.scrollHeight;
     });
-  const close = await page.getByRole("button", { name: "닫기", exact: true }).boundingBox();
+  const close = await page.getByRole("button", { name: "프로필 닫기", exact: true }).boundingBox();
   assert.ok(close.y >= 0 && close.y + close.height <= 640);
+  await page.evaluate(() => {
+    window.testController.renameResident = (residentId, displayName) => {
+      window.renamed = { residentId, displayName };
+    };
+  });
+  await page.getByLabel("공방 주민 이름", { exact: true }).fill("새 공방 이름");
+  await page.getByRole("button", { name: "이름 저장", exact: true }).click();
+  assert.deepEqual(await page.evaluate(() => window.renamed), { residentId: "r", displayName: "새 공방 이름" });
   console.log("Profile panels and draft preservation: OK");
 } finally {
   await browser?.close();

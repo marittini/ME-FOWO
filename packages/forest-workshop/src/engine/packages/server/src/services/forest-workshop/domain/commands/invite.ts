@@ -1,7 +1,7 @@
 // 초대 commands (plan §7.2-F, board 03-3):
 //   invite.draw     1회 / 10회 초대: 초대권 per draw; ten draws are applied one after another (each sees the last).
 //   invite.setWish  희망 주민 설정: one registered resident weighs more, and the guarantee brings them first.
-//   invite.exchange 종표 교환: 종표 bring the chosen resident (선택 영입) or give them 돌파.
+//   invite.exchange 증표 교환: 증표 bring the chosen resident (선택 영입) or give them 돌파.
 // The roll uses the server's seed for the attempt (CommandContext.seed); a replay returns the stored result.
 import { z } from "zod";
 import { MAX_BREAKTHROUGH } from "../../content/crew";
@@ -68,5 +68,19 @@ export const exchangeTokens = defineCommand({
     };
     const received = receive(paid, payload.residentId, "exchange", context.now);
     return { state: received.state, result: { ...received.result, tokens: received.state.wallet.tokens } };
+  },
+});
+
+export const refillTickets = defineCommand({
+  type: "invite.refillTickets",
+  payloadSchema: z.object({ pack: z.enum(["small", "large", "chest"]) }).strict(),
+  requiresFreshView: false,
+  apply(state, payload) {
+    const amount = { small: 10, large: 100, chest: 1000 }[payload.pack];
+    if (!Number.isSafeInteger(state.wallet.tickets + amount)) throw new FwError("invalid_request");
+    return {
+      state: { ...state, wallet: { ...state.wallet, tickets: state.wallet.tickets + amount } },
+      result: { amount },
+    };
   },
 });

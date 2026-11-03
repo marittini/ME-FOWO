@@ -100,7 +100,7 @@ function facilityCard(state: AppState, content: GameContent, world: WorldView, c
           ]),
           h("div", { className: "effect-row" }, [
             h("span", { text: "작업 방식" }),
-            h("span", { text: closed ? "해금 전" : facility.mode === "auto" ? "자동 운영" : "지정 횟수" }),
+            h("span", { text: closed ? "해금 전" : "자동 운영" }),
           ]),
           h("div", { className: "effect-row" }, [
             h("span", { text: "주민 효과" }),

@@ -3,7 +3,7 @@
 // drops, no thin strokes, no blended gradients.
 export const INVITE_STYLES = `
 .paged-rows { display: grid; gap: 0.5em; }
-/* Top counters (초대권 + · 종표) */
+/* Top counters (초대권 + · 증표) */
 .invite-counters { gap: 0.35em; }
 .counter-plus { display: inline-flex; align-items: center; justify-content: center; width: 1.45em; height: 1.45em; margin-left: 0.1em; border-radius: 50%; border: 2px solid var(--ink); background: var(--fw-accent); color: var(--fw-on-accent); }
 .counter-plus .icon { stroke-width: 3; }
@@ -43,7 +43,7 @@ export const INVITE_STYLES = `
 .link-row { display: flex; justify-content: space-between; gap: 0.5em; padding-top: 0.4em; border-top: var(--line-in) dashed var(--fw-track); }
 .link-button.with-icon { display: inline-flex; align-items: center; gap: 0.35em; color: var(--fw-text); }
 
-/* 종표 교환 card and list */
+/* 증표 교환 card and list */
 .exchange-card { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 0.7em; width: 100%; padding: 0.2em; border: 0; background: none; color: var(--fw-text); font: inherit; text-align: left; cursor: pointer; }
 .exchange-count { display: grid; justify-items: center; gap: 0.25em; padding-right: 0.7em; border-right: var(--line-in) solid var(--fw-track); }
 .exchange-count strong { font-size: calc(var(--fs) * 1.1); }

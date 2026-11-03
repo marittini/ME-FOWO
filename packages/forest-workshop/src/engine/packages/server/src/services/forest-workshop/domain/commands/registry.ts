@@ -6,19 +6,10 @@ import { settleWorld } from "../production/settle";
 import { worldStateSchema, type WorldState } from "../world-model";
 import type { CommandContext, CommandDefinition, CommandOutcome } from "./command";
 import { deliverOrder, sellItems, setAutoSell } from "./economy";
-import { drawInvites, exchangeTokens, setWish } from "./invite";
+import { drawInvites, exchangeTokens, setWish, refillTickets } from "./invite";
+import { setProductionTree } from "./production-tree";
 import { claimStarterKit } from "./onboarding";
-import {
-  assignResident,
-  markReportsRead,
-  queueAdd,
-  queueRemove,
-  setMode,
-  setProtected,
-  setRules,
-  unlockFacility,
-  upgradeFacility,
-} from "./production";
+import { assignResident, markReportsRead, setProtected, setRules, unlockFacility, upgradeFacility } from "./production";
 import { addPair, archivePair, restorePair } from "./pairs";
 import {
   clearResidentImageHistory,
@@ -26,9 +17,9 @@ import {
   setResidentImage,
   setResidentPlacement,
 } from "./resident-images";
-import { chooseStarter, registerResident, updateResident } from "./residents";
+import { chooseStarter, registerResident, updateResident, renameResident } from "./residents";
 import { cancelExpedition, chooseAnswer, departExpedition, markStoryRead } from "./stories";
-import { updateSettings } from "./settings";
+import { updateSettings, setLayout } from "./settings";
 
 import { updateGuidelines } from "./guidelines";
 import { correctMemory, setMemoryStatus } from "./memory";
@@ -46,9 +37,11 @@ const DEFINITIONS = [
   updateGuidelines,
   correctMemory,
   setMemoryStatus,
+  setLayout,
   updateSettings,
   claimStarterKit,
   registerResident,
+  renameResident,
   updateResident,
   chooseStarter,
   setResidentImage,
@@ -59,17 +52,16 @@ const DEFINITIONS = [
   archivePair,
   restorePair,
   setRules,
+  setProductionTree,
   setProtected,
   upgradeFacility,
   markReportsRead,
   unlockFacility,
-  setMode,
-  queueAdd,
-  queueRemove,
   assignResident,
   sellItems,
   setAutoSell,
   deliverOrder,
+  refillTickets,
   drawInvites,
   setWish,
   exchangeTokens,

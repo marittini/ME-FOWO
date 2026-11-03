@@ -166,27 +166,6 @@ function tryRules(
   return { job: null, waiting: shortage ?? { reason: "target_reached" } };
 }
 
-/** 지정 횟수: the queue's first request runs next; with too few materials the facility waits for them (no skipping). */
-function tryQueue(
-  facility: FacilityState,
-  production: ProductionState,
-  inventory: Inventory,
-  now: number,
-  jobId: number,
-  crew: CrewBonus | undefined,
-): Attempt {
-  const head = facility.queue[0];
-  if (!head) return { job: null, waiting: { reason: "queue_empty" } };
-  const recipe = recipeDefinition(head.recipeId);
-  if (!recipe) return { job: null, waiting: { reason: "queue_empty" } };
-  const run = crewRecipe(recipe, crew);
-  const missing = shortageOf(run.inputs, production, inventory);
-  if (missing) return { job: null, waiting: missing };
-  const started = head.started + 1;
-  facility.queue = started >= head.total ? facility.queue.slice(1) : [{ ...head, started }, ...facility.queue.slice(1)];
-  return { job: newJob(recipe, run, facility, head.entryId, "queue", now, jobId), waiting: null };
-}
-
 /**
  * Runs the workshop for `creditedMs` of workshop time. Returns new production and inventory objects (inputs are not
  * mutated) and what happened, for the 작업 보고.
@@ -243,25 +222,27 @@ export function advanceProduction(
   };
 
   const startIdle = (time: number) => {
-    for (const pass of ["count", "auto"] as const) {
-      for (const facilityId of FACILITY_ORDER) {
-        const facility = production.facilities[facilityId];
-        if (!facility || facility.job) continue;
-        if (!facility.unlocked) {
-          facility.waiting = { reason: "locked" };
-          continue;
-        }
-        if (facility.mode !== pass) continue;
-        const attempt =
-          pass === "count"
-            ? tryQueue(facility, production, inventory, time, production.nextJobId, crew[facilityId])
-            : tryRules(facility, production, inventory, time, production.nextJobId, crew[facilityId], realAt(time));
-        facility.waiting = attempt.waiting;
-        if (attempt.job) {
-          add(inventory, attempt.job.consumed, -1);
-          facility.job = attempt.job;
-          production.nextJobId += 1;
-        }
+    for (const facilityId of FACILITY_ORDER) {
+      const facility = production.facilities[facilityId];
+      if (!facility || facility.job) continue;
+      if (!facility.unlocked) {
+        facility.waiting = { reason: "locked" };
+        continue;
+      }
+      const attempt = tryRules(
+        facility,
+        production,
+        inventory,
+        time,
+        production.nextJobId,
+        crew[facilityId],
+        realAt(time),
+      );
+      facility.waiting = attempt.waiting;
+      if (attempt.job) {
+        add(inventory, attempt.job.consumed, -1);
+        facility.job = attempt.job;
+        production.nextJobId++;
       }
     }
   };

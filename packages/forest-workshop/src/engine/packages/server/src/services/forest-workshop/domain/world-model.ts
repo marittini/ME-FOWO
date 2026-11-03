@@ -22,7 +22,7 @@ import { mailboxSchema, initialMailbox } from "./model/mailbox";
 
 import { activitiesSchema, initialActivities } from "./model/activities";
 
-export const CURRENT_SCHEMA_VERSION = 12;
+export const CURRENT_SCHEMA_VERSION = 13;
 
 const nonNegativeInt = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const displayText = (max: number) =>
@@ -52,6 +52,8 @@ export const groundSchema = z
   .strict()
   .refine((g) => g.right - g.left >= 20 && g.bottom - g.top >= 10, { message: "이동영역이 너무 좁아요" });
 
+export const boardSchema = z.object({ x: z.number().min(0).max(100), y: z.number().min(0).max(100) }).strict();
+
 const worldShape = z
   .object({
     schemaVersion: z.literal(CURRENT_SCHEMA_VERSION),
@@ -62,9 +64,10 @@ const worldShape = z
         worldName: worldNameSchema,
         playerNickname: nicknameSchema,
         ground: groundSchema.default(DEFAULT_GROUND),
+        board: boardSchema.nullable().default(null),
       })
       .strict(),
-    /** gold · 초대권 · 종표 (선택 영입 증표). */
+    /** gold · 초대권 · 증표 (선택 영입 증표). */
     wallet: z.object({ gold: nonNegativeInt, tickets: nonNegativeInt, tokens: nonNegativeInt }).strict(),
     inventory: inventorySchema,
     progress: z

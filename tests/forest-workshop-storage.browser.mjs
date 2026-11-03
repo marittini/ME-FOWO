@@ -7,6 +7,14 @@ import { build } from "esbuild";
 import { chromium } from "playwright";
 const temp = await mkdtemp(join(tmpdir(), "forest-storage-"));
 const client = resolve("packages/forest-workshop/src/engine/packages/client/src/features/forest-workshop");
+async function goToPage(scope, label, target) {
+  const picker = scope.getByRole("navigation", { name: label, exact: true });
+  const current = Number((await picker.locator("strong").innerText()).split("/")[0]) - 1;
+  for (let index = current; index !== target; index += index < target ? 1 : -1)
+    await scope
+      .getByRole("button", { name: `${label} · ${index < target ? "다음" : "이전"} 페이지`, exact: true })
+      .click();
+}
 let browser;
 try {
   const entry = join(temp, "entry.ts"),
@@ -124,11 +132,9 @@ try {
   });
   assert.ok(size.content <= size.available + 1, `storage must not scroll horizontally: ${JSON.stringify(size)}`);
   assert.equal(await page.getByText("물건 3", { exact: true }).count(), 0);
-  await page.getByLabel("재고 목록 고르기", { exact: true }).click();
-  await page.getByLabel("재고 목록 고르기", { exact: true }).locator("..").locator("button").nth(2).click();
+  await goToPage(page, "재고 목록 고르기", 2);
   assert.equal(await page.getByText("물건 6", { exact: true }).count(), 1);
-  await page.getByLabel("재고 목록 고르기", { exact: true }).click();
-  await page.getByLabel("재고 목록 고르기", { exact: true }).locator("..").locator("button").nth(1).click();
+  await goToPage(page, "재고 목록 고르기", 1);
   assert.equal(await page.getByText("물건 3", { exact: true }).count(), 1);
   await page.setViewportSize({ width: 320, height: 640 });
   await page.locator("#host").evaluate((host) => {
@@ -147,8 +153,7 @@ try {
   assert.deepEqual(await page.evaluate(() => window.openedSheet), { kind: "sell", itemId: "item-3" });
   await page.getByRole("tab", { name: "시설", exact: true }).click();
   assert.equal(await page.getByText("물건 0", { exact: true }).count(), 1);
-  await page.getByLabel("재고 목록 고르기", { exact: true }).click();
-  await page.getByLabel("재고 목록 고르기", { exact: true }).locator("..").locator("button").nth(1).click();
+  await goToPage(page, "재고 목록 고르기", 1);
   assert.equal(await page.getByText("물건 3", { exact: true }).count(), 1);
   await page.getByRole("button", { name: "편집하기" }).click();
   await page.getByRole("button", { name: "늘리기 1", exact: true }).click();

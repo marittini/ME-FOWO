@@ -14,7 +14,14 @@ function itemName(content: GameContent, itemId: string) {
 export function renderStarterKitSheet(state: AppState, controller: Controller) {
   const world = state.world?.state === "ready" ? state.world.value : null;
   const content = state.content;
-  if (!world || !content || world.state.progress.starterKitClaimed || state.starterSheetHidden) return null;
+  if (
+    !world ||
+    !content ||
+    !world.state.progress.starterResidentId ||
+    world.state.progress.starterKitClaimed ||
+    state.starterSheetHidden
+  )
+    return null;
   const busy = Boolean(state.busy["claim-starter-kit"]);
   const kit = content.starterKit;
   return h("div", { className: "sheet-backdrop" }, [

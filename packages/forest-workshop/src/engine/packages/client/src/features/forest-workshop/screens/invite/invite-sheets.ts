@@ -9,12 +9,12 @@ import { pagePicker } from "../chrome/page-picker";
 import { sheetDialog } from "../chrome/sheet";
 import { kindTag, residentAvatar, residentFigure } from "../residents/resident-figure";
 
-const OUTCOME_LABEL = { new: "새 주민", breakthrough: "돌파", token: "종표" } as const;
+const OUTCOME_LABEL = { new: "새 주민", breakthrough: "돌파", token: "증표" } as const;
 
 function outcomeText(draw: DrawResult, max: number) {
   if (draw.outcome === "new") return "공방에 왔어요!";
   if (draw.outcome === "breakthrough") return `돌파 ${draw.breakthrough}/${max}`;
-  return "최대 돌파라 종표 1개가 됐어요";
+  return "최대 돌파라 증표 1개가 됐어요";
 }
 
 function closeButton(controller: Controller) {
@@ -117,7 +117,7 @@ function chancesSheet(state: AppState, world: WorldView, content: GameContent, c
         ),
     h("p", {
       className: "muted",
-      text: `처음 만나면 영입, 다시 만나면 돌파(최대 ${content.crew.maxBreakthrough}), 최대 돌파 뒤에는 종표 1개. 종표 ${content.invite.tokensPerExchange}개로 원하는 주민을 고를 수 있어요.`,
+      text: `처음 만나면 영입, 다시 만나면 돌파(최대 ${content.crew.maxBreakthrough}), 최대 돌파 뒤에는 증표 1개. 증표 ${content.invite.tokensPerExchange}개로 원하는 주민을 고를 수 있어요.`,
     }),
     closeButton(controller),
   ]);
@@ -139,7 +139,7 @@ function logSheet(state: AppState, world: WorldView, content: GameContent, contr
               h("span", { className: `result-badge ${entry.outcome}`, text: OUTCOME_LABEL[entry.outcome] }),
               h("small", {
                 className: "muted",
-                text: `${formatter.format(new Date(entry.at))}${entry.via === "guarantee" ? " · 보장" : entry.via === "exchange" ? " · 종표 교환" : ""}${entry.outcome === "breakthrough" ? ` · 돌파 ${entry.breakthrough}/${content.crew.maxBreakthrough}` : ""}`,
+                text: `${formatter.format(new Date(entry.at))}${entry.via === "guarantee" ? " · 보장" : entry.via === "exchange" ? " · 증표 교환" : ""}${entry.outcome === "breakthrough" ? ` · 돌파 ${entry.breakthrough}/${content.crew.maxBreakthrough}` : ""}`,
               }),
             ]),
           ),

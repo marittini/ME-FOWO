@@ -19,8 +19,8 @@ export function ticketCounter(state: AppState, controller: Controller) {
     "button",
     {
       className: "counter ticket",
-      attrs: { type: "button", "aria-label": `초대권 ${tickets}장 — 초대권 받기` },
-      on: { click: () => controller.openDeliveries() },
+      attrs: { type: "button", "aria-label": `초대권 ${tickets}장 — 무료 리필` },
+      on: { click: () => controller.openTicketShop() },
     },
     [
       h("span", { className: "ticket-mark" }, [ICONS.ticket("icon")]),
@@ -38,7 +38,7 @@ export type TopBar =
       resources: boolean;
       /** The ribbon under the sign (boards 03-1 주민, 03-2 관계, 03-3 초대). */
       subtitle?: string;
-      /** The screen's own counters in place of gold · tickets · gear (board 03-3: 초대권 · 종표). */
+      /** The screen's own counters in place of gold · tickets · gear (board 03-3: 초대권 · 증표). */
       counters?: Child;
     };
 

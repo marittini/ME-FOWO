@@ -1,3 +1,7 @@
+import {
+  completeRules,
+  recommendedRules,
+} from "../packages/forest-workshop/src/engine/packages/server/src/services/forest-workshop/domain/production/initial";
 // Forest Workshop P3b regressions: the rest of automatic management and invitations (plan §7.2-B/C/F, §7.6, §11).
 //   - 해금: closed facilities never run, open once by their condition
 //   - 지정 횟수: exactly N runs, inputs one run at a time, waiting without skipping, slots, mode switch keeps the run
@@ -16,7 +20,6 @@ import { assignTalent } from "../packages/forest-workshop/src/engine/packages/se
 import { passiveBonus } from "../packages/forest-workshop/src/engine/packages/server/src/services/forest-workshop/content/crew";
 import { INVITE_RULES } from "../packages/forest-workshop/src/engine/packages/server/src/services/forest-workshop/content/invite";
 import {
-  queueSlots,
   recipeDefinition,
   runDurationMs,
 } from "../packages/forest-workshop/src/engine/packages/server/src/services/forest-workshop/content/production";
@@ -81,6 +84,8 @@ function resident(n: number, recruited: boolean, extra: Partial<Resident> = {}):
 /** A world present at T0 with the given storeroom and residents (the first, if recruited, is the starter). */
 function world(inventory: Record<string, number> = {}, residents: Resident[] = []): WorldState {
   const base = createWorldState({ worldId: WORLD, worldName: "숲", playerNickname: "공방지기", now: iso(T0) });
+  // Isolate the original target/queue-independent scenarios from the expanded default catalog.
+  for (const [id, facility] of Object.entries(base.production.facilities)) facility.rules = recommendedRules(WORLD, id);
   return worldStateSchema.parse({
     ...base,
     inventory,
@@ -139,8 +144,8 @@ async function main() {
     );
     refuses(
       () => cmd(world(), "production.setMode", { facilityId: "grow-plot", mode: "count" }),
-      "facility_locked",
-      "settings on a closed facility",
+      "unknown_command",
+      "retired count mode cannot be selected",
     );
     assert.ok((s.production.made["berry-jam"] ?? 0) >= 3, "jam was made");
     const opened = cmd(s, "production.unlockFacility", { facilityId: "grow-plot" }, T0 + 2 * HOUR);
@@ -150,82 +155,9 @@ async function main() {
     assert.equal(again.result.alreadyOpen, true);
   }
 
-  // 지정 횟수: exactly N runs, one run's inputs at a time, waits for materials without skipping.
-  {
-    let s = noRules(world({ "wild-berry": 10 }), "gather-yard");
-    s = cmd(s, "production.setMode", { facilityId: "process-bench", mode: "count" }).state;
-    // The auto rule had already started a jam at T0 (it keeps going); the queue starts after it.
-    const running = s.production.facilities["process-bench"]!.job;
-    assert.equal(running?.source, "rule", "the running run finishes as it is");
-    s = cmd(s, "production.queueAdd", {
-      facilityId: "process-bench",
-      entryId: uuid(901),
-      recipeId: "berry-jam",
-      count: 3,
-    }).state;
-    const jam = runDurationMs(recipeDefinition("berry-jam")!, 1);
-    s = presentFor(s, T0, T0 + 4 * jam + MIN);
-    // 10 berries: the rule run took 4 at T0; the queue can take 4 once more, then 2 left < 4 → waits on run 2 of 3.
-    assert.equal(s.inventory["berry-jam"], 2, "1 rule run + 1 queue run");
-    assert.equal(s.inventory["wild-berry"], 2);
-    const bench = s.production.facilities["process-bench"]!;
-    assert.equal(bench.waiting?.reason, "materials", "waits without skipping");
-    assert.deepEqual(
-      bench.queue.map((entry) => [entry.started, entry.total]),
-      [[1, 3]],
-    );
-    // Materials arrive → resumes; target (5) is ignored in this mode; exactly 3 queue runs in all.
-    s = { ...s, inventory: { ...s.inventory, "wild-berry": 40 } };
-    s = presentFor(s, T0 + 4 * jam + MIN, T0 + 10 * jam);
-    assert.equal(s.inventory["berry-jam"], 4, "3 queue runs + the rule run");
-    assert.equal(s.production.facilities["process-bench"]!.queue.length, 0);
-    assert.equal(s.production.facilities["process-bench"]!.waiting?.reason, "queue_empty");
-    assert.deepEqual(
-      s.production.facilities["process-bench"]!.rules,
-      world().production.facilities["process-bench"]!.rules,
-      "rules wait unchanged",
-    );
-    // Slots: 3 at level 1.
-    assert.equal(queueSlots(1), 3);
-    assert.equal(queueSlots(8), 4);
-    assert.equal(queueSlots(20), 5);
-    let q = cmd(world(), "production.setMode", { facilityId: "gather-yard", mode: "count" }).state;
-    for (let i = 0; i < 3; i += 1) {
-      q = cmd(q, "production.queueAdd", {
-        facilityId: "gather-yard",
-        entryId: uuid(910 + i),
-        recipeId: "gather-herb",
-        count: 2,
-      }).state;
-    }
-    refuses(
-      () =>
-        cmd(q, "production.queueAdd", {
-          facilityId: "gather-yard",
-          entryId: uuid(920),
-          recipeId: "gather-herb",
-          count: 1,
-        }),
-      "queue_full",
-      "slots",
-    );
-    refuses(
-      () =>
-        cmd(q, "production.queueAdd", {
-          facilityId: "gather-yard",
-          entryId: uuid(921),
-          recipeId: "berry-jam",
-          count: 1,
-        }),
-      "invalid_payload",
-      "recipe of another facility",
-    );
-    const removed = cmd(q, "production.queueRemove", { facilityId: "gather-yard", entryId: uuid(912) });
-    assert.equal(removed.state.production.facilities["gather-yard"]!.queue.length, 2);
-    // Back to 자동 운영: the queue waits (paused), unchanged.
-    const back = cmd(removed.state, "production.setMode", { facilityId: "gather-yard", mode: "auto" });
-    assert.equal(back.state.production.facilities["gather-yard"]!.queue.length, 2);
-  }
+  // Retired queue commands are no longer callable.
+  for (const type of ["production.queueAdd", "production.queueRemove"])
+    refuses(() => cmd(world(), type, {}), "unknown_command", type);
 
   // 자동 판매.
   {
@@ -603,7 +535,7 @@ async function main() {
     assert.equal(migrated.production.facilities["process-bench"]!.job?.source, "rule");
     assert.deepEqual(
       migrated.production.facilities["process-bench"]!.rules,
-      v5.production.facilities["process-bench"]!.rules,
+      completeRules(WORLD, "process-bench", v5.production.facilities["process-bench"]!.rules),
     );
     assert.equal(migrated.production.facilities["craft-bench"]!.unlocked, false);
     const migratedResident = migrated.residents[uuid(1)]!;

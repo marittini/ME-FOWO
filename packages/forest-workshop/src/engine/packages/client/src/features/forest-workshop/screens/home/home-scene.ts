@@ -15,7 +15,7 @@ import { residentFigure } from "../residents/resident-figure";
 
 import { normalizeWeatherEffects } from "../../app/preferences";
 import { weatherLayer } from "./weather-layer";
-import { editingGround, groundOverlay } from "./ground-editor";
+import { editingGround, groundOverlay, positionBoard } from "./ground-editor";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -128,8 +128,8 @@ function spot(side: "left" | "right", resident: Resident | null, world: WorldSta
 }
 
 /** A prop in the painted world, behind the residents, rather than another card below the scene. */
-function deliveryBoard(controller: Controller, editing: boolean) {
-  return h("div", { className: "scene-props" }, [
+function deliveryBoard(state: AppState, controller: Controller, editing: boolean) {
+  const prop = h("div", { className: "scene-props" }, [
     h(
       "button",
       {
@@ -141,6 +141,13 @@ function deliveryBoard(controller: Controller, editing: boolean) {
       [assetImage(UI_ART.deliveryBoard, { className: "board-art", fallback: () => ICONS.document("icon board-art") })],
     ),
   ]);
+  const world = state.world?.state === "ready" ? state.world.value : null;
+  const board =
+    state.settingsBoardDraft?.worldId === world?.worldId
+      ? state.settingsBoardDraft?.value
+      : world?.state.settings.board;
+  if (board) positionBoard(prop, board);
+  return prop;
 }
 
 export function renderHomeScene(state: AppState, controller: Controller) {
@@ -165,7 +172,7 @@ export function renderHomeScene(state: AppState, controller: Controller) {
       // The painted world and its prop share one camera; weather and residents paint above them.
       h("div", { className: "scene-scenery" }, [
         assetImage(BACKGROUND_ART[currentSeason(state)].scene, { className: "scene-art", fallback: drawnBackdrop }),
-        world ? deliveryBoard(controller, editingGround(state)) : null,
+        world ? deliveryBoard(state, controller, editingGround(state)) : null,
       ]),
       editingGround(state) ? null : weatherLayer(state),
       cast,
@@ -195,6 +202,8 @@ export function renderHomeScene(state: AppState, controller: Controller) {
     normalizeWeatherEffects(state.weatherEffects),
     residents,
     ground,
+    world?.settings.board,
+    state.settingsBoardDraft,
     editingGround(state),
   ]);
   return scene;

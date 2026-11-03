@@ -11,6 +11,8 @@ import type { StoryDocument, StoryOverview } from "./types";
 export type ExploreTab = "survey" | "patrol" | "story";
 
 export interface ExploreView {
+  preparingPairId?: string | null;
+  planError?: { pairId: string; message: string } | null;
   tab: ExploreTab;
   activityResidentId?: string;
   pairId: string | null;
@@ -57,7 +59,7 @@ export function createStoryActions(core: ControllerCore) {
     const world = core.currentWorld();
     if (!world) return;
     const request = ++overviewRequest;
-    if (!silent) patchExplore({ overview: { state: "loading" } });
+    if (!silent && store.get().explore.overview?.state !== "ready") patchExplore({ overview: { state: "loading" } });
     let preparingKey: string | null = null;
     try {
       let overview = await gameApi.getStoryOverview(world.worldId);
@@ -77,18 +79,32 @@ export function createStoryActions(core: ControllerCore) {
       ) {
         attemptedPlans.add(key);
         preparingKey = key;
-        patchExplore({ overview: { state: "loading" } });
+        patchExplore({
+          overview: { state: "ready", value: overview },
+          pairId,
+          preparingPairId: pairId,
+          planError: null,
+        });
         overview = await gameApi.prepareStory(world.worldId, pairId);
         if (request !== overviewRequest || core.currentWorld()?.worldId !== world.worldId) return;
       }
       patchExplore({
         overview: { state: "ready", value: overview },
+        preparingPairId: null,
         pairId: overview.pairs.some((pair) => pair.pairId === pairId) ? pairId : (overview.pairs[0]?.pairId ?? null),
       });
     } catch (error) {
       if (preparingKey) attemptedPlans.delete(preparingKey);
       if (request !== overviewRequest || core.currentWorld()?.worldId !== world.worldId) return;
-      if (!silent || preparingKey)
+      if (preparingKey && store.get().explore.overview?.state === "ready") {
+        const pairId = store.get().explore.pairId;
+        patchExplore({
+          preparingPairId: null,
+          planError: pairId
+            ? { pairId, message: errorMessage(error, "이 페어의 이야기를 준비하지 못했어요. 다시 시도해 주세요.") }
+            : null,
+        });
+      } else if (!silent)
         patchExplore({ overview: { state: "error", message: errorMessage(error, "이야기를 불러오지 못했습니다.") } });
     }
   }
@@ -207,6 +223,13 @@ export function createStoryActions(core: ControllerCore) {
 
   return {
     loadStoryOverview: loadOverview,
+    retryStoryPlan() {
+      const world = core.currentWorld(),
+        pairId = store.get().explore.pairId;
+      if (!world || !pairId) return;
+      attemptedPlans.delete(`${world.worldId}:${pairId}:${world.state.stories.pairs[pairId]?.completed.length ?? 0}`);
+      void loadOverview();
+    },
     selectActivityResident(activityResidentId: string) {
       patchExplore({ activityResidentId });
     },
@@ -246,7 +269,7 @@ export function createStoryActions(core: ControllerCore) {
     },
 
     selectStoryPair(pairId: string) {
-      patchExplore({ pairId, historyPage: 0, selectedEpisode: undefined });
+      patchExplore({ pairId, historyPage: 0, selectedEpisode: undefined, planError: null, preparingPairId: null });
       void loadOverview();
     },
 

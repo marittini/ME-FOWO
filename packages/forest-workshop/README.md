@@ -4,16 +4,21 @@ A portrait cozy workshop game for ME-personal, in development. `forest-workshop`
 name 숲결 공방 is provisional. The design contract is *Development_Plan_FINAL_v1_6* (숲속 공방 독립 에이전트 최종
 개발계획서 v1.6); `docs/forest-workshop/` in this repository records what has been implemented and verified.
 
-## What 0.7.0 includes
+## What 0.8.0 includes
 
-- Register characters and personas as workshop residents. Selecting a source automatically prepares a full adapted profile; confirm it or edit it before registering. Original cards stay unchanged.
-- Five production fields with all recipes already listed. Existing priorities and targets stay as they were; additional recipes start switched off. Use targets or counted queues, assign residents, protect stock, and sell goods.
+- On first entry, review the AI connections and choose a starting resident before opening the welcome kit. Register characters and personas as workshop residents. Selecting a source automatically prepares a full adapted profile; confirm it or edit it before registering. Original cards stay unchanged.
+- Five production fields with all recipes enabled by default. Production settings contains recipes, stock targets and priorities; counted queues have been removed. Pick a goal recipe to configure its ingredient tree across facilities. Protection and automatic-sale retention keep needed materials available; locked facilities still need unlocking.
 - Pair-specific three-episode story plans, followed by scenes that use the canonical workshop profiles and shared memories. Already published scenes remain unchanged.
 - Survey and patrol activities prepare a resident letter automatically when their result reaches the game. Open the mailbox to read it; generation failures retain the activity record and offer a retry.
-- Click the bulletin board standing beside the Home workshop to open today's delivery requests; residents stay in front of the board. Touching a resident shows a mood mark while movement continues.
+- Click the bulletin board standing beside the Home workshop to open today's delivery requests; move its position with the ground editor. Residents stay in front of the board. Touching a resident shows a mood mark while movement continues.
 - Real weather from Open-Meteo for the selected preset city, refreshed every 15 minutes. Choose the city under Settings → 내 공방; Seoul is the default. Weather effects can be disabled separately.
 - Bundled, licensed Jua typography, readable profile paragraphs, responsive mobile spacing, and three quiet outdoor story backgrounds.
+- Arrow page navigation, centered resident-detail popups and editable workshop display names. Original source names stay unchanged.
+- A free ticket shop with repeatable 10/100/1,000-ticket packs and no payment, ads or daily refill cap; duplicate network retries grant a pack only once.
+- Original procedural pentatonic background music and soft interaction sounds, with separate mute controls and volume. Playback starts after interaction and pauses when the page is hidden.
 - Multiple worlds, memory and AI guideline management, invitations, automatic selling, and backups that carry resident pictures and stored stories.
+
+Schema 13 migration enables all existing recipes once and clears unstarted counted requests while preserving targets, priorities and in-flight jobs. Subsequent manual off choices remain unchanged. Back up before downgrading; older package versions cannot read schema 13.
 
 Choose Engine model connections under Settings → 관리 → AI 모델 연결 설정. Profile, story and letter connections remain separate. A failed generation does not consume another expedition or replace saved stories. Legacy profiles explicitly edited by the player are preserved; existing published chapters retain their original plan until the next chapter.
 

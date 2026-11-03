@@ -15,7 +15,7 @@ export function recommendedRules(worldId: string, facilityId: string): Rule[] {
   }));
 }
 
-/** Every recipe is already listed. Newly discovered recipes start off until the player enables them. */
+/** Every recipe is already listed. New recipes are enabled by default; explicit saved choices remain intact. */
 export function completeRules(worldId: string, facilityId: string, rules: Rule[]): Rule[] {
   const used = new Set(rules.map((rule) => rule.recipeId));
   const policyIds = new Set(rules.map((rule) => rule.policyId));
@@ -27,7 +27,7 @@ export function completeRules(worldId: string, facilityId: string, rules: Rule[]
       let policyId = seededUuid(`${worldId}:rule:${facilityId}:${recipe.id}`);
       while (policyIds.has(policyId)) policyId = seededUuid(`${worldId}:rule:${facilityId}:${recipe.id}:${++salt}`);
       policyIds.add(policyId);
-      return { policyId, enabled: false, recipeId: recipe.id, targetStock: 10, priority: 5 };
+      return { policyId, enabled: true, recipeId: recipe.id, targetStock: 10, priority: 5 };
     }),
   ];
 }

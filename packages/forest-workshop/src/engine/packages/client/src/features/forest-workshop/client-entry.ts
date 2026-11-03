@@ -8,6 +8,7 @@
 //   screens/<area>/   one folder per mockup area (home, work, residents, settings), one render function per screen
 //   styles*.ts        scoped portrait styles (styles-residents.ts for the resident boards), sized from the player's
 //                     text size
+import { createGameAudio } from "./app/audio";
 import { localEnvironment } from "./app/local-environment";
 import { currentSeason, createController, type AppState, type Controller } from "./app/controller";
 import { screenPageKey } from "./app/screen-page";
@@ -39,6 +40,11 @@ const TAG = "marinara-capability-forest-workshop";
 
 class ForestWorkshopElement extends HTMLElement {
   private readonly root: ShadowRoot;
+  private gameAudio = createGameAudio();
+  private readonly onAudioClick = (event: Event) => {
+    if ((event.target as Element | null)?.closest("button,summary")) void this.gameAudio.click();
+    if ((event.target as Element | null)?.closest("[data-audio-setting]")) this.gameAudio.sync();
+  };
   private controller: Controller | null = null;
   private diagnostics: DiagnosticsPanel | null = null;
   private unsubscribe: (() => void) | null = null;
@@ -50,7 +56,10 @@ class ForestWorkshopElement extends HTMLElement {
   /** Countdown ends already asked about, so a finished run triggers one refresh, not one per second. */
   private refreshedEnds = new Set<string>();
   private readonly onPresence = () => {
-    if (document.hidden) this.controller?.pauseAutoReading();
+    if (document.hidden) {
+      this.controller?.pauseAutoReading();
+      this.gameAudio.pause();
+    } else void this.gameAudio.start();
     void this.controller?.heartbeat();
   };
   private readonly onFullscreenGesture = () => {
@@ -72,6 +81,8 @@ class ForestWorkshopElement extends HTMLElement {
   }
 
   connectedCallback() {
+    this.gameAudio = createGameAudio();
+    this.root.addEventListener("click", this.onAudioClick);
     if (!this.controller) {
       this.controller = createController();
       this.diagnostics = new DiagnosticsPanel();
@@ -99,6 +110,8 @@ class ForestWorkshopElement extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.root.removeEventListener("click", this.onAudioClick);
+    this.gameAudio.dispose();
     this.removeEventListener("pointerdown", this.onFullscreenGesture);
     this.resizeObserver.disconnect();
     this.unsubscribe?.();

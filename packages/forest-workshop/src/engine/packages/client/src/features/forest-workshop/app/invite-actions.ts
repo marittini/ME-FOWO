@@ -1,4 +1,4 @@
-// 초대 (board 03-3) and 초대권 받기 (납품 의뢰): the actions behind 1회 / 10회 초대, 희망 주민, 종표 교환 and delivering a
+// 초대 (board 03-3) and 초대권 받기 (납품 의뢰): the actions behind 1회 / 10회 초대, 희망 주민, 증표 교환 and delivering a
 // request. The server rolls, decides every amount and checks today's list; the client shows what it was told.
 import { gameApi } from "./api";
 import type { ControllerCore } from "./controller";
@@ -8,6 +8,7 @@ import type { DrawResult } from "./types";
 export type InviteTab = "invite" | "exchange";
 
 export type InviteSheet =
+  | { kind: "ticket-shop" }
   | { kind: "invite-result"; draws: DrawResult[]; page?: number }
   | { kind: "invite-chances"; page?: number }
   | { kind: "invite-log"; page?: number }
@@ -58,6 +59,13 @@ export function createInviteActions(core: ControllerCore) {
       });
     },
 
+    openTicketShop() {
+      store.set({ sheet: { kind: "ticket-shop" } });
+    },
+    async refillTickets(pack: "small" | "large" | "chest") {
+      const response = await core.runCommand("tickets-refill", "invite.refillTickets", { pack });
+      if (response) core.notify(`초대권 ${response.result.amount}장을 채웠어요. 언제든 다시 받을 수 있어요.`);
+    },
     async draw(count: number) {
       const response = await core.runCommand(`invite:${count}`, "invite.draw", { count });
       if (response) store.set({ sheet: { kind: "invite-result", draws: response.result.draws as DrawResult[] } });

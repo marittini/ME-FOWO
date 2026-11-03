@@ -33,25 +33,29 @@ try {
     const style = document.createElement("style");
     style.textContent = window.styles;
     document.head.append(style);
-    const picker = window.pagePicker("목록 고르기", 0, ["첫 번째", "두 번째 항목", "세 번째"], (index) => {
-      window.selected = index;
-    });
-    document.querySelector("#host").append(picker);
+    window.paint = (current = 0) => {
+      const picker = window.pagePicker("목록 고르기", current, ["첫 번째", "두 번째 항목", "세 번째"], (index) => {
+        window.selected = index;
+        window.paint(index);
+      });
+      document.querySelector("#host").replaceChildren(picker);
+    };
+    window.paint();
   });
-  const summary = page.getByLabel("목록 고르기", { exact: true });
-  await summary.focus();
-  await page.keyboard.press("Enter");
-  assert.equal(await page.getByRole("button", { name: "첫 번째" }).getAttribute("aria-pressed"), "true");
-  await page.keyboard.press("Escape");
-  assert.equal(await summary.locator("..").evaluate((node) => node.open), false);
-  assert.equal(await summary.evaluate((node) => node === document.activeElement), true);
-  await page.keyboard.press("Enter");
-  await page.getByRole("button", { name: "두 번째 항목" }).focus();
+  const previous = () => page.getByRole("button", { name: "목록 고르기 · 이전 페이지" });
+  const next = () => page.getByRole("button", { name: "목록 고르기 · 다음 페이지" });
+  assert.equal(await previous().isDisabled(), true);
+  assert.equal(await page.locator("select,details,summary").count(), 0);
+  await next().focus();
   await page.keyboard.press("Enter");
   assert.equal(await page.evaluate(() => window.selected), 1);
-  assert.equal(await summary.locator("..").evaluate((node) => node.open), false);
-  assert.equal(await summary.evaluate((node) => node === document.activeElement), true);
-  console.log("Game-style page picker supports keyboard, selection, Escape and focus return: OK");
+  assert.match(await page.locator(".page-picker-label").innerText(), /2 \/ 3/);
+  await next().click();
+  assert.equal(await next().isDisabled(), true);
+  await previous().click();
+  assert.equal(await page.evaluate(() => window.selected), 1);
+  assert.ok(await next().evaluate((n) => n.getBoundingClientRect().width >= 44));
+  console.log("Arrow pagination supports keyboard, boundaries and touch target sizing: OK");
 } finally {
   await browser?.close();
   await rm(temp, { recursive: true, force: true });

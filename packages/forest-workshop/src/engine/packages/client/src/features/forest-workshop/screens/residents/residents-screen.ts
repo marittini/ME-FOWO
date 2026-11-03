@@ -230,7 +230,7 @@ function body(world: WorldView, state: AppState, controller: Controller) {
         (value) => controller.setResidentsPage(value),
       ),
     ]),
-    selected ? detail(selected, world, state.content, controller) : null,
+
     h(
       "button",
       {
@@ -245,12 +245,35 @@ function body(world: WorldView, state: AppState, controller: Controller) {
 
 export function renderResidentsScreen(state: AppState, controller: Controller) {
   const world = state.world?.state === "ready" ? state.world.value : null;
+  const selected = world?.state.residents[state.residentsView.selectedId ?? ""];
   const sheet =
     state.sheet?.kind === "profile" && world
       ? renderProfileSheet(world, state, controller, state.sheet.residentId)
       : state.sheet?.kind === "field" && world
         ? renderFieldSheet(state, world, controller, state.sheet.residentId)
-        : null;
+        : world && selected && state.residentsView.detailOpen
+          ? h("div", { className: "sheet-backdrop player-popup" }, [
+              h(
+                "section",
+                {
+                  className: "sheet card",
+                  attrs: { role: "dialog", "aria-modal": "true", "aria-label": `${selected.displayName} 주민 상세` },
+                },
+                [
+                  h("div", { className: "sheet-head" }, [
+                    h("h2", { text: selected.displayName }),
+                    h("button", {
+                      className: "popup-close",
+                      text: "×",
+                      attrs: { type: "button", "aria-label": "주민 상세 닫기" },
+                      on: { click: () => controller.showResidentsList() },
+                    }),
+                  ]),
+                  detail(selected, world, state.content, controller),
+                ],
+              ),
+            ])
+          : null;
   return renderFrame(state, controller, {
     top: { kind: "sub", title: "주민", resources: false },
     backdrop: "forest",

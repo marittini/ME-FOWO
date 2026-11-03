@@ -7,7 +7,7 @@ export function screenPageKey(
 ): string {
   if (state.route === "residents") return `residents:list:${state.residentsView.page ?? 0}`;
   if (state.route === "work")
-    return `work:${state.work.facilityId}:${state.work.section ?? "status"}:${state.work.queueView ?? ""}:${state.work.queuePage ?? 0}:${state.work.priorityPage ?? 0}`;
+    return `work:${state.work.facilityId}:${state.work.section ?? "status"}:${state.work.priorityPage ?? 0}`;
   if (state.route === "facilities") return `facilities:${state.facilitiesTab}:${state.work.inventoryPage ?? 0}`;
   if (state.route === "settings") return `settings:${state.settingsSection ?? "workshop"}`;
   if (state.route === "explore")
