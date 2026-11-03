@@ -2,6 +2,7 @@
 // card with 작업 보고 and the 72-hour absence bar (work-report.ts); the story card; the bottom bar. Blocks without their
 // feature yet are locked in place (docs/forest-workshop/ui-spec.md). The welcome package opens as a sheet above.
 import type { AppState, Controller } from "../../app/controller";
+import { modelConnections } from "../settings/settings-screen";
 import { UI_ART, assetImage } from "../../app/assets";
 import { button, errorLine, h, statusLine } from "../../app/dom";
 import { card, renderFrame } from "../chrome/frame";
@@ -69,6 +70,28 @@ export function renderHomeScreen(state: AppState, controller: Controller) {
       ],
     });
   }
+  if (!world.value.state.progress.starterResidentId)
+    return renderFrame(state, controller, {
+      top: { kind: "sub", title: "공방 시작 준비", resources: false },
+      backdrop: "forest",
+      nav: false,
+      body: [
+        card(
+          "먼저 함께할 주민을 정해요",
+          [
+            h("p", { text: "AI 연결을 확인한 뒤 첫 주민을 골라 주세요." }),
+            modelConnections(true),
+            h("p", {
+              className: "hint",
+              text: "기본 연결을 사용해도 좋아요. 꾸러미는 주민을 선택한 뒤 받을 수 있어요.",
+            }),
+            button("처음 함께할 주민 고르기", () => controller.openRegister(1)),
+            button("세계 목록으로", () => controller.navigate("worlds"), { variant: "secondary" }),
+          ],
+          { className: "onboarding-card" },
+        ),
+      ],
+    });
   return renderFrame(state, controller, {
     top: { kind: "home" },
     backdrop: "forest",

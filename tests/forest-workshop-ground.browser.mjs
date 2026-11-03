@@ -41,6 +41,10 @@ try {
     };
     const controller = {
       store: { get: () => state },
+      rememberBoard: (worldId, value) => {
+        state.settingsBoardDraft = { worldId, value: { ...value } };
+        window.boardPosition = { ...value };
+      },
       rememberGround: (worldId, value) => {
         state.settingsGroundDraft = { worldId, value: { ...value } };
       },
@@ -76,6 +80,16 @@ try {
   await page.mouse.down();
   await page.mouse.move(100, bounds.y + bounds.height / 2);
   await page.mouse.up();
+  const board = page.getByRole("button", { name: "게시판 위치 조절" });
+  await board.focus();
+  await page.keyboard.press("ArrowLeft");
+  assert.equal(await page.evaluate(() => window.boardPosition.x), 84);
+  const boardBounds = await board.boundingBox();
+  await page.mouse.move(boardBounds.x + boardBounds.width / 2, boardBounds.y + boardBounds.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(130, 200);
+  await page.mouse.up();
+  assert.ok(await page.evaluate(() => window.boardPosition.x < 84 && window.boardPosition.y >= 40));
   await page.getByRole("button", { name: "저장", exact: true }).click();
   assert.ok((await page.evaluate(() => window.saved)).left >= 25, "drag changes saved range, not a stale render value");
   await page.getByRole("button", { name: "기본 범위" }).click();

@@ -292,9 +292,9 @@ try {
     patch: { restore: { fileName: "숲결공방-백업.json", summary: { residents: 8, pairs: 5, pictures: 13 } } },
   });
   cases.push({
-    name: "work-count",
+    name: "work-production-settings",
     route: "work",
-    patch: withWorld((world) => (world.production.facilities["gather-yard"].mode = "count")),
+    patch: { work: { ...base.work, section: "recipe" } },
   });
   cases.push({
     name: "facility-locked",
@@ -437,6 +437,20 @@ try {
         },
       },
     });
+  cases.push({
+    name: "resident-detail-popup",
+    route: "residents",
+    patch: { residentsView: { ...base.residentsView, detailOpen: true } },
+  });
+  cases.push({ name: "ticket-shop", route: "invite", patch: { sheet: { kind: "ticket-shop" } } });
+  cases.push({
+    name: "first-entry",
+    route: "home",
+    patch: withWorld((world) => {
+      world.progress.starterResidentId = null;
+      world.progress.starterKitClaimed = false;
+    }),
+  });
   const findings = [];
   for (const config of [
     { width: 320, height: 640, font: 22 },
@@ -496,6 +510,8 @@ try {
                 !n.classList.contains("visually-hidden") &&
                 n.getClientRects().length &&
                 n.checkVisibility() &&
+                // Text inputs scroll their value to keep the caret visible; panel bounds still verify layout.
+                !(n instanceof HTMLInputElement && n.type === "text") &&
                 n.scrollWidth > n.clientWidth + 2,
             )
             .map((n) => n.getAttribute("aria-label") || n.textContent?.slice(0, 35));

@@ -111,6 +111,12 @@ export interface AppState {
   settingsSection?: "workshop" | "display" | "manage";
   settingsNicknameDraft?: { worldId: string; value: string };
   groundEditingWorld?: string;
+  layoutBaseline?: {
+    worldId: string;
+    ground: WorldView["state"]["settings"]["ground"];
+    board: { x: number; y: number } | null;
+  };
+  settingsBoardDraft?: { worldId: string; value: { x: number; y: number } | null };
   settingsGroundDraft?: { worldId: string; value: WorldView["state"]["settings"]["ground"] };
   /** 저장·백업 → 저장 공간 사용량, loaded when that screen opens. */
   storage: Loadable<StorageUsage> | null;
@@ -132,7 +138,7 @@ export interface AppState {
   work: WorkView;
   /** Client time the shown world arrived; countdowns are estimated from it. */
   worldReceivedAt: number;
-  /** 초대 (board 03-3): 주민 초대 or 종표 교환. */
+  /** 초대 (board 03-3): 주민 초대 or 증표 교환. */
   inviteTab: InviteTab;
   /** Today's 납품 의뢰, loaded when 초대권 받기 opens. */
   deliveries: Loadable<DeliveryList> | null;
@@ -217,7 +223,7 @@ export function createController() {
     sheet: null,
     placementDraft: null,
     register: null,
-    work: { facilityId: "gather-yard", drafts: {}, selected: {}, queueRecipe: {} },
+    work: { facilityId: "gather-yard", drafts: {}, selected: {} },
     inviteTab: "invite",
     deliveries: null,
     explore: { tab: "story", pairId: null, overview: null },
@@ -309,7 +315,7 @@ export function createController() {
       work:
         state.world?.state === "ready" && state.world.value.worldId === view.worldId
           ? state.work
-          : { facilityId: state.work.facilityId, drafts: {}, selected: {}, queueRecipe: {} },
+          : { facilityId: state.work.facilityId, drafts: {}, selected: {} },
       content: content ?? state.content,
       route: state.route === "worlds" ? "home" : state.route,
     }));
@@ -528,6 +534,12 @@ export function createController() {
       navigate("home");
       store.set({
         groundEditingWorld: world.worldId,
+        layoutBaseline: {
+          worldId: world.worldId,
+          ground: { ...world.state.settings.ground },
+          board: world.state.settings.board ?? null,
+        },
+        settingsBoardDraft: { worldId: world.worldId, value: world.state.settings.board ?? null },
         settingsGroundDraft: { worldId: world.worldId, value: { ...world.state.settings.ground } },
       });
     },
@@ -537,13 +549,22 @@ export function createController() {
       if (world)
         store.set({
           settingsGroundDraft: { worldId: world.worldId, value: { left: 12, right: 88, top: 58, bottom: 90 } },
+          settingsBoardDraft: { worldId: world.worldId, value: null },
         });
     },
 
     cancelGroundEditor() {
-      store.set({ groundEditingWorld: undefined, settingsGroundDraft: undefined });
+      store.set({
+        groundEditingWorld: undefined,
+        settingsGroundDraft: undefined,
+        settingsBoardDraft: undefined,
+        layoutBaseline: undefined,
+      });
     },
 
+    rememberBoard(worldId: string, value: { x: number; y: number }) {
+      store.remember({ settingsBoardDraft: { worldId, value: { ...value } } });
+    },
     rememberGround(worldId: string, value: WorldView["state"]["settings"]["ground"]) {
       store.remember({ settingsGroundDraft: { worldId, value: { ...value } } });
     },
@@ -551,11 +572,30 @@ export function createController() {
     async saveGround(ground: WorldView["state"]["settings"]["ground"]) {
       const worldId = currentWorld()?.worldId;
       const sent = { ...ground };
-      const result = await runCommand("ground-save", "settings.update", { ground: sent });
+      const board = store.get().settingsBoardDraft;
+      const sentBoard = board && board.worldId === worldId ? board.value : undefined;
+      const world = currentWorld();
+      if (!world) return null;
+      const baseline = store.get().layoutBaseline;
+      const expected =
+        baseline?.worldId === world.worldId
+          ? baseline
+          : { ground: world.state.settings.ground, board: world.state.settings.board ?? null };
+      const result = await runCommand("ground-save", "settings.setLayout", {
+        ground: sent,
+        board: sentBoard !== undefined ? sentBoard : (world.state.settings.board ?? null),
+        expectedGround: expected.ground,
+        expectedBoard: expected.board,
+      });
       if (result) {
         const draft = store.get().settingsGroundDraft;
         if (draft && draft.worldId === worldId && JSON.stringify(draft.value) === JSON.stringify(sent))
-          store.remember({ settingsGroundDraft: undefined, groundEditingWorld: undefined });
+          store.set({
+            settingsGroundDraft: undefined,
+            groundEditingWorld: undefined,
+            settingsBoardDraft: undefined,
+            layoutBaseline: undefined,
+          });
         core.notify("지면 설정을 저장했어요.");
       }
       return result;

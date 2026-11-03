@@ -377,9 +377,18 @@ function body(state: AppState, world: WorldView, content: GameContent, controlle
   return [
     tabs(state, controller),
     pairChooser(state, world, pairs, controller),
+    state.explore.preparingPairId === pair.pairId
+      ? statusLine("이 페어의 이야기를 준비하고 있어요. 다른 페어도 선택할 수 있어요.")
+      : null,
+    state.explore.planError?.pairId === pair.pairId
+      ? card(null, [
+          errorLine(state.explore.planError.message),
+          button("이 페어 생성 다시 시도", () => controller.retryStoryPlan()),
+        ])
+      : null,
     h(
       "div",
-      { className: "pill-tabs", attrs: { role: "group", "aria-label": "이야기 화면" } },
+      { className: "pill-tabs explore-story-tabs", attrs: { role: "group", "aria-label": "이야기 화면" } },
       sections.map(([id, label]) =>
         h("button", {
           className: `pill-tab${section === id ? " current" : ""}`,

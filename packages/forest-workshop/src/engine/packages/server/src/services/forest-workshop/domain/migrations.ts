@@ -16,6 +16,31 @@ type RawWorld = Record<string, unknown>;
 
 /** `MIGRATIONS[n]` turns a version-n document into version n+1. Add one entry per schema bump; never edit old ones. */
 const MIGRATIONS: Readonly<Record<number, (world: RawWorld) => RawWorld>> = {
+  12: (world) => {
+    const production = world.production as WorldState["production"];
+    return {
+      ...world,
+      schemaVersion: 13,
+      settings: { ...(world.settings as object), board: null },
+      production: {
+        ...production,
+        facilities: Object.fromEntries(
+          Object.entries(production.facilities).map(([id, facility]) => [
+            id,
+            {
+              ...facility,
+              mode: "auto",
+              queue: [],
+              rules: completeRules(String(world.worldId), id, facility.rules).map((rule) => ({
+                ...rule,
+                enabled: true,
+              })),
+            },
+          ]),
+        ),
+      },
+    };
+  },
   11: (world) => {
     const production = world.production as RawWorld;
     const facilities = production.facilities as Record<string, { rules: Parameters<typeof completeRules>[2] }>;

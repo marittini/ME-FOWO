@@ -4,7 +4,7 @@
 import { gameApi } from "./api";
 import type { ControllerCore } from "./controller";
 import { newWorldId as newUuid } from "./host-api";
-import type { AutoSell, FacilityMode, GameContent, ProductionState, Rule, WorldState } from "./types";
+import type { AutoSell, GameContent, ProductionState, Rule, WorldState } from "./types";
 
 export interface WorkView {
   /** The facility 공방 작업 and 시설과 창고 show. */
@@ -13,13 +13,8 @@ export interface WorkView {
   drafts: Record<string, Rule[]>;
   /** The rule whose recipe and target are shown, per facility. */
   selected: Record<string, string>;
-  /** 지정 횟수: the recipe chosen for the next queue entry, per facility. */
-  queueRecipe: Record<string, string>;
   section?: "status" | "recipe" | "priority";
   inventoryPage?: number;
-  queueView?: "list" | "add";
-  queuePage?: number;
-  queueCounts?: Record<string, number>;
   priorityPage?: number;
 }
 
@@ -143,7 +138,7 @@ export function createProductionActions(core: ControllerCore) {
     },
 
     selectFacility(facilityId: string) {
-      patchWork({ facilityId, section: "status", queueView: undefined, queuePage: 0, priorityPage: 0 });
+      patchWork({ facilityId, section: "status", priorityPage: 0 });
     },
 
     setWorkSection(section: NonNullable<WorkView["section"]>) {
@@ -154,22 +149,8 @@ export function createProductionActions(core: ControllerCore) {
       patchWork({ inventoryPage: Math.max(0, page) });
     },
 
-    setQueueView(queueView: NonNullable<WorkView["queueView"]>) {
-      patchWork({ queueView });
-    },
-
-    setQueuePage(queuePage: number) {
-      patchWork({ queuePage: Math.max(0, queuePage) });
-    },
-
     setPriorityPage(priorityPage: number) {
       patchWork({ priorityPage: Math.max(0, priorityPage) });
-    },
-
-    rememberQueueCount(facilityId: string, count: number) {
-      store.remember((state) => ({
-        work: { ...state.work, queueCounts: { ...state.work.queueCounts, [facilityId]: count } },
-      }));
     },
 
     rememberAutoSellPage(page: number) {
@@ -292,31 +273,18 @@ export function createProductionActions(core: ControllerCore) {
       if (response && !response.result.alreadyOpen) core.notify("시설이 열렸어요. 추천 규칙으로 바로 일을 시작해요.");
     },
 
-    /** 자동 운영 / 지정 횟수: the running run finishes as it is; the next one follows the new mode. */
-    async setMode(facilityId: string, mode: FacilityMode) {
-      const response = await core.runCommand(`mode:${facilityId}`, "production.setMode", { facilityId, mode });
-      if (response?.result.running) core.notify("지금 작업이 끝나면 바뀐 방식으로 이어져요.");
-    },
-
-    selectQueueRecipe(facilityId: string, recipeId: string) {
-      patchWork({ queueRecipe: { ...store.get().work.queueRecipe, [facilityId]: recipeId } });
-    },
-
-    async addQueue(facilityId: string, recipeId: string, count: number) {
-      // The entry ID stays the same while this request is retried, so a lost answer cannot add it twice.
-      const entryKey = `queue-entry:${facilityId}`;
-      const entryId = core.requestIdFor(entryKey, JSON.stringify([recipeId, count]), newUuid);
-      const response = await core.runCommand(`queue:${facilityId}`, "production.queueAdd", {
-        facilityId,
-        entryId,
-        recipeId,
-        count,
-      });
-      if (response) core.forgetRequest(entryKey);
-    },
-
-    async removeQueue(facilityId: string, entryId: string) {
-      await core.runCommand(`queue-remove:${entryId}`, "production.queueRemove", { facilityId, entryId });
+    async applyProductionTree(recipeId: string, targetStock: number) {
+      const draftsBefore = JSON.stringify(store.get().work.drafts);
+      const response = await core.runCommand("production-tree", "production.setTree", { recipeId, targetStock });
+      if (!response) return;
+      if (JSON.stringify(store.get().work.drafts) === draftsBefore) patchWork({ drafts: {} });
+      const locked = response.result.locked as string[];
+      const names = locked.map((id) => content()?.facilities.find((f) => f.id === id)?.name ?? id);
+      core.notify(
+        names.length
+          ? `제작 트리를 설정했어요. 시설 해금 필요: ${names.join(", ")}`
+          : "하위 재료까지 제작 트리를 설정했어요.",
+      );
     },
 
     /** 배치 변경: null takes the resident out. */

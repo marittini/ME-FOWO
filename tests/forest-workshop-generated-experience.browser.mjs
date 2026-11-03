@@ -179,6 +179,52 @@ try {
     true,
     "bundled licensed Jua font actually loads",
   );
+  // A slow/failed generation belongs to its pair, never hides or resets the other selection.
+  await page.evaluate(() => {
+    window.planJobs = {};
+    window.planCalls = [];
+    const overview = { revision: 1, pairs: [{ pairId: "pair-A" }, { pairId: "pair-B" }] };
+    const oldGet = window.mockApi.get,
+      oldPost = window.mockApi.post;
+    window.mockApi.get = async (path) => (path.includes("/stories?") ? overview : oldGet(path));
+    window.mockApi.post = async (path, body) => {
+      if (!path.endsWith("/stories/prepare")) return oldPost(path, body);
+      window.planCalls.push(body.pairId);
+      return new Promise((resolve, reject) => {
+        window.planJobs[body.pairId] = { resolve: () => resolve(overview), reject };
+      });
+    };
+    window.view.state.pairs = {
+      "pair-A": { residentIds: ["resident", "other"], archived: false },
+      "pair-B": { residentIds: ["resident", "third"], archived: false },
+    };
+    window.controller.store.set({
+      world: { state: "ready", value: window.view },
+      route: "home",
+      explore: { ...window.controller.store.get().explore, tab: "story", pairId: "pair-A", overview: null },
+    });
+    window.controller.navigate("explore");
+  });
+  await page.waitForFunction(() => window.planJobs["pair-A"]);
+  assert.equal(await page.evaluate(() => window.controller.store.get().explore.overview.state), "ready");
+  await page.evaluate(() => window.controller.selectStoryPair("pair-B"));
+  await page.waitForFunction(() => window.planJobs["pair-B"]);
+  await page.evaluate(() => window.planJobs["pair-A"].resolve());
+  await page.waitForTimeout(20);
+  assert.equal(await page.evaluate(() => window.controller.store.get().explore.pairId), "pair-B");
+  await page.evaluate(() => window.planJobs["pair-B"].reject(new Error("model unavailable")));
+  await page.waitForFunction(() => window.controller.store.get().explore.planError?.pairId === "pair-B");
+  assert.equal(
+    await page.evaluate(() => window.controller.store.get().explore.overview.state),
+    "ready",
+    "failed B keeps the pair chooser usable",
+  );
+  await page.evaluate(() => window.controller.retryStoryPlan());
+  await page.waitForFunction(() => window.planCalls.filter((id) => id === "pair-B").length === 2);
+  await page.evaluate(() => window.planJobs["pair-B"].resolve());
+  await page.waitForFunction(() => !window.controller.store.get().explore.preparingPairId);
+  assert.equal(await page.evaluate(() => window.controller.store.get().explore.pairId), "pair-B");
+  assert.equal(await page.evaluate(() => window.controller.store.get().explore.planError), null);
   console.log("Automatic profile/letter flow, late replies, preserved edits and bundled Jua: OK");
 } finally {
   await browser?.close();

@@ -8,10 +8,6 @@
 //   production.markReportsRead 작업 보고 확인: marks reports read. It grants nothing; outputs went to the storeroom
 //                              when they were made (plan §7.2-C).
 //   production.unlockFacility  해금: opens a facility once its condition holds (one time, no cost).
-//   production.setMode         자동 운영 / 지정 횟수: the running run finishes as it is; the next run follows the new
-//                              mode. The other mode's settings (rules, queue) wait unchanged (plan §7.2-B).
-//   production.queueAdd/Remove 지정 횟수 대기열: 1–99 runs of one recipe per slot; slots grow with the level. Inputs
-//                              are taken one run at a time when each run starts (plan §7.2-C).
 //   production.assignResident  배치 변경: one recruited resident per facility, a resident in one facility at a time.
 //                              The running run keeps its speed; the next run uses the new passive.
 // Every command first settles the world to now (services/command-service.ts), so these act on the present workshop.
@@ -21,13 +17,11 @@ import {
   FACILITY_MAX_LEVEL,
   MAX_RULES_PER_FACILITY,
   PROTECTED_STOCK_RANGE,
-  QUEUE_COUNT_RANGE,
-  queueSlots,
   recipeDefinition,
   upgradeCost,
 } from "../../content/production";
 import { FwError } from "../errors";
-import { FACILITY_MODES, ruleSchema, type FacilityState } from "../model/production";
+import { ruleSchema, type FacilityState } from "../model/production";
 import { completeRules } from "../production/initial";
 import { unlockParts } from "../production/unlock";
 import type { WorldState } from "../world-model";
@@ -140,61 +134,6 @@ export const unlockFacility = defineCommand({
     return {
       state: putFacility(state, payload.facilityId, { ...facility, unlocked: true, waiting: null }),
       result: { facilityId: payload.facilityId, alreadyOpen: false },
-    };
-  },
-});
-
-export const setMode = defineCommand({
-  type: "production.setMode",
-  payloadSchema: z.object({ facilityId: z.string().max(64), mode: z.enum(FACILITY_MODES) }).strict(),
-  requiresFreshView: false,
-  apply(state, payload) {
-    const facility = requireFacility(state, payload.facilityId);
-    return {
-      state: putFacility(state, payload.facilityId, { ...facility, mode: payload.mode }),
-      result: { facilityId: payload.facilityId, mode: payload.mode, running: facility.job !== null },
-    };
-  },
-});
-
-export const queueAdd = defineCommand({
-  type: "production.queueAdd",
-  payloadSchema: z
-    .object({
-      facilityId: z.string().max(64),
-      entryId: z.string().uuid(),
-      recipeId: z.string().max(64),
-      count: z.number().int().min(QUEUE_COUNT_RANGE.min).max(QUEUE_COUNT_RANGE.max),
-    })
-    .strict(),
-  requiresFreshView: false,
-  apply(state, payload) {
-    const facility = requireFacility(state, payload.facilityId);
-    if (recipeDefinition(payload.recipeId)?.facilityId !== payload.facilityId) throw new FwError("invalid_payload");
-    if (facility.queue.some((entry) => entry.entryId === payload.entryId)) throw new FwError("invalid_payload");
-    if (facility.queue.length >= queueSlots(facility.level)) throw new FwError("queue_full");
-    const queue = [
-      ...facility.queue,
-      { entryId: payload.entryId, recipeId: payload.recipeId, total: payload.count, started: 0 },
-    ];
-    return {
-      state: putFacility(state, payload.facilityId, { ...facility, queue }),
-      result: { facilityId: payload.facilityId, entryId: payload.entryId },
-    };
-  },
-});
-
-export const queueRemove = defineCommand({
-  type: "production.queueRemove",
-  payloadSchema: z.object({ facilityId: z.string().max(64), entryId: z.string().uuid() }).strict(),
-  requiresFreshView: false,
-  apply(state, payload) {
-    const facility = requireFacility(state, payload.facilityId);
-    // Only runs that have not started are removed; a running run finishes and its output stays (plan §7.2-C).
-    const queue = facility.queue.filter((entry) => entry.entryId !== payload.entryId);
-    return {
-      state: putFacility(state, payload.facilityId, { ...facility, queue }),
-      result: { facilityId: payload.facilityId, removed: queue.length !== facility.queue.length },
     };
   },
 });

@@ -43,11 +43,12 @@ export interface WorldState {
   worldId: string;
   createdAt: string;
   settings: {
+    board?: { x: number; y: number } | null;
     worldName: string;
     playerNickname: string;
     ground: { left: number; right: number; top: number; bottom: number };
   };
-  /** gold · 초대권 · 종표 */
+  /** gold · 초대권 · 증표 */
   wallet: { gold: number; tickets: number; tokens: number };
   inventory: Record<string, number>;
   progress: { starterKitClaimed: boolean; starterResidentId: string | null };
@@ -233,7 +234,7 @@ export interface QueueEntry {
   started: number;
 }
 
-export type FacilityMode = "auto" | "count";
+export type FacilityMode = "auto";
 
 export interface FacilityState {
   unlocked: boolean;

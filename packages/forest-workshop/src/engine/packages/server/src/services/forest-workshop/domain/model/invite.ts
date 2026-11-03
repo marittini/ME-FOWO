@@ -18,7 +18,7 @@ export const inviteLogEntrySchema = z
     outcome: z.enum(INVITE_OUTCOMES),
     /** 돌파 after this draw (for "breakthrough"). */
     breakthrough: z.number().int().min(0).max(5),
-    /** How it came: a draw, the guarantee, or a 종표 exchange. */
+    /** How it came: a draw, the guarantee, or a 증표 exchange. */
     via: z.enum(["draw", "guarantee", "exchange"]),
   })
   .strict();

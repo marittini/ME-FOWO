@@ -1,3 +1,4 @@
+import { recommendedRules } from "../packages/forest-workshop/src/engine/packages/server/src/services/forest-workshop/domain/production/initial";
 // Forest Workshop P3a regressions: automatic production (plan §7.2, §7.6, §11 핵심 시험).
 //   - content validation refuses recipe cycles
 //   - the 72-hour absence rule: 71:59:59 / 72:00:00 / 72:00:01 / 7 days, background settlements, return, clock reversal
@@ -60,6 +61,8 @@ async function rejects(promise: Promise<unknown>, code: string, label: string) {
 /** A world present at T0 with the given storeroom, checked against the schema. */
 function world(inventory: Record<string, number> = {}): WorldState {
   const base = createWorldState({ worldId: WORLD, worldName: "숲", playerNickname: "공방지기", now: iso(T0) });
+  // Isolate the original target/queue-independent scenarios from the expanded default catalog.
+  for (const [id, facility] of Object.entries(base.production.facilities)) facility.rules = recommendedRules(WORLD, id);
   return worldStateSchema.parse({
     ...base,
     inventory,
@@ -355,7 +358,10 @@ async function main() {
       facilityId: "gather-yard",
       rules: [{ ...yardRules[0]!, targetStock: 12 }],
     });
-    assert.equal(changed.state.production.facilities["gather-yard"]!.rules.filter((rule) => rule.enabled).length, 1);
+    assert.ok(
+      changed.state.production.facilities["gather-yard"]!.rules.every((rule) => rule.enabled),
+      "new recipes are enabled by default",
+    );
     assert.equal(changed.state.production.facilities["gather-yard"]!.rules[0]!.targetStock, 12);
 
     // Upgrade: the server's cost, once even if the same tap is sent twice.

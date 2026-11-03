@@ -38,7 +38,7 @@ export interface DrawResult {
   via: InviteLogEntry["via"];
 }
 
-/** Brings `residentId` (a draw, the guarantee or an exchange): a new arrival, a 돌파, or a 종표 past the last 돌파. */
+/** Brings `residentId` (a draw, the guarantee or an exchange): a new arrival, a 돌파, or a 증표 past the last 돌파. */
 export function receive(
   state: WorldState,
   residentId: string,

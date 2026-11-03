@@ -1,6 +1,6 @@
-// 초대 (board 03-3): the sign with 새로운 인연을 맞이해요, 초대권 (+ → 초대권 받기) and 종표 at the top; 주민 초대 ·
-// 종표 교환 tabs; the envelope; 희망 주민 설정; 1회 초대 · 10회 초대 with the shortage note; 확률 보기 · 초대 기록; and
-// the 종표 교환 card (n / 5 · 원하는 주민 선택). [종표 교환] lists the registered residents to choose from.
+// 초대 (board 03-3): the sign with 새로운 인연을 맞이해요, 초대권 (+ → 초대권 받기) and 증표 at the top; 주민 초대 ·
+// 증표 교환 tabs; the envelope; 희망 주민 설정; 1회 초대 · 10회 초대 with the shortage note; 확률 보기 · 초대 기록; and
+// the 증표 교환 card (n / 5 · 원하는 주민 선택). [증표 교환] lists the registered residents to choose from.
 // Every registered resident has the same chance (no grades); the server rolls and decides (plan §7.2-F).
 import type { AppState, Controller } from "../../app/controller";
 import { UI_ART, assetImage } from "../../app/assets";
@@ -30,7 +30,7 @@ export function inviteCounters(state: AppState, controller: Controller) {
         h("span", { className: "counter-plus" }, [ICONS.plus("icon tiny")]),
       ],
     ),
-    h("span", { className: "counter token", attrs: { "aria-label": `종표 ${tokens}개` } }, [
+    h("span", { className: "counter token", attrs: { "aria-label": `증표 ${tokens}개` } }, [
       h("span", { className: "token-mark" }, [ICONS.leaf("icon")]),
       h("span", { className: "counter-value", text: String(tokens) }),
     ]),
@@ -50,7 +50,7 @@ function tabs(state: AppState, controller: Controller) {
     );
   return h("div", { className: "segmented invite-tabs", attrs: { role: "tablist", "aria-label": "초대" } }, [
     tab("invite", "주민 초대", ICONS.sprout("icon")),
-    tab("exchange", "종표 교환", ICONS.leaf("icon")),
+    tab("exchange", "증표 교환", ICONS.leaf("icon")),
   ]);
 }
 
@@ -129,7 +129,7 @@ function inviteBody(state: AppState, world: WorldView, content: GameContent, con
             ? "등록한 주민 중에서 새로운 인연을 만날 수 있어요."
             : waiting > 0
               ? `아직 오지 않은 주민 ${waiting}명 · 늦어도 ${Math.max(1, guaranteeIn)}번째 초대에는 새 주민을 만나요.`
-              : "모두 공방에 왔어요. 다시 만나면 돌파, 최대 돌파 뒤에는 종표가 돼요.",
+              : "모두 공방에 왔어요. 다시 만나면 돌파, 최대 돌파 뒤에는 증표가 돼요.",
       }),
       h("div", { className: "link-row" }, [
         h(
@@ -179,7 +179,7 @@ function exchangeRow(
     h("button", {
       className: "button small",
       text: busy ? "교환 중…" : "교환",
-      attrs: { type: "button", "aria-label": `${resident.displayName} 선택 · 종표 교환` },
+      attrs: { type: "button", "aria-label": `${resident.displayName} 선택 · 증표 교환` },
       disabled: busy || maxed || tokens < content.invite.tokensPerExchange,
       on: { click: () => void controller.exchange(resident.residentId) },
     }),
@@ -194,13 +194,13 @@ function exchangeBody(state: AppState, world: WorldView, content: GameContent, c
   const count = Math.max(1, Math.ceil(residents.length / 2));
   const page = Math.min(state.invitePage ?? 0, count - 1);
   return [
-    card("종표 교환", [
+    card("증표 교환", [
       h("p", { className: "exchange-summary" }, [
         h("span", { className: "token-coin" }, [ICONS.leaf("icon")]),
         h("strong", { text: `${tokens} / ${content.invite.tokensPerExchange}` }),
         h("span", {
           className: "muted",
-          text: ` 종표 ${content.invite.tokensPerExchange}개로 원하는 주민을 바로 맞이하거나 돌파해요.`,
+          text: ` 증표 ${content.invite.tokensPerExchange}개로 원하는 주민을 바로 맞이하거나 돌파해요.`,
         }),
       ]),
       residents.length === 0
@@ -245,6 +245,12 @@ export function renderInviteScreen(state: AppState, controller: Controller) {
     body: ready
       ? [
           tabs(state, controller),
+          h("button", {
+            className: "button secondary",
+            text: "초대권 상점 · 무료 리필",
+            attrs: { type: "button" },
+            on: { click: () => controller.openTicketShop() },
+          }),
           ...(state.inviteTab === "invite"
             ? inviteBody(state, world, content, controller)
             : exchangeBody(state, world, content, controller)),

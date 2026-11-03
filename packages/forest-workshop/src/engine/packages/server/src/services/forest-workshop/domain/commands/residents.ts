@@ -131,3 +131,24 @@ export const chooseStarter = defineCommand({
     };
   },
 });
+
+/** Production ticks never invalidate a name edit; another name edit does. */
+export const renameResident = defineCommand({
+  type: "residents.rename",
+  payloadSchema: z
+    .object({ residentId: z.string().uuid(), displayName: displayNameSchema, expectedName: displayNameSchema })
+    .strict(),
+  requiresFreshView: false,
+  apply(state, payload, context) {
+    const resident = requireResident(state, payload.residentId);
+    if (resident.displayName !== payload.expectedName) throw new FwError("stale_view");
+    const renamed =
+      payload.displayName === resident.displayName
+        ? resident
+        : withChange(
+            { ...resident, displayName: payload.displayName },
+            { at: context.now, kind: "name", detail: payload.displayName },
+          );
+    return { state: putResident(state, renamed), result: { residentId: payload.residentId } };
+  },
+});

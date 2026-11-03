@@ -7,6 +7,14 @@ import { build } from "esbuild";
 import { chromium } from "playwright";
 const temp = await mkdtemp(join(tmpdir(), "forest-explore-"));
 const client = resolve("packages/forest-workshop/src/engine/packages/client/src/features/forest-workshop");
+async function goToPage(scope, label, target) {
+  const picker = scope.getByRole("navigation", { name: label, exact: true });
+  const current = Number((await picker.locator("strong").innerText()).split("/")[0]) - 1;
+  for (let index = current; index !== target; index += index < target ? 1 : -1)
+    await scope
+      .getByRole("button", { name: `${label} · ${index < target ? "다음" : "이전"} 페이지`, exact: true })
+      .click();
+}
 let browser;
 try {
   const entry = join(temp, "entry.ts"),
@@ -176,8 +184,7 @@ try {
   assert.equal(await page.getByText("기록 2", { exact: true }).isVisible(), true);
   await page.getByRole("button", { name: "1편 다시 읽기", exact: true }).click();
   assert.deepEqual(await page.evaluate(() => window.openedStory), { pairId: "a", episode: 0, storyId: "current-0" });
-  await page.getByLabel("읽은 이야기 목록 고르기", { exact: true }).click();
-  await page.getByLabel("읽은 이야기 목록 고르기", { exact: true }).locator("..").locator("button").nth(1).click();
+  await goToPage(page, "읽은 이야기 목록 고르기", 1);
   assert.equal(await page.getByText("기록 0", { exact: true }).isVisible(), true);
   await page.getByRole("button", { name: "기록 0 1편 다시 읽기" }).click();
   assert.deepEqual(await page.evaluate(() => window.openedStory), { pairId: "a", episode: 0, storyId: "s0" });

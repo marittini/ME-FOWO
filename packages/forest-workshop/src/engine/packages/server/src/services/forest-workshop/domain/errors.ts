@@ -154,7 +154,7 @@ const MESSAGES: Record<FwErrorCode, string> = {
   starter_needed: "시작 주민을 먼저 정해 주세요.",
   invite_empty: "초대할 주민이 없습니다. 먼저 캐릭터나 페르소나를 주민으로 불러와 주세요.",
   not_enough_tickets: "초대권이 부족합니다. 재화는 바뀌지 않았습니다.",
-  not_enough_tokens: "종표가 부족합니다. 재화는 바뀌지 않았습니다.",
+  not_enough_tokens: "증표가 부족합니다. 재화는 바뀌지 않았습니다.",
   max_breakthrough: "이미 최대 돌파한 주민입니다.",
   order_not_found: "오늘의 납품 의뢰가 아닙니다. 목록을 새로 불러와 주세요.",
   order_done: "오늘 이미 납품한 의뢰입니다.",

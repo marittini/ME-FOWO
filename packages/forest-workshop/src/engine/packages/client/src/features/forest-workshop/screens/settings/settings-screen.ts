@@ -1,3 +1,4 @@
+import { readAudioPreference, writeAudioPreference } from "../../app/audio";
 import { hostApi } from "../../app/host-api";
 import { readModelConnection, writeModelConnection, type GenerationPurpose } from "../../app/preferences";
 // 설정 (board 04-1): 내 공방 (닉네임 + 수정, 현실 날씨 + 변경), 표시 (글자 크기 + 미리보기, 날씨 효과, 자동 읽기),
@@ -240,11 +241,59 @@ function manageRow(icon: keyof typeof MANAGEMENT_ART, label: string, onClick: ()
   ]);
 }
 
-function modelConnections() {
-  const box = h("div", { className: "setting-block" }, [
-    h("strong", { text: "AI 모델 연결" }),
-    h("p", { className: "muted", text: "이 기기의 설정이에요. 기존 이야기는 바뀌지 않아요." }),
+function audioSettings() {
+  const preference = readAudioPreference();
+  const box = h("div", { className: "setting-block", attrs: { "data-audio-setting": "" } }, [
+    h("h3", { text: "공방의 소리" }),
+    h("p", {
+      className: "hint",
+      text: "잔잔한 오음계 배경음과 부드러운 조작음을 사용해요. 첫 화면 조작 뒤 재생되며 앱이 숨겨지면 멈춰요.",
+    }),
   ]);
+  for (const [key, label] of [
+    ["music", "배경음"],
+    ["effects", "효과음"],
+  ] as const) {
+    const toggle = h("button", {
+      className: "button secondary",
+      text: `${label} ${preference[key] ? "켜짐" : "꺼짐"}`,
+      attrs: { type: "button", "aria-pressed": String(preference[key]) },
+      on: {
+        click: () => {
+          preference[key] = !preference[key];
+          writeAudioPreference(preference);
+          toggle.textContent = `${label} ${preference[key] ? "켜짐" : "꺼짐"}`;
+          toggle.setAttribute("aria-pressed", String(preference[key]));
+        },
+      },
+    });
+    box.append(toggle);
+  }
+  const volume = h("input", {
+    attrs: { type: "range", min: "0", max: "60", step: "1", "aria-label": "음량" },
+    on: {
+      input: () => {
+        preference.volume = Number(volume.value) / 100;
+        writeAudioPreference(preference);
+      },
+    },
+  });
+  volume.value = String(Math.round(preference.volume * 100));
+  box.append(h("label", { text: "음량" }, [volume]));
+  return box;
+}
+
+export function modelConnections(expanded = false) {
+  const box = h(
+    "div",
+    { className: expanded ? "setting-block onboarding-models" : "setting-block" },
+    expanded
+      ? []
+      : [
+          h("strong", { text: "AI 모델 연결" }),
+          h("p", { className: "muted", text: "이 기기의 설정이에요. 기존 이야기는 바뀌지 않아요." }),
+        ],
+  );
   const status = h("p", { className: "muted", text: "연결 목록을 불러오는 중…", attrs: { role: "status" } });
   box.append(status);
   void Promise.resolve()
@@ -258,7 +307,9 @@ function modelConnections() {
           ? [{ id: row.id, name: row.name, model: typeof row.model === "string" ? row.model : "" }]
           : [];
       });
-      status.textContent = "선택한 연결을 사용할 수 없으면 해당 생성이 중단돼요.";
+      status.textContent = expanded
+        ? "AI 모델 연결을 확인해 주세요."
+        : "선택한 연결을 사용할 수 없으면 해당 생성이 중단돼요.";
       for (const [purpose, label] of [
         ["story", "이야기 생성"],
         ["profile", "주민 설정 제안"],
@@ -296,6 +347,7 @@ function modelConnections() {
     .catch(() => {
       status.textContent = "연결 목록을 불러오지 못했어요. 엔진 연결을 확인하고 설정을 다시 열어 주세요.";
     });
+  if (expanded) return box;
   return h("details", { className: "setting-block" }, [h("summary", { text: "AI 모델 연결 설정" }), box]);
 }
 
@@ -339,6 +391,7 @@ export function renderSettingsScreen(state: AppState, controller: Controller) {
                 fontSizeRow(state, controller),
                 seasonRow(state, controller),
                 weatherEffectsControls(state, controller),
+                audioSettings(),
                 autoReadingRow(state, controller),
               ],
               { id: "fw-display" },
