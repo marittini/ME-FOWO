@@ -28,8 +28,11 @@ export async function listStories(documents: HostDocumentStore, worldId: string)
 
 /** Creates the scene; when another request created it first, returns that one (the first write wins). */
 export async function createStory(documents: HostDocumentStore, story: StoryDocument): Promise<StoryDocument> {
+  if (await documents.getById(PACKAGE_ID, documentId.worldDeletion(story.worldId))) {
+    throw new Error("World has been deleted");
+  }
   try {
-    await documents.create({
+    const created = await documents.create({
       id: documentId.story(story.worldId, story.storyId),
       packageId: PACKAGE_ID,
       kind: DOCUMENT_KIND.story,
@@ -39,6 +42,10 @@ export async function createStory(documents: HostDocumentStore, story: StoryDocu
       createdAt: story.generatedAt,
       updatedAt: story.generatedAt,
     });
+    if (await documents.getById(PACKAGE_ID, documentId.worldDeletion(story.worldId))) {
+      await documents.remove(PACKAGE_ID, created.id, created.revision);
+      throw new Error("World has been deleted");
+    }
     return story;
   } catch (error) {
     const existing = await findStory(documents, story.worldId, story.storyId).catch(() => null);

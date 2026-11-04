@@ -6,6 +6,8 @@ name 숲결 공방 is provisional. The design contract is *Development_Plan_FINA
 
 ## What 0.9.2 includes
 
+- Delete existing worlds from the world picker after confirming the named world. This removes that world's package records while preserving other worlds, original source cards, shared gallery images, and exported backups.
+
 - On first entry, review the AI connections and choose a starting resident before opening the welcome kit. Register characters and personas as workshop residents. Selecting a source automatically prepares a full adapted profile; confirm it or edit it before registering. Original cards stay unchanged.
 - Five production fields with all recipes enabled by default. Production settings starts with a four-item recipe page, one shared stock target for all facilities, a separate apply action and one automatic-production action; manual recipe switches, stock and priorities remain in the same tab under an explicit disclosure. Applying a goal configures its ingredient tree across facilities and returns to work status; counted queues have been removed. A minimum input batch above protected stock prevents low shared targets from blocking a recipe. Protection and automatic-sale retention keep needed materials available; locked facilities still need unlocking.
 - Assigning a pair generates its current relationship from both workshop profiles through the selected story connection, with retry on failure and no invented shared history. Existing progressed relationships remain intact. Saved worlds upgrade to schema 15; older packages cannot read the upgraded save.

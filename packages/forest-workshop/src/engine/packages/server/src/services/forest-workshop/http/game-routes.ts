@@ -2,6 +2,7 @@
 // routes because they act on a world that does not exist yet or on the whole world.
 //   GET  /worlds                    list worlds
 //   POST /worlds                    create a world { worldId, worldName, playerNickname }
+//   DELETE /worlds/:worldId         remove a world and its package-owned records; reply { deleted: true }
 //   GET  /state?worldId=            current world, its revision and the content the screens need
 //   POST /commands                  { worldId, commandId, expectedRevision, type, payload }
 //   GET  /backup?worldId=           download a backup JSON
@@ -146,6 +147,12 @@ export function registerGameRoutes(router: FastifyInstance, services: GameRouteS
       if (created.created) reply.status(201);
       return { ...created, content: CONTENT };
     }),
+  );
+
+  router.delete("/worlds/:worldId", async (request: FastifyRequest, reply: FastifyReply) =>
+    respond(reply, logger, "delete world", async () =>
+      worlds.delete((request.params as Record<string, unknown>).worldId),
+    ),
   );
 
   // Reading settles production to now (not presence: a read is not the player being here) and saves it first.

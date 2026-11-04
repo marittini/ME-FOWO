@@ -5,6 +5,7 @@ import { host } from "marinara:host";
 export interface HostApiClient {
   get<T>(path: string): Promise<T>;
   post<T>(path: string, body?: unknown): Promise<T>;
+  delete<T>(path: string): Promise<T>;
   upload<T>(path: string, formData: FormData): Promise<T>;
 }
 
