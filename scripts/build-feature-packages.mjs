@@ -108,14 +108,14 @@ const memoryNagOwnedSourcePaths = [
   "packages/client/src/features/memory-nag",
 ];
 // Forest Workshop is a package-owned game built from its own sources only; it bundles no vendored Engine module and
-// publishes from the owner's fork (marittini/ME-personal-A), not the official Pasta-Devs catalog.
+// publishes from the owner's fork (marittini/ME-FOWO), not the official Pasta-Devs catalog.
 const forestWorkshopSourceRoot = join(packagesDir, "forest-workshop/src/engine");
 const forestWorkshopOwnedSourcePaths = [
   "packages/server/src/services/forest-workshop",
   "packages/client/src/features/forest-workshop",
 ];
-const FORK_RAW_ROOT = "https://raw.githubusercontent.com/marittini/ME-personal-A/main";
-const FORK_BLOB_ROOT = "https://github.com/marittini/ME-personal-A/blob/main";
+const FORK_RAW_ROOT = "https://raw.githubusercontent.com/marittini/ME-FOWO/main";
+const FORK_BLOB_ROOT = "https://github.com/marittini/ME-FOWO/blob/main";
 /** Packages this fork owns: their artifact and documentation live in the fork, never at the official URL. */
 const FORK_OWNED_PACKAGE_IDS = new Set(["forest-workshop"]);
 const noodleSourceRoot = join(packagesDir, "noodle/src/engine");

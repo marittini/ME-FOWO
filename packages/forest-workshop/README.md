@@ -2,7 +2,7 @@
 
 Marinara-Engine에 설치해 실행하는 세로형 공방 게임입니다. 패키지 ID는 `forest-workshop`입니다. 캐릭터·페르소나를 공방 주민으로 맞이하고, 생산·납품·초대·탐험·주민 이야기를 즐길 수 있습니다.
 
-`ME-personal`은 제작자가 개인적으로 사용하는 엔진 포크입니다. 다른 사용자는 원본 [Pasta-Devs/Marinara-Engine](https://github.com/Pasta-Devs/Marinara-Engine)을 사용할 수 있습니다. 이 저장소 이름인 `ME-personal-A`는 패키지 배포 저장소의 이름이며, 개인 엔진 설치를 요구한다는 뜻이 아닙니다.
+원본 [Pasta-Devs/Marinara-Engine](https://github.com/Pasta-Devs/Marinara-Engine)에 아래 순서대로 설치합니다. 배포 저장소는 [ME-FOWO](https://github.com/marittini/ME-FOWO)입니다.
 
 ## 엔진 패치가 반드시 필요한가요?
 
@@ -27,7 +27,6 @@ Marinara-Engine에 설치해 실행하는 세로형 공방 게임입니다. 패�
 | 엔진 버전 | 매니페스트상 `>=2.5.1 <4.0.0` |
 | 호스트 API | 패키지가 요구하는 capability API `1.341`을 지원하는 호환 엔진 |
 | 원본 소스 확인 | [Marinara-Engine 2.5.1의 확인 커밋](https://github.com/Pasta-Devs/Marinara-Engine/commit/e5ead06ac2fe1cb3e039f8cab7e4d266b01dac44) |
-| 기존 패키지 빌드 기준 | 제작자의 ME-personal 2.5.1, 커밋 `7f341f9186db8e08f21d63cc47ec458deff250d5` |
 
 엔진 표시 버전이 같아도 소스 시점에 따라 호스트 API가 다를 수 있습니다. 버전 숫자만 맞추지 말고 설치 화면의 호환성 판정을 확인하세요. 매니페스트의 `builtAgainst`는 기존 빌드 기준 기록이며 원본 엔진의 지원 기능을 대신 검사해 주는 값이 아닙니다.
 
@@ -46,7 +45,7 @@ Marinara-Engine에 설치해 실행하는 세로형 공방 게임입니다. 패�
 원본의 기본 공식 카탈로그에는 숲결 공방이 없습니다. 엔진이 읽는 `.env` 파일에 아래 한 줄을 추가하거나, 이미 같은 항목이 있으면 그 값을 수정합니다.
 
 ```dotenv
-MARINARA_AGENT_CATALOG_URL=https://raw.githubusercontent.com/marittini/ME-personal-A/main/catalog/v2/catalog.json
+MARINARA_AGENT_CATALOG_URL=https://raw.githubusercontent.com/marittini/ME-FOWO/main/catalog/v2/catalog.json
 ```
 
 - **소스 설치:** `Marinara-Engine` 프로젝트 루트의 `.env`에 넣습니다.
@@ -62,7 +61,7 @@ MARINARA_AGENT_CATALOG_URL=https://raw.githubusercontent.com/marittini/ME-person
 기존 `docker-compose.yml`의 `services.marinara.environment` 목록에 **다음 항목을 추가**합니다. 기존 환경 변수와 데이터 볼륨 설정은 유지합니다.
 
 ```yaml
-- MARINARA_AGENT_CATALOG_URL=https://raw.githubusercontent.com/marittini/ME-personal-A/main/catalog/v2/catalog.json
+- MARINARA_AGENT_CATALOG_URL=https://raw.githubusercontent.com/marittini/ME-FOWO/main/catalog/v2/catalog.json
 ```
 
 해당 Compose 프로젝트 폴더에서 환경 변수를 반영해 컨테이너를 다시 만듭니다.
@@ -126,13 +125,13 @@ pnpm install --frozen-lockfile
 macOS·Linux·Git Bash:
 
 ```bash
-curl --fail --location --output ../forest-workshop-entry.patch https://raw.githubusercontent.com/marittini/ME-personal-A/main/patches/marinara-engine-2.5.1-forest-workshop-shortcut.patch
+curl --fail --location --output ../forest-workshop-entry.patch https://raw.githubusercontent.com/marittini/ME-FOWO/main/patches/marinara-engine-2.5.1-forest-workshop-shortcut.patch
 ```
 
 Windows PowerShell:
 
 ```powershell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/marittini/ME-personal-A/main/patches/marinara-engine-2.5.1-forest-workshop-shortcut.patch" -OutFile "../forest-workshop-entry.patch"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/marittini/ME-FOWO/main/patches/marinara-engine-2.5.1-forest-workshop-shortcut.patch" -OutFile "../forest-workshop-entry.patch"
 ```
 
 ### 적용 확인·구축·실행

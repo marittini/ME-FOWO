@@ -1,6 +1,6 @@
 # 숲결 공방 (Forest Workshop)
 
-[Marinara-Engine](https://github.com/Pasta-Devs/Marinara-Engine)에 설치하는 독립 공방 게임입니다. `ME-personal`은 제작자가 개인적으로 사용하는 엔진 포크이며, 다른 사용자가 설치해야 하는 필수 엔진이 아닙니다. 이 저장소 `ME-personal-A`는 숲결 공방의 패키지·카탈로그 배포 저장소입니다.
+[Marinara-Engine](https://github.com/Pasta-Devs/Marinara-Engine)에 설치하는 독립 공방 게임입니다. 이 저장소 `ME-FOWO`는 숲결 공방의 패키지·카탈로그를 배포합니다.
 
 **호환되는 원본 엔진에서는 패키지를 설치하면 홈의 숲결 공방 탭이 자동으로 생깁니다.** 최신 원본 소스에 범용 홈 진입점이 있으므로 모든 사용자가 엔진 내부에 전용 코드를 추가할 필요는 없습니다. 기본 공식 카탈로그에는 이 패키지가 없어 배포 카탈로그를 지정하는 과정이 필요합니다.
 
