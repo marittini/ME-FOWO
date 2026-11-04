@@ -1,0 +1,7 @@
+[
+  "Same fenced JSON: baseline 502 -> 0.8.1 success, one mailbox slot",
+  "Full mailbox: baseline 400 -> success; existing 199 letters, archive and activity summary preserved",
+  "Saved letter replay: no additional provider request",
+  "Truncation: actionable output_limit; original result remains",
+  "Actual provider request budget: 600 -> 2048"
+]

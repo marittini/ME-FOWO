@@ -1,11 +1,16 @@
 import type { AppState, Controller } from "../../app/controller";
 import { h } from "../../app/dom";
+import { UI_ART, NAV_ART, assetImage } from "../../app/assets";
 import { ICONS } from "../chrome/icons";
 export function ticketShop(state: AppState, controller: Controller) {
+  const tickets = state.world?.state === "ready" ? state.world.value.state.wallet.tickets : 0;
   return h("div", { className: "sheet-backdrop player-popup" }, [
     h(
       "section",
-      { className: "sheet card", attrs: { role: "dialog", "aria-modal": "true", "aria-labelledby": "fw-ticket-shop" } },
+      {
+        className: "sheet card ticket-store",
+        attrs: { role: "dialog", "aria-modal": "true", "aria-labelledby": "fw-ticket-shop" },
+      },
       [
         h("div", { className: "sheet-head" }, [
           h("h2", { text: "초대권 상점", attrs: { id: "fw-ticket-shop" } }),
@@ -16,7 +21,17 @@ export function ticketShop(state: AppState, controller: Controller) {
             on: { click: () => controller.closeSheet() },
           }),
         ]),
-        h("p", { className: "hint", text: "결제 없이 무료로 받으세요. 횟수·일일 제한 없이 언제든 채울 수 있어요." }),
+        h("div", { className: "ticket-store-balance", attrs: { "aria-live": "polite" } }, [
+          ICONS.ticket("icon"),
+          h("span", { text: "보유 초대권" }),
+          h("strong", { text: tickets.toLocaleString("ko-KR") }),
+        ]),
+        h("p", { className: "hint", text: "모든 묶음이 무료예요. 횟수 제한 없이 다시 받을 수 있어요." }),
+        h("p", {
+          className: "ticket-store-received",
+          text: state.ticketRefillMessage ?? "원하는 묶음을 골라 주세요.",
+          attrs: { role: "status" },
+        }),
         h(
           "div",
           { className: "ticket-shop-list" },
@@ -29,9 +44,14 @@ export function ticketShop(state: AppState, controller: Controller) {
           ).map(([pack, amount, title]) =>
             h("div", { className: "ticket-pack" }, [
               h("div", { className: "ticket-pack-copy" }, [
-                ICONS.ticket("icon"),
-                h("strong", { text: title }),
-                h("span", { text: `초대권 ${amount}장` }),
+                assetImage(pack === "chest" ? UI_ART.gift : NAV_ART.invite, {
+                  className: "ticket-pack-art",
+                  fallback: () => ICONS.ticket("icon"),
+                }),
+                h("span", { className: "ticket-pack-reward" }, [
+                  h("small", { text: title }),
+                  h("strong", { text: `${amount.toLocaleString("ko-KR")}장` }),
+                ]),
               ]),
               h("button", {
                 className: "button",

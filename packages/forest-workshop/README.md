@@ -4,12 +4,12 @@ A portrait cozy workshop game for ME-personal, in development. `forest-workshop`
 name 숲결 공방 is provisional. The design contract is *Development_Plan_FINAL_v1_6* (숲속 공방 독립 에이전트 최종
 개발계획서 v1.6); `docs/forest-workshop/` in this repository records what has been implemented and verified.
 
-## What 0.8.0 includes
+## What 0.8.1 includes
 
 - On first entry, review the AI connections and choose a starting resident before opening the welcome kit. Register characters and personas as workshop residents. Selecting a source automatically prepares a full adapted profile; confirm it or edit it before registering. Original cards stay unchanged.
-- Five production fields with all recipes enabled by default. Production settings contains recipes, stock targets and priorities; counted queues have been removed. Pick a goal recipe to configure its ingredient tree across facilities. Protection and automatic-sale retention keep needed materials available; locked facilities still need unlocking.
+- Five production fields with all recipes enabled by default. Production settings starts with a four-item recipe page, editable target quantity and one automatic-production action; manual recipe switches, stock and priorities remain in the same tab under an explicit disclosure. Applying a goal configures its ingredient tree across facilities and returns to work status; counted queues have been removed. Protection and automatic-sale retention keep needed materials available; locked facilities still need unlocking.
 - Pair-specific three-episode story plans, followed by scenes that use the canonical workshop profiles and shared memories. Already published scenes remain unchanged.
-- Survey and patrol activities prepare a resident letter automatically when their result reaches the game. Open the mailbox to read it; generation failures retain the activity record and offer a retry.
+- Survey and patrol activities prepare a resident letter automatically when their result reaches the game. Open the mailbox to read it; generation failures retain the activity record and show a local error, model-settings link and explicit retry. Whole fenced JSON responses are supported. Generation uses up to 2,048 output tokens within the connection limits; the duplicated system report slot is reused while its activity summary and archive selection are preserved. Opening a known failure does not automatically call the model again.
 - Click the bulletin board standing beside the Home workshop to open today's delivery requests; move its position with the ground editor. Residents stay in front of the board. Touching a resident shows a mood mark while movement continues.
 - Real weather from Open-Meteo for the selected preset city, refreshed every 15 minutes. Choose the city under Settings → 내 공방; Seoul is the default. Weather effects can be disabled separately.
 - Bundled, licensed Jua typography, readable profile paragraphs, responsive mobile spacing, and three quiet outdoor story backgrounds.

@@ -15,7 +15,7 @@
         },
         "id": "forest-workshop",
         "name": "Forest Workshop",
-        "version": "0.8.0",
+        "version": "0.8.1",
         "description": "A portrait forest workshop game with automatically prepared resident profiles and letters, per-pair three-episode story plans, five production fields with every recipe already listed, daily deliveries from a home bulletin board, real weather by city, Jua typography, and backups carrying pictures and stories. Resident artwork is uploaded by the player; original character and persona cards are read only. Install it, restart Marinara Engine when prompted, then open Home → 숲결 공방.",
         "engine": {
           "min": "2.5.1",
@@ -155,13 +155,13 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "d5504cdd1bad3c4517593974c92731fdef875d01c9443f2898f249687c63d4c0",
-            "bytes": 169971
+            "sha256": "f748295d73cefd78bb5af8b6b791bc1dfadd5169b643b255b42a699cc056a3d7",
+            "bytes": 172573
           },
           {
             "path": "client.js",
-            "sha256": "cc62c1131c839f2c87333f75565639b9d14094d6c497093aa362dbfbd5399745",
-            "bytes": 376398
+            "sha256": "b77cb148c9d202de05a747fb11b94dc3ea00d6953f54bb0acf1216e11fb38ff6",
+            "bytes": 383575
           },
           {
             "path": "assets/asset-manifest.json",
@@ -704,9 +704,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/marittini/ME-personal-A/main/artwork/agent-covers/forest-workshop.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/marittini/ME-personal-A/main/artifacts/forest-workshop-0.8.0.zip",
-        "sha256": "4ff3ce7cfb372a6e879e92df9ee8c13755a6cf9d0ab27188ebc03525928036ef",
-        "bytes": 6715162
+        "url": "https://raw.githubusercontent.com/marittini/ME-personal-A/main/artifacts/forest-workshop-0.8.1.zip",
+        "sha256": "129ea7cff0a4efaa8e026ff48fdee429ce4e0209d1fd741b30c4aae2eb8e376a",
+        "bytes": 6724941
       },
       "documentationUrl": "https://github.com/marittini/ME-personal-A/blob/main/packages/forest-workshop/README.md"
     }

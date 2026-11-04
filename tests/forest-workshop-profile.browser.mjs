@@ -129,6 +129,7 @@ try {
       window.renamed = { residentId, displayName };
     };
   });
+  await page.getByText("이름 바꾸기", { exact: true }).click();
   await page.getByLabel("공방 주민 이름", { exact: true }).fill("새 공방 이름");
   await page.getByRole("button", { name: "이름 저장", exact: true }).click();
   assert.deepEqual(await page.evaluate(() => window.renamed), { residentId: "r", displayName: "새 공방 이름" });

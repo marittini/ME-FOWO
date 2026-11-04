@@ -150,6 +150,15 @@ export function renderProfileSheet(world: WorldView, state: AppState, controller
     tabs.forEach((tab, index) => tab.setAttribute("aria-pressed", index === selected ? "true" : "false"));
   }
   selectPanel(profile?.panel === 1 ? 1 : 0);
+  const nameEditor = h(
+    "details",
+    {
+      className: "profile-name-edit",
+      attrs: (profile?.nameOpen ?? profile?.nameDraft !== undefined) ? { open: "" } : {},
+      on: { toggle: () => controller.rememberProfile({ nameOpen: nameEditor.open }) },
+    },
+    [h("summary", { text: "이름 바꾸기" }), rename],
+  );
   return h("div", { className: "sheet-backdrop player-popup" }, [
     h(
       "section",
@@ -187,7 +196,7 @@ export function renderProfileSheet(world: WorldView, state: AppState, controller
           ]),
         ]),
         h("div", { className: "profile-tabs", attrs: { "aria-label": "프로필 내용 선택" } }, tabs),
-        rename,
+        nameEditor,
         ...panels,
       ],
     ),

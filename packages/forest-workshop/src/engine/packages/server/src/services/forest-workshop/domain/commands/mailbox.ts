@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { FwError } from "../errors";
+import type { WorldState } from "../world-model";
 import { defineCommand } from "./command";
 export const readMail = defineCommand({
   type: "mail.read",
@@ -40,6 +41,13 @@ export const archiveMail = defineCommand({
   },
 });
 
+/** System result prose is duplicated in the immutable activity summary, so reuse that slot safely. */
+export function reusableActivityReport(state: WorldState, activity: { mailId: string; summary: string }) {
+  return state.mailbox.letters.find(
+    (letter) => letter.id === activity.mailId && letter.eventId === activity.mailId && letter.body === activity.summary,
+  );
+}
+
 // Only the generation service can submit model output; clients cannot create arbitrary mail.
 export const saveResidentLetter = defineCommand({
   type: "mail.saveResidentLetter",
@@ -58,7 +66,8 @@ export const saveResidentLetter = defineCommand({
     if (!activity) throw new FwError("invalid_payload", { message: "완료된 활동을 찾지 못했어요." });
     const id = `resident-${activity.id}`;
     if (state.mailbox.letters.some((letter) => letter.id === id)) return { state, result: { id } };
-    if (state.mailbox.letters.length + (state.activities.running ? 1 : 0) >= 200)
+    const report = reusableActivityReport(state, activity);
+    if (state.mailbox.letters.length - (report ? 1 : 0) + (state.activities.running ? 1 : 0) >= 200)
       throw new FwError("invalid_payload", {
         message: "우편 공간이 부족해요. 진행 중인 활동의 결과 공간을 확보해야 해요.",
       });
@@ -72,8 +81,14 @@ export const saveResidentLetter = defineCommand({
       body: payload.body,
       createdAt: context.now,
       readAt: null,
-      archived: false,
+      archived: report?.archived ?? false,
     };
-    return { state: { ...state, mailbox: { letters: [letter, ...state.mailbox.letters] } }, result: { id } };
+    return {
+      state: {
+        ...state,
+        mailbox: { letters: [letter, ...state.mailbox.letters.filter((item) => item.id !== report?.id)] },
+      },
+      result: { id },
+    };
   },
 });
