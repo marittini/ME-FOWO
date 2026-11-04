@@ -15,7 +15,7 @@
         },
         "id": "forest-workshop",
         "name": "Forest Workshop",
-        "version": "0.9.3",
+        "version": "0.9.4",
         "description": "A portrait forest workshop game with automatically prepared resident profiles and letters, per-pair three-episode story plans, five production fields with every recipe already listed, daily deliveries from a home bulletin board, real weather by city, Jua typography, and backups carrying pictures and stories. Resident artwork is uploaded by the player; original character and persona cards are read only. Install it, restart Marinara Engine when prompted, then open Home → 숲결 공방.",
         "engine": {
           "min": "2.5.1",
@@ -155,8 +155,8 @@
           },
           {
             "path": "server.mjs",
-            "sha256": "66fce44083a080118ecfa7923188e070fb71d758b1da384040c909f697a45f96",
-            "bytes": 183603
+            "sha256": "d366262639260109efbbfd62d31ac1d2cdd393b7d56dac70953dd231e152be36",
+            "bytes": 184117
           },
           {
             "path": "client.js",
@@ -704,9 +704,9 @@
       "category": "misc",
       "iconUrl": "https://raw.githubusercontent.com/marittini/ME-personal-A/main/artwork/agent-covers/forest-workshop.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/marittini/ME-personal-A/main/artifacts/forest-workshop-0.9.3.zip",
-        "sha256": "4223de29b0413111e50102c2fc2455d350a92f6528b9e31b5e1f8091209aea08",
-        "bytes": 6750668
+        "url": "https://raw.githubusercontent.com/marittini/ME-personal-A/main/artifacts/forest-workshop-0.9.4.zip",
+        "sha256": "3c3827ff69b5793e76ff357f0ad7b8ff518bd0c02bd79e88cd3e20e8401f51e6",
+        "bytes": 6751182
       },
       "documentationUrl": "https://github.com/marittini/ME-personal-A/blob/main/packages/forest-workshop/README.md"
     }

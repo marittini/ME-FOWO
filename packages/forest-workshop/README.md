@@ -4,7 +4,7 @@ A portrait cozy workshop game for ME-personal, in development. `forest-workshop`
 name 숲결 공방 is provisional. The design contract is *Development_Plan_FINAL_v1_6* (숲속 공방 독립 에이전트 최종
 개발계획서 v1.6); `docs/forest-workshop/` in this repository records what has been implemented and verified.
 
-## What 0.9.3 includes
+## What 0.9.4 includes
 
 - Delete existing worlds from the world picker after confirming the named world. This removes that world's package records while preserving other worlds, original source cards, shared gallery images, and exported backups.
 

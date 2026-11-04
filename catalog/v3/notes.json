@@ -4,6 +4,12 @@
     "forest-workshop": {
       "versions": [
         {
+          "version": "0.9.4",
+          "date": "2026-11-04",
+          "notes": "- 새 주민 프로필 생성 지침을 종족, 성격·특징·말투, 관계·과거 중심의 1,500자 이내 요약으로 조정합니다. 기존 프로필과 저장 한도는 유지합니다.",
+          "highlight": false
+        },
+        {
           "version": "0.9.3",
           "date": "2026-11-04",
           "notes": "- 홈 야간 표시에서 계절 배경 CSS가 밤 배경색을 투명하게 덮어쓰던 문제를 수정합니다. 기존 지역·일몰 판정은 유지하며 실제로 보이는 배경에 밤의 어두운 색상을 적용합니다.",
@@ -115,12 +121,6 @@
           "version": "0.6.11",
           "date": "2026-10-29",
           "notes": "- Configure world and pair writing preferences for newly generated stories. Existing stories and memory visibility remain unchanged. Generation records store applied guideline revisions. Schema 9 worlds cannot be opened by older packages.",
-          "highlight": false
-        },
-        {
-          "version": "0.6.10",
-          "date": "2026-10-29",
-          "notes": "- Manage memories and view a pair’s shared memories. Corrections preserve the original and its knowledge scope; memories can be disabled and restored. New memory writes refuse at capacity instead of silently discarding records. Previously discarded memories cannot be recovered.",
           "highlight": false
         }
       ]
