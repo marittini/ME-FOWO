@@ -4,6 +4,7 @@
 // remaining minutes until the player returns.
 import { z } from "zod";
 import {
+  DEFAULT_SHARED_TARGET_STOCK,
   FACILITY_MAX_LEVEL,
   MAX_RULES_PER_FACILITY,
   PROTECTED_STOCK_RANGE,
@@ -143,6 +144,7 @@ export type AutoSell = z.infer<typeof autoSellSchema>;
 
 export const productionSchema = z
   .object({
+    sharedTargetStock: z.number().int().min(1).max(TARGET_STOCK_RANGE.max).default(DEFAULT_SHARED_TARGET_STOCK),
     simMs: nonNegativeInt,
     facilities: z.record(z.string(), facilityStateSchema),
     protectedStock: z.record(

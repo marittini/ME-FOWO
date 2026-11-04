@@ -269,11 +269,15 @@ function completedList(state: AppState, pair: PairStoryView, controller: Control
   return card("읽은 이야기", [
     readEpisodes.length && page === 0
       ? h("div", { className: "completed-arc" }, [
-          h("strong", { text: pair.arc.title }),
-          ...readEpisodes.map(({ index, storyId }) =>
-            button(`${index + 1}편 다시 읽기`, () => controller.openStory(pair.pairId, index, storyId), {
-              variant: "secondary",
-            }),
+          h("strong", { className: "completed-arc-title", text: pair.arc.title }),
+          h(
+            "div",
+            { className: "row-actions completed-arc-actions" },
+            readEpisodes.map(({ index, storyId }) =>
+              button(`${index + 1}편 다시 읽기`, () => controller.openStory(pair.pairId, index, storyId), {
+                variant: "secondary",
+              }),
+            ),
           ),
         ])
       : null,
@@ -286,10 +290,10 @@ function completedList(state: AppState, pair: PairStoryView, controller: Control
         .slice(page * 2, page * 2 + 2)
         .map((arc) =>
           h("li", { className: "completed-arc" }, [
-            h("strong", { text: arc.title }),
+            h("strong", { className: "completed-arc-title", text: arc.title }),
             h(
               "span",
-              { className: "row-actions" },
+              { className: "row-actions completed-arc-actions" },
               arc.storyIds.map((storyId, index) =>
                 h("button", {
                   className: "outline-button small",

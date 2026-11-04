@@ -177,8 +177,8 @@ function detail(resident: Resident, world: WorldView, content: GameContent | nul
       ),
       actionButton(ICONS.heart, "관계", () => controller.openRelations(resident.residentId)),
     ]),
-    h("details", { className: "resident-abilities" }, [
-      h("summary", { text: "특기와 공방에서 하는 일" }),
+    h("section", { className: "resident-abilities", attrs: { "aria-labelledby": "resident-abilities-title" } }, [
+      h("h3", { attrs: { id: "resident-abilities-title" }, text: "특기와 공방에서 하는 일" }),
       passiveBlock(resident, world, content),
     ]),
     resident.recruited
@@ -264,7 +264,7 @@ export function renderResidentsScreen(state: AppState, controller: Controller) {
                 },
                 [
                   h("div", { className: "sheet-head" }, [
-                    h("h2", { text: selected.displayName }),
+                    h("h2", { className: "resident-dialog-title", text: selected.displayName }),
                     h("button", {
                       className: "popup-close",
                       text: "×",

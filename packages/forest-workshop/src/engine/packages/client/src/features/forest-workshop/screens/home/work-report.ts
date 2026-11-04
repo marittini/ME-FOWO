@@ -131,9 +131,9 @@ export function absenceStrip(world: WorldView, content: GameContent | null, cont
     [
       ICONS.clock(),
       h("span", {}, [
-        "미접속 누적 ",
+        "미접속 시간 ",
         h("strong", { text: `${last ? formatHours(last.creditedMs) : "0"}시간` }),
-        ` / 최대 ${formatHours(limit)}시간`,
+        h("small", { className: "offline-limit", text: `최대 ${formatHours(limit)}시간` }),
       ]),
       ICONS.info("icon muted-icon"),
     ],

@@ -9,6 +9,30 @@ export function clampFontSize(value: number): number {
   return Math.min(FONT_SIZE.max, Math.max(FONT_SIZE.min, Math.round(value)));
 }
 
+export const HOME_DISPLAY_COUNT = { min: 1, max: 6, default: 2 } as const;
+const HOME_DISPLAY_COUNT_KEY = "forest-workshop:home-display-count";
+export function normalizeHomeDisplayCount(value: number): number {
+  if (!Number.isFinite(value) || !Number.isInteger(value)) return HOME_DISPLAY_COUNT.default;
+  return Math.min(HOME_DISPLAY_COUNT.max, Math.max(HOME_DISPLAY_COUNT.min, value));
+}
+export function readHomeDisplayCount(): number {
+  try {
+    const stored = localStorage.getItem(HOME_DISPLAY_COUNT_KEY);
+    if (stored === null || !/^\d+$/.test(stored)) return HOME_DISPLAY_COUNT.default;
+    const value = Number(stored);
+    return value >= HOME_DISPLAY_COUNT.min && value <= HOME_DISPLAY_COUNT.max ? value : HOME_DISPLAY_COUNT.default;
+  } catch {
+    return HOME_DISPLAY_COUNT.default;
+  }
+}
+export function writeHomeDisplayCount(value: number) {
+  try {
+    localStorage.setItem(HOME_DISPLAY_COUNT_KEY, String(normalizeHomeDisplayCount(value)));
+  } catch {
+    // Blocked storage: the choice still applies for this session.
+  }
+}
+
 export function readFontSize(): number {
   try {
     const stored = localStorage.getItem(FONT_SIZE_KEY);

@@ -268,6 +268,7 @@ export interface AutoSell {
 }
 
 export interface ProductionState {
+  sharedTargetStock: number;
   simMs: number;
   facilities: Record<string, FacilityState>;
   protectedStock: Record<string, number>;
@@ -459,6 +460,7 @@ export interface GameContent {
     choiceTrust: number;
   };
   invite: {
+    goldPerTicket: number;
     ticketsPerDraw: number;
     multiDraw: number;
     baseWeight: number;

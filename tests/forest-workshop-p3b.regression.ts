@@ -188,7 +188,11 @@ async function main() {
       itemId: "berry-jam",
       setting: { enabled: true, keep: 0, dailyMax: 99 },
     }).state;
-    assert.equal(t.inventory["berry-jam"], 5, "kept at the jam rule's target (5)");
+    assert.equal(
+      t.inventory["berry-jam"],
+      withTarget.production.sharedTargetStock,
+      "kept at the workshop shared target",
+    );
     // Equivalence: one settlement across midnight = many.
     const start = cmd(base, "economy.setAutoSell", {
       itemId: "berry-jam",
@@ -535,7 +539,10 @@ async function main() {
     assert.equal(migrated.production.facilities["process-bench"]!.job?.source, "rule");
     assert.deepEqual(
       migrated.production.facilities["process-bench"]!.rules,
-      completeRules(WORLD, "process-bench", v5.production.facilities["process-bench"]!.rules),
+      completeRules(WORLD, "process-bench", v5.production.facilities["process-bench"]!.rules).map((rule) => ({
+        ...rule,
+        targetStock: migrated.production.sharedTargetStock,
+      })),
     );
     assert.equal(migrated.production.facilities["craft-bench"]!.unlocked, false);
     const migratedResident = migrated.residents[uuid(1)]!;

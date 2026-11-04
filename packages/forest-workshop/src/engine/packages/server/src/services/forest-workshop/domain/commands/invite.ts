@@ -84,3 +84,21 @@ export const refillTickets = defineCommand({
     };
   },
 });
+
+export const buyGold = defineCommand({
+  type: "invite.buyGold",
+  payloadSchema: z.object({ amount: z.number().int().min(1).max(10_000) }).strict(),
+  requiresFreshView: false,
+  apply(state, payload) {
+    const cost = payload.amount * INVITE_RULES.goldPerTicket;
+    if (state.wallet.tickets < payload.amount) {
+      throw new FwError("not_enough_tickets", { details: { missing: payload.amount - state.wallet.tickets } });
+    }
+    const gold = state.wallet.gold + cost;
+    if (!Number.isSafeInteger(gold)) throw new FwError("invalid_request");
+    return {
+      state: { ...state, wallet: { ...state.wallet, tickets: state.wallet.tickets - payload.amount, gold } },
+      result: { ticketsSpent: payload.amount, goldReceived: cost },
+    };
+  },
+});

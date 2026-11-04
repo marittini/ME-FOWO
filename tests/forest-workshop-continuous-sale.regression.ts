@@ -10,20 +10,23 @@ const original = initialProduction("continuous-regression");
 original.autoSell["berry-jam"] = { enabled: true, keep: 5, dailyMax: 8, continuous: true };
 original.protectedStock["wild-berry"] = 10;
 const input = { ...STARTER_KIT.items };
-const once = advanceProduction(original, input, 24 * hour, { realStart: start });
+const once = advanceProduction(original, input, 24 * hour - 1, { realStart: start });
 assert.equal(once.summary.sold["berry-jam"], 8, "the daily allowance can be used without manual selling");
 assert.ok((once.inventory["berry-jam"] ?? 0) >= 5, "the player's retained stock remains");
 assert.ok((once.inventory["wild-berry"] ?? 0) >= 10, "protected materials stay untouched");
 const first = advanceProduction(original, input, 8 * hour, { realStart: start });
 const second = advanceProduction(first.production, first.inventory, 8 * hour, { realStart: start + 8 * hour });
-const third = advanceProduction(second.production, second.inventory, 8 * hour, { realStart: start + 16 * hour });
+const third = advanceProduction(second.production, second.inventory, 8 * hour - 1, { realStart: start + 16 * hour });
 assert.deepEqual(third.inventory, once.inventory, "settlement frequency cannot change inventory");
 assert.equal(first.summary.gold + second.summary.gold + third.summary.gold, once.summary.gold);
 const twoDays = advanceProduction(original, input, 47 * hour, { realStart: start });
 assert.equal(twoDays.summary.sold["berry-jam"], 16, "the allowance resets at UTC midnight");
 const noClock = advanceProduction(original, input, 24 * hour);
 assert.equal(noClock.summary.gold, 0, "missing real time never grants an unchecked sale allowance");
-assert.ok((noClock.inventory["berry-jam"] ?? 0) <= 5, "missing real time does not produce unlimited sale stock");
+assert.ok(
+  (noClock.inventory["berry-jam"] ?? 0) <= original.sharedTargetStock,
+  "missing real time does not produce unlimited sale stock",
+);
 const legacy = initialProduction("legacy-regression");
 legacy.autoSell["berry-jam"] = { enabled: true, keep: 0, dailyMax: 8 };
 const legacyResult = advanceProduction(legacy, input, 24 * hour, { realStart: start });

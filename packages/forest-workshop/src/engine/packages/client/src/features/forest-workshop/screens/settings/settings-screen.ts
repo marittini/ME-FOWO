@@ -8,7 +8,7 @@ import type { StoredSeasonChoice } from "../../app/preferences";
 import { SEASON_LABELS } from "../../app/season";
 import { currentSeason, type AppState, type Controller } from "../../app/controller";
 import { button, h, statusLine } from "../../app/dom";
-import { normalizeWeatherEffects, WEATHER_LABELS } from "../../app/preferences";
+import { normalizeWeatherEffects, WEATHER_LABELS, HOME_DISPLAY_COUNT } from "../../app/preferences";
 import { MANAGEMENT_ART, assetImage } from "../../app/assets";
 import { FONT_SIZE } from "../../app/preferences";
 import type { WorldView } from "../../app/types";
@@ -122,6 +122,31 @@ function fontSizeRow(state: AppState, controller: Controller) {
       h("span", { className: "slider-value", text: `${state.fontSize}px` }),
     ]),
     h("p", { className: "font-preview", text: "이렇게 표시돼요." }),
+  ]);
+}
+
+function homeDisplayCountRow(state: AppState, controller: Controller) {
+  const picker = h(
+    "select",
+    {
+      className: "input",
+      attrs: { id: "fw-home-display-count", "aria-label": "홈에 표시할 주민 수" },
+      on: { change: () => controller.setHomeDisplayCount(Number(picker.value)) },
+    },
+    Array.from({ length: HOME_DISPLAY_COUNT.max }, (_, index) => {
+      const value = index + 1;
+      return h("option", {
+        text: `${value}명`,
+        attrs: { value: String(value), ...(value === (state.homeDisplayCount ?? 2) ? { selected: "" } : {}) },
+      });
+    }),
+  );
+  return h("div", { className: "setting-block" }, [
+    h("div", { className: "setting-row" }, [
+      ICONS.leaf("icon row-leaf"),
+      h("label", { className: "setting-label", text: "홈에 표시할 주민 수", attrs: { for: "fw-home-display-count" } }),
+      picker,
+    ]),
   ]);
 }
 
@@ -321,6 +346,7 @@ export function renderSettingsScreen(state: AppState, controller: Controller) {
               "표시",
               [
                 fontSizeRow(state, controller),
+                homeDisplayCountRow(state, controller),
                 seasonRow(state, controller),
                 weatherEffectsControls(state, controller),
                 audioSettings(),

@@ -75,52 +75,47 @@ export function renderTopBar(state: AppState, controller: Controller, bar: TopBa
     const weatherLabel = live
       ? `${live.temperature}° · ${WEATHER_LABELS[live.kind]}${state.weatherError ? " (이전 정보)" : ""}`
       : "날씨 확인 중";
+    const climate = h("div", { className: "season-weather" }, [
+      h("span", {
+        className: "season-badge",
+        text: SEASON_LABELS[currentSeason(state)],
+        attrs: { "aria-label": `현재 계절 ${SEASON_LABELS[currentSeason(state)]}` },
+      }),
+      h(
+        "button",
+        {
+          className: "chip-button weather",
+          attrs: { type: "button", "aria-label": `${weatherLabel} — 도시 설정` },
+          on: {
+            click: () => {
+              controller.setSettingsSection("workshop");
+              controller.navigate("settings");
+            },
+          },
+        },
+        [
+          assetImage(
+            WEATHER_ART[live?.kind === "clear" ? "sun" : !live || live.kind === "cloudy" ? "cloud" : live.kind],
+            { className: "icon", fallback: () => ICONS.weather() },
+          ),
+          h("span", { text: weatherLabel }),
+        ],
+      ),
+    ]);
     return h("header", { className: "top top-home" }, [
       h("div", { className: "top-row" }, [
         h("h1", { className: "sign sign-home", attrs: { id: "fw-screen-title" } }, [
           h("span", { className: "sign-title", text: "숲결 공방" }),
         ]),
-        resources(state, controller),
+        climate,
       ]),
       h("div", { className: "top-row second" }, [
-        h("div", { className: "season-weather" }, [
-          h("span", {
-            className: "season-badge",
-            text: SEASON_LABELS[currentSeason(state)],
-            attrs: { "aria-label": `현재 계절 ${SEASON_LABELS[currentSeason(state)]}` },
-          }),
-          h(
-            "button",
-            {
-              className: "chip-button weather",
-              attrs: {
-                type: "button",
-                "aria-label": `${weatherLabel} — 도시 설정`,
-              },
-              on: {
-                click: () => {
-                  controller.setSettingsSection("workshop");
-                  controller.navigate("settings");
-                },
-              },
-            },
-            [
-              assetImage(
-                WEATHER_ART[live?.kind === "clear" ? "sun" : !live || live.kind === "cloudy" ? "cloud" : live.kind],
-                { className: "icon", fallback: () => ICONS.weather() },
-              ),
-              h("span", { text: weatherLabel }),
-            ],
-          ),
-        ]),
+        resources(state, controller),
         h(
           "button",
           {
             className: "icon-button mail",
-            attrs: {
-              type: "button",
-              "aria-label": hasNewMail ? "우편함 · 새 편지 있음" : "우편함",
-            },
+            attrs: { type: "button", "aria-label": hasNewMail ? "우편함 · 새 편지 있음" : "우편함" },
             on: { click: () => controller.openMailbox() },
           },
           [

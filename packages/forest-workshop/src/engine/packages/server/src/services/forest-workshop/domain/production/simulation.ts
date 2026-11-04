@@ -69,22 +69,39 @@ export function targetItem(recipeId: string): string | null {
   return recipe ? (Object.keys(recipe.outputs)[0] ?? null) : null;
 }
 
+/** Keep at least one enabled consumer's batch above protected stock, even when the shared goal is one. */
+export function materialBatchFloor(production: ProductionState, itemId: string): number {
+  let needed = 0;
+  for (const facility of Object.values(production.facilities)) {
+    if (!facility.unlocked) continue;
+    for (const rule of facility.rules)
+      if (rule.enabled) needed = Math.max(needed, recipeDefinition(rule.recipeId)?.inputs[itemId] ?? 0);
+  }
+  return needed ? needed + protectedAmount(production, itemId) : 0;
+}
+
 /**
  * The least 자동 판매 leaves of an item (plan §7.2-C): the player's 판매 후 남길 수량, the highest active production
  * target for it, and protected stock — whichever is largest.
  */
 export function autoSellFloor(production: ProductionState, itemId: string): number {
   const setting = production.autoSell[itemId];
-  if (setting?.enabled && setting.continuous) return Math.max(setting.keep, protectedAmount(production, itemId));
+  if (setting?.enabled && setting.continuous)
+    return Math.max(setting.keep, protectedAmount(production, itemId), materialBatchFloor(production, itemId));
   let highestTarget = 0;
   for (const facility of Object.values(production.facilities)) {
     if (!facility.unlocked || facility.mode !== "auto") continue;
     for (const rule of facility.rules) {
       if (rule.enabled && targetItem(rule.recipeId) === itemId)
-        highestTarget = Math.max(highestTarget, rule.targetStock);
+        highestTarget = Math.max(highestTarget, production.sharedTargetStock);
     }
   }
-  return Math.max(setting?.keep ?? 0, highestTarget, protectedAmount(production, itemId));
+  return Math.max(
+    setting?.keep ?? 0,
+    highestTarget,
+    protectedAmount(production, itemId),
+    materialBatchFloor(production, itemId),
+  );
 }
 
 function shortageOf(
@@ -153,7 +170,11 @@ function tryRules(
       const remaining =
         setting?.enabled && setting.continuous && day !== null ? Math.max(0, setting.dailyMax - sold) : 0;
       const saleTarget = remaining > 0 ? autoSellFloor(production, item) + remaining : 0;
-      if (stockWithPending(inventory, production, item) >= Math.max(rule.targetStock, saleTarget)) continue;
+      if (
+        stockWithPending(inventory, production, item) >=
+        Math.max(production.sharedTargetStock, materialBatchFloor(production, item), saleTarget)
+      )
+        continue;
     }
     const run = crewRecipe(recipe, crew);
     const missing = shortageOf(run.inputs, production, inventory);

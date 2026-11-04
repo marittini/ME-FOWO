@@ -6,10 +6,18 @@ import { settleWorld } from "../production/settle";
 import { worldStateSchema, type WorldState } from "../world-model";
 import type { CommandContext, CommandDefinition, CommandOutcome } from "./command";
 import { deliverOrder, sellItems, setAutoSell } from "./economy";
-import { drawInvites, exchangeTokens, setWish, refillTickets } from "./invite";
+import { drawInvites, exchangeTokens, setWish, refillTickets, buyGold } from "./invite";
 import { setProductionTree } from "./production-tree";
 import { claimStarterKit } from "./onboarding";
-import { assignResident, markReportsRead, setProtected, setRules, unlockFacility, upgradeFacility } from "./production";
+import {
+  setSharedTarget,
+  assignResident,
+  markReportsRead,
+  setProtected,
+  setRules,
+  unlockFacility,
+  upgradeFacility,
+} from "./production";
 import { addPair, archivePair, restorePair } from "./pairs";
 import {
   clearResidentImageHistory,
@@ -52,6 +60,7 @@ const DEFINITIONS = [
   archivePair,
   restorePair,
   setRules,
+  setSharedTarget,
   setProductionTree,
   setProtected,
   upgradeFacility,
@@ -62,6 +71,7 @@ const DEFINITIONS = [
   setAutoSell,
   deliverOrder,
   refillTickets,
+  buyGold,
   drawInvites,
   setWish,
   exchangeTokens,

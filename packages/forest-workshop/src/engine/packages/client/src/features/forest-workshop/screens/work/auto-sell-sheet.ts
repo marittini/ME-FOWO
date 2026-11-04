@@ -10,15 +10,25 @@ import { itemTile } from "./production-view";
 /** The floor the server uses (domain/production/simulation.ts autoSellFloor). */
 function floorOf(world: WorldView, content: GameContent, itemId: string, keep: number, continuous: boolean) {
   let target = 0;
+  let batch = 0;
+  for (const facility of Object.values(world.state.production.facilities))
+    if (facility.unlocked)
+      for (const rule of facility.rules)
+        if (rule.enabled)
+          batch = Math.max(batch, content.recipes.find((recipe) => recipe.id === rule.recipeId)?.inputs[itemId] ?? 0);
+  const materialFloor = batch ? batch + (world.state.production.protectedStock[itemId] ?? 0) : 0;
   for (const facility of Object.values(world.state.production.facilities)) {
     if (!facility.unlocked || facility.mode !== "auto") continue;
     for (const rule of facility.rules) {
       const recipe = content.recipes.find((candidate) => candidate.id === rule.recipeId);
       if (rule.enabled && recipe && Object.keys(recipe.outputs)[0] === itemId)
-        target = Math.max(target, rule.targetStock);
+        target = Math.max(target, world.state.production.sharedTargetStock ?? 30);
     }
   }
-  return { floor: Math.max(keep, continuous ? 0 : target, world.state.production.protectedStock[itemId] ?? 0), target };
+  return {
+    floor: Math.max(materialFloor, keep, continuous ? 0 : target, world.state.production.protectedStock[itemId] ?? 0),
+    target,
+  };
 }
 
 export function renderAutoSellSheet(state: AppState, world: WorldView, content: GameContent, controller: Controller) {

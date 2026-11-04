@@ -303,7 +303,7 @@ async function main() {
   {
     const env = await setup();
     const raw = structuredClone((await loadWorld(env.host.documents, W)).state);
-    raw.schemaVersion = 11 as 13;
+    raw.schemaVersion = 11 as 14;
     raw.production.facilities["gather-yard"]!.rules = [
       { ...raw.production.facilities["gather-yard"]!.rules[0]!, enabled: false, targetStock: 37 },
     ];
