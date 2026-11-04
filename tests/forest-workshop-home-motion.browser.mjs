@@ -165,8 +165,10 @@ try {
   assert.equal(await page.evaluate(() => window.selected), undefined);
   assert.equal(await page.locator(".resident-reaction").isVisible(), true);
   const body = resident.locator(".figure-body");
-  assert.equal(await body.evaluate((node) => getComputedStyle(node).animationName), "fw-greeting");
   const greeting = await body.evaluate((node) => {
+    // Retap and measure in one browser task; a busy test host must not consume the 600ms response window.
+    node.closest("button").click();
+    const name = getComputedStyle(node).animationName;
     const animation = node.getAnimations().find((item) => item.animationName === "fw-greeting");
     const delay = animation.effect.getTiming().delay;
     animation.pause();
@@ -175,11 +177,11 @@ try {
     animation.currentTime = 200;
     const middle = getComputedStyle(node).transform;
     animation.play();
-    return { delay, changesBody: start !== middle };
+    return { name, delay, changesBody: start !== middle };
   });
   assert.deepEqual(
     greeting,
-    { delay: 0, changesBody: true },
+    { name: "fw-greeting", delay: 0, changesBody: true },
     "greeting visibly morphs rather than inheriting the walking negative delay",
   );
   await page.waitForTimeout(650);

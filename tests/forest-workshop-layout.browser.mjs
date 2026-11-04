@@ -754,6 +754,37 @@ try {
             JSON.stringify(proof),
           );
         }
+        if (["home", "home-weather-day", "home-weather-night"].includes(test.name)) {
+          const canvas = await page.locator("fw-audit-host").evaluate((host) => {
+            const root = host.shadowRoot,
+              column = root.querySelector(".column"),
+              image = root.querySelector("img.scene-art"),
+              header = root.querySelector(".top-home"),
+              footer = root.querySelector(".page");
+            const box = column.getBoundingClientRect(),
+              style = getComputedStyle(column);
+            return {
+              oneImage: style.backgroundImage.includes(image.getAttribute("src")),
+              duplicateHidden: getComputedStyle(image).visibility === "hidden",
+              imageRetained: image.isConnected,
+              behindWholeHome:
+                box.top <= header.getBoundingClientRect().top + 1 &&
+                box.bottom >= footer.getBoundingClientRect().bottom - 1,
+              centeredWidth: Math.abs(box.width - Math.min(host.clientWidth, 520)) < 2,
+              night: style.backgroundBlendMode === "multiply",
+            };
+          });
+          assert.ok(
+            canvas.oneImage &&
+              canvas.duplicateHidden &&
+              canvas.imageRetained &&
+              canvas.behindWholeHome &&
+              canvas.centeredWidth,
+            JSON.stringify(canvas),
+          );
+          if (test.phase)
+            assert.equal(canvas.night, test.phase === "night", "night treatment follows the continuous home backdrop");
+        }
         const result = await page.locator("fw-audit-host").evaluate((host) => {
           const root = host.shadowRoot,
             shell = root.querySelector(".shell"),

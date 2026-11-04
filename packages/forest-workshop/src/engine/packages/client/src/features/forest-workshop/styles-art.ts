@@ -12,9 +12,18 @@ const seasonBases = SEASONS.map(
     `.season-${season}.art-base:is(.backdrop-forest, .backdrop-wood) { background: var(--fw-page) ${cssAssetUrl(BACKGROUND_ART[season].base)} center top / cover no-repeat; }`,
 ).join("\n");
 
+// Home uses one painted canvas behind the HUD, stage and footer; never join two different pictures at the stage edges.
+const homeScenes = SEASONS.map(
+  (season) =>
+    `.season-${season}.home-layout .column:has(> .scene img.scene-art) { background: ${cssAssetUrl(BACKGROUND_ART[season].scene)} center 20% / cover no-repeat; }`,
+).join("\n");
+
 export const ART_STYLES = `
 /* Keep the season picture on the viewport, covering tall and wide hosts independently of content length. */
 ${seasonBases}
+${homeScenes}
+.home-layout .column:has(> .scene img.scene-art) > .scene img.scene-art { visibility: hidden; }
+.home-layout .column:has(> .scene-night img.scene-art) { background-color: #999; background-blend-mode: multiply; }
 .art-base:is(.backdrop-forest, .backdrop-wood) .scroll { background: transparent; }
 
 /* Item, facility and emotion pictures: drawn straight on the panel like the mockups, no tile frame around them. */
