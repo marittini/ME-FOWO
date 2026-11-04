@@ -100,7 +100,7 @@ try {
           window.view = {
             ...window.view,
             revision: 2,
-            state: { ...window.view.state, mailbox: { letters: [letter, result] } },
+            state: { ...window.view.state, mailbox: { letters: [letter] } },
           };
           return { state: window.view.state, revision: 2, result: { id: letter.id } };
         }
@@ -178,6 +178,115 @@ try {
     await page.evaluate(() => [...document.fonts].some((face) => face.family === "Jua" && face.status === "loaded")),
     true,
     "bundled licensed Jua font actually loads",
+  );
+  // A failed automatic letter stays local, is not auto-charged again on opening, and can be retried.
+  await page.evaluate(() => {
+    window.failedLetterCalls = 0;
+    const previous = window.mockApi.post;
+    window.mockApi.post = async (path, body) => {
+      if (path.endsWith("/mail/generate") && body.activityId === "activity-two") {
+        window.failedLetterCalls++;
+        throw { payload: { error: "generation_failed", message: "출력 길이를 늘려 주세요." } };
+      }
+      return previous(path, body);
+    };
+    const activity = { id: "activity-two", residentId: "resident", mailId: "result-two", summary: "기록" };
+    window.view.state.activities.completed.unshift(activity);
+    window.view.state.mailbox.letters.unshift({
+      id: "result-two",
+      eventId: "result-two",
+      title: "기록",
+      body: "기록",
+      sender: "다람",
+      createdAt: "2026-11-04T00:00:00Z",
+      readAt: null,
+      archived: false,
+    });
+    window.controller.store.set({
+      world: { state: "ready", value: window.view },
+      notice: { kind: "info", text: "기존 안내" },
+    });
+    window.failedRequest = window.controller.generateResidentLetter("activity-two");
+  });
+  await page.evaluate(() => window.failedRequest);
+  assert.equal(
+    await page.evaluate(() => window.controller.store.get().notice.text),
+    "기존 안내",
+    "background letter errors do not replace unrelated notices",
+  );
+  assert.equal(
+    await page.evaluate(() => window.controller.store.get().letterErrors["world-one:activity-two"].message),
+    "출력 길이를 늘려 주세요.",
+  );
+  await page.evaluate(() => window.controller.openActivityLetter("result-two"));
+  assert.equal(
+    await page.evaluate(() => window.failedLetterCalls),
+    1,
+    "opening a known failure does not repeat model work",
+  );
+  await page.evaluate(() => window.controller.generateResidentLetter("activity-two"));
+  assert.equal(await page.evaluate(() => window.failedLetterCalls), 2, "explicit retry still works");
+  await page.evaluate(() => window.controller.openActivityLetter("result-one"));
+  assert.equal(
+    await page.evaluate(() => window.controller.store.get().sheet.id),
+    "resident-activity-one",
+    "old result link resolves after its slot was reused",
+  );
+  // Closing a retry in progress must leave the arriving letter unread.
+  await page.evaluate(() => {
+    const previous = window.mockApi.post;
+    window.mockApi.post = async (path, body) => {
+      if (path.endsWith("/mail/generate") && body.activityId === "activity-three")
+        return new Promise((resolve) => {
+          window.finishClosedLetter = () => {
+            const letter = {
+              id: "resident-activity-three",
+              eventId: "resident-activity-three",
+              sender: "다람",
+              title: "늦게 도착한 편지",
+              body: "안부",
+              createdAt: "2026-11-04T00:00:00Z",
+              readAt: null,
+              archived: false,
+            };
+            window.view = {
+              ...window.view,
+              revision: 10,
+              state: { ...window.view.state, mailbox: { letters: [letter, ...window.view.state.mailbox.letters] } },
+            };
+            resolve({ state: window.view.state, revision: 10, result: { id: letter.id } });
+          };
+        });
+      return previous(path, body);
+    };
+    window.view.state.activities.completed.unshift({
+      id: "activity-three",
+      residentId: "resident",
+      mailId: "result-three",
+      summary: "기록",
+    });
+    window.controller.store.set({
+      world: { state: "ready", value: window.view },
+      sheet: { kind: "mailbox", id: "result-three" },
+    });
+    window.readsBeforeClose = window.calls.filter(
+      (call) => call.path.endsWith("/commands") && call.body.type === "mail.read",
+    ).length;
+    window.closedLetterTask = window.controller.generateResidentLetter("activity-three");
+  });
+  await page.waitForFunction(() => window.finishClosedLetter);
+  await page.evaluate(async () => {
+    window.controller.closeSheet();
+    window.finishClosedLetter();
+    await window.closedLetterTask;
+  });
+  assert.equal(await page.evaluate(() => window.controller.store.get().sheet), null);
+  assert.equal(
+    await page.evaluate(
+      () => window.calls.filter((call) => call.path.endsWith("/commands") && call.body.type === "mail.read").length,
+    ),
+    await page.evaluate(() => window.readsBeforeClose),
+    "closing does not silently mark the arriving letter read",
   );
   // A slow/failed generation belongs to its pair, never hides or resets the other selection.
   await page.evaluate(() => {

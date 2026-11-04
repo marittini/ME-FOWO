@@ -41,6 +41,9 @@ assert.deepEqual(parseResidentLetter('{"title":" 안녕 ","body":" 오늘은 맑
   title: "안녕",
   body: "오늘은 맑았어요.",
 });
+assert.deepEqual(parseResidentLetter('```json\n{"title":"안녕","body":"내용"}\n```'), { title: "안녕", body: "내용" });
+assert.deepEqual(parseResidentLetter('```\n{"title":"안녕","body":"내용"}\n```'), { title: "안녕", body: "내용" });
+assert.throws(() => parseResidentLetter('설명\n```json\n{"title":"안녕","body":"내용"}\n```'));
 assert.throws(() => parseResidentLetter('{"title":"안녕","body":"내용","reward":999}'));
 assert.throws(() => parseResidentLetter(JSON.stringify({ title: "안녕", body: "x".repeat(1001) })));
 assert.throws(() => parseResidentLetter("잘못된 응답"));

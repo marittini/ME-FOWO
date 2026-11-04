@@ -130,9 +130,28 @@ async function main() {
   assert.equal(almostFull.mailbox.letters.length, 199);
   const payload = { activityId: id, title: "편지", body: "안녕" };
   const context = { now: clock().toISOString(), commandId: "capacity-check" };
-  assert.throws(() => saveResidentLetter.apply(almostFull, payload, context), { code: "invalid_payload" });
+  const replaced = saveResidentLetter.apply(almostFull, payload, context).state;
+  assert.equal(
+    replaced.mailbox.letters.length,
+    199,
+    "system result slot is reused, leaving the running activity its reserved slot",
+  );
+  const protectedOriginal = {
+    ...almostFull,
+    mailbox: {
+      letters: almostFull.mailbox.letters.map((letter) =>
+        letter.id === `activity-${id}` ? { ...letter, body: letter.body + " 추가 원문" } : letter,
+      ),
+    },
+  };
+  assert.throws(() => saveResidentLetter.apply(protectedOriginal, payload, context), { code: "invalid_payload" });
   const capacityHost = new FakeHost();
-  await createWorldDocument(capacityHost.persistence.documents, almostFull, clock().toISOString(), "capacity test");
+  await createWorldDocument(
+    capacityHost.persistence.documents,
+    protectedOriginal,
+    clock().toISOString(),
+    "capacity test",
+  );
   let capacityModelCalls = 0;
   const capacityService = createResidentLetterService(
     {

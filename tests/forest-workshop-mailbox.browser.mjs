@@ -115,9 +115,11 @@ try {
     const root = document.querySelector("#host").shadowRoot;
     const state = {
       sheet: { kind: "mailbox", id: "activity-test-activity" },
+      letterErrors: { "mail-world:test-activity": { message: "출력 길이를 늘려 주세요.", code: "generation_failed" } },
       world: {
         state: "ready",
         value: {
+          worldId: "mail-world",
           state: {
             activities: { completed: [{ id: "test-activity", mailId: "activity-test-activity" }] },
             mailbox: {
@@ -151,6 +153,7 @@ try {
     window.activityMailController = controller;
     root.replaceChildren(window.renderMailboxSheet(state, controller));
   });
+  assert.equal(await page.getByText("출력 길이를 늘려 주세요.", { exact: true }).isVisible(), true);
   await page.getByRole("button", { name: "편지 다시 불러오기" }).click();
   assert.equal(await page.evaluate(() => window.requestedActivity), "test-activity");
   await page.evaluate(() => {

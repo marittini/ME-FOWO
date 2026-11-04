@@ -432,7 +432,7 @@ button.counter { cursor: pointer; }
 .page-arrow:disabled { opacity: .4; cursor: default; }
 .page-picker-label { min-width: 0; display: grid; gap: .15em; text-align: center; overflow-wrap: anywhere; }
 .page-picker-label small { font-size: .75em; }
-.player-popup { align-items: center; }
+.sheet-backdrop.player-popup { align-items: center; }
 .player-popup .sheet { max-height: 85%; width: min(100%, 32em); }
 .popup-close { margin-left: auto; min-width: 44px; min-height: 44px; font: inherit; font-size: 1.4em; border: 0; border-radius: 50%; background: var(--fw-surface-3); color: var(--fw-text); cursor: pointer; }
 .ticket-shop-list { display: grid; gap: .8em; }
@@ -851,4 +851,38 @@ button:focus-visible, .locked-block:focus-visible, .input:focus-visible, .slider
   outline-offset: 3px;
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } .button:active:not(:disabled) { transform: none; } }
+
+/* Focused goal setup and compact, centered resident/shop dialogs. */
+.recipe-choices.goal-choices { grid-template-columns: repeat(2,minmax(0,1fr)); gap: .45em; }
+.goal-choices .recipe-choice { min-height: 3.5em; display: flex; align-items: center; gap: .5em; padding: .45em; text-align: left; }
+.goal-choices .item-tile { flex: none; width: 2em; height: 2em; }
+.goal-choices .recipe-choice > span { min-width: 0; overflow-wrap: anywhere; }
+.goal-quantity { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5em; font-weight: 700; }
+.goal-quantity .stepper.wide.compact { display: grid; flex: 0 0 auto; width: 132px; grid-template-columns: repeat(3,44px); gap: 0; }
+.goal-quantity .stepper .step { min-width: 0; width: 44px; padding: 0; }
+.goal-quantity .step-value { min-width: 0; padding: .3em .1em; font-size: 1em; }
+.goal-quantity input { appearance: textfield; text-align: center; }
+.goal-quantity input::-webkit-inner-spin-button, .goal-quantity input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.goal-start { width: 100%; }
+.goal-hint { margin: .25em 0; }
+.production-manual { border-top: 1px solid var(--ink); padding-top: .6em; }
+.production-manual > summary, .resident-abilities > summary, .profile-name-edit > summary, .letter-retry-state summary { min-height: 44px; padding: .6em .2em; font-weight: 700; cursor: pointer; }
+.production-manual[open] > * + * { margin-top: .8em; }
+.resident-summary-dialog .resident-detail { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .8em; }
+.resident-summary-dialog .detail-stage { max-height: 10em; min-height: 7em; }
+.resident-summary .detail-info { min-width: 0; }
+.resident-summary .detail-actions { margin: 1em 0 .5em; }
+.resident-abilities { border-top: 1px solid var(--ink); }
+.ticket-store-balance { display: flex; align-items: center; gap: .5em; padding: .6em .8em; border-radius: 999px; background: var(--fw-leaf-soft); }
+.ticket-store-balance strong { margin-left: auto; font-size: 1.3em; font-variant-numeric: tabular-nums; }
+.ticket-store .ticket-pack { padding: .65em; gap: .6em; flex-wrap: nowrap; }
+.ticket-store .ticket-pack-copy { display: flex; align-items: center; gap: .6em; flex: 1; }
+.ticket-pack-art { flex: none; width: 2.5em; height: 2.5em; object-fit: contain; }
+.ticket-pack-reward { min-width: 0; display: grid; gap: .2em; }
+.ticket-pack-reward small { font-size: .72em; overflow-wrap: anywhere; }
+.ticket-pack-reward strong { font-size: 1.3em; font-variant-numeric: tabular-nums; }
+.ticket-store .ticket-pack > .button { flex: none; padding: .6em .7em; }
+.ticket-store-received { margin: 0; min-height: 2.5em; padding: .5em; font-size: .8em; background: var(--fw-leaf-soft); border-radius: .6em; }
+.letter-retry-state > .error-line { margin: .6em 0; }
+@media (max-width: 350px) { .ticket-store .ticket-pack { flex-wrap: wrap; } .ticket-store .ticket-pack > .button { width: 100%; } }
 `;

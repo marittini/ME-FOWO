@@ -14,6 +14,8 @@ export interface WorkView {
   /** The rule whose recipe and target are shown, per facility. */
   selected: Record<string, string>;
   section?: "status" | "recipe" | "priority";
+  recipePage?: number;
+  advancedOpen?: boolean;
   inventoryPage?: number;
   priorityPage?: number;
 }
@@ -80,11 +82,13 @@ export function createProductionActions(core: ControllerCore) {
     store.set((state) => ({ work: { ...state.work, ...update } }));
   }
 
-  function editDraft(facilityId: string, change: (rules: Rule[]) => Rule[]) {
+  function editDraft(facilityId: string, change: (rules: Rule[]) => Rule[], remember = false) {
     const world = core.currentWorld();
     if (!world) return;
     const current = draftRules(store.get(), world.state.production, facilityId);
-    patchWork({ drafts: { ...store.get().work.drafts, [facilityId]: change(current.map((rule) => ({ ...rule }))) } });
+    const drafts = { ...store.get().work.drafts, [facilityId]: change(current.map((rule) => ({ ...rule }))) };
+    if (remember) store.remember((state) => ({ work: { ...state.work, drafts } }));
+    else patchWork({ drafts });
   }
 
   /** Presence (plan §7.6): only a visible, focused game screen renews it. */
@@ -138,13 +142,27 @@ export function createProductionActions(core: ControllerCore) {
     },
 
     selectFacility(facilityId: string) {
-      patchWork({ facilityId, section: "status", priorityPage: 0 });
+      patchWork({ facilityId, section: "status", priorityPage: 0, recipePage: 0, advancedOpen: false });
     },
 
     setWorkSection(section: NonNullable<WorkView["section"]>) {
-      patchWork({ section });
+      patchWork({ section, ...(section === "priority" ? { advancedOpen: true } : {}) });
     },
 
+    setRecipePage(recipePage: number) {
+      patchWork({ recipePage: Math.max(0, recipePage) });
+    },
+    rememberProductionDetails(advancedOpen: boolean) {
+      if (store.get().work.advancedOpen !== advancedOpen) patchWork({ advancedOpen });
+    },
+    rememberGoalTarget(facilityId: string, policyId: string, targetStock: number) {
+      if (!Number.isInteger(targetStock) || targetStock < 1 || targetStock > 999) return;
+      editDraft(
+        facilityId,
+        (rules) => rules.map((rule) => (rule.policyId === policyId ? { ...rule, targetStock } : rule)),
+        true,
+      );
+    },
     setInventoryPage(page: number) {
       patchWork({ inventoryPage: Math.max(0, page) });
     },
@@ -275,9 +293,16 @@ export function createProductionActions(core: ControllerCore) {
 
     async applyProductionTree(recipeId: string, targetStock: number) {
       const draftsBefore = JSON.stringify(store.get().work.drafts);
+      const facilityBefore = store.get().work.facilityId;
       const response = await core.runCommand("production-tree", "production.setTree", { recipeId, targetStock });
       if (!response) return;
-      if (JSON.stringify(store.get().work.drafts) === draftsBefore) patchWork({ drafts: {} });
+      if (JSON.stringify(store.get().work.drafts) === draftsBefore)
+        patchWork({
+          drafts: {},
+          ...(store.get().route === "work" && store.get().work.facilityId === facilityBefore
+            ? { section: "status" }
+            : {}),
+        });
       const locked = response.result.locked as string[];
       const names = locked.map((id) => content()?.facilities.find((f) => f.id === id)?.name ?? id);
       core.notify(

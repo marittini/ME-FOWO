@@ -3,7 +3,7 @@
 // it. Retried uploads reuse their upload key, so a picture is never stored twice.
 import { gameApi } from "./api";
 import type { ControllerCore, Sheet } from "./controller";
-import { newWorldId as newUuid } from "./host-api";
+import { errorMessage, errorCode, newWorldId as newUuid } from "./host-api";
 import type { Pair, Placement, Resident, ResidentKind, WorldState } from "./types";
 
 export interface ResidentsView {
@@ -27,7 +27,15 @@ export type ResidentSheet =
       residentId?: string;
       status?: "all" | "active" | "corrected" | "invalidated";
     }
-  | { kind: "profile"; residentId: string; panel?: number; draft?: string; nameDraft?: string; expectedName?: string }
+  | {
+      kind: "profile";
+      residentId: string;
+      panel?: number;
+      draft?: string;
+      nameDraft?: string;
+      expectedName?: string;
+      nameOpen?: boolean;
+    }
   | { kind: "pair-add"; residentId: string }
   | { kind: "image-history"; residentId: string }
   | { kind: "history-cleanup" }
@@ -77,16 +85,36 @@ export function createResidentActions(core: ControllerCore) {
   async function prepareLetter(activityId: string, open = false): Promise<string | null> {
     const world = core.currentWorld();
     if (!world) return null;
+    const opening = open && store.get().sheet?.kind === "mailbox" ? store.get().sheet : null;
+    const selectedAtStart = opening?.kind === "mailbox" ? opening.id : undefined;
     const key = `${world.worldId}:${activityId}`;
     const id = `resident-${activityId}`;
     let task = running.get(key);
     if (!task) {
       task = (async () => {
         if (core.currentWorld()?.state.mailbox.letters.some((letter) => letter.id === id)) return id;
+        store.set((state) => ({ letterErrors: { ...state.letterErrors, [key]: undefined } }));
         const response = await core.track(
           `letter:${activityId}`,
-          () => gameApi.generateResidentLetter(world.worldId, activityId),
+          async () => {
+            try {
+              return await gameApi.generateResidentLetter(world.worldId, activityId);
+            } catch (error) {
+              if (core.currentWorld()?.worldId === world.worldId)
+                store.set((state) => ({
+                  letterErrors: {
+                    ...state.letterErrors,
+                    [key]: {
+                      message: errorMessage(error, "편지를 준비하지 못했어요. 다시 시도해 주세요."),
+                      code: errorCode(error),
+                    },
+                  },
+                }));
+              throw error;
+            }
+          },
           "편지를 준비하지 못했어요. 활동 결과는 보관되어 있어요. 편지를 다시 열어 확인해 주세요.",
+          { quiet: true },
         );
         if (!response || core.currentWorld()?.worldId !== world.worldId) return null;
         core.showWorld({
@@ -100,7 +128,16 @@ export function createResidentActions(core: ControllerCore) {
       running.set(key, task);
     }
     const result = await task;
-    if (open && result && core.currentWorld()?.worldId === world.worldId) await showLetter(result);
+    const currentSheet = store.get().sheet;
+    if (
+      open &&
+      result &&
+      selectedAtStart &&
+      currentSheet?.kind === "mailbox" &&
+      currentSheet.id === selectedAtStart &&
+      core.currentWorld()?.worldId === world.worldId
+    )
+      await showLetter(result);
     return result;
   }
   async function showLetter(id: string) {
@@ -118,6 +155,7 @@ export function createResidentActions(core: ControllerCore) {
     const activity = world.state.activities?.completed?.find((item) => item.mailId === id);
     if (activity) {
       store.set({ sheet: { kind: "mailbox", id } });
+      if (store.get().letterErrors?.[`${world.worldId}:${activity.id}`]) return;
       const generated = await prepareLetter(activity.id);
       if (core.currentWorld()?.worldId !== world.worldId) return;
       // Do not reopen mail after the player closed it or selected a different letter.
@@ -156,14 +194,18 @@ export function createResidentActions(core: ControllerCore) {
       store.set({ sheet: { kind: "mailbox" } });
     },
     async openActivityLetter(id: string) {
-      const letter = core.currentWorld()?.state.mailbox.letters.find((item) => item.id === id);
+      const world = core.currentWorld();
+      const activity = world?.state.activities?.completed?.find((item) => item.mailId === id);
+      const letter = world?.state.mailbox.letters.find(
+        (item) => item.id === id || (activity && item.id === `resident-${activity.id}`),
+      );
       if (!letter) {
         store.set({ sheet: { kind: "mailbox" } });
         core.notify("결과 편지를 찾을 수 없어요. 우편함을 확인해 주세요.");
         return;
       }
       store.set({ sheet: { kind: "mailbox", archived: letter.archived } });
-      await openLetter(id);
+      await openLetter(letter.id);
     },
     setMailboxView(patch: { archived?: boolean; page?: number; id?: string }) {
       store.set((state) => (state.sheet?.kind === "mailbox" ? { sheet: { ...state.sheet, ...patch } } : {}));
@@ -176,7 +218,7 @@ export function createResidentActions(core: ControllerCore) {
       if (!world || !activity || world.state.mailbox.letters.some((letter) => letter.id === `resident-${activity.id}`))
         return;
       const key = `${world.worldId}:${activity.id}`;
-      if (attempted.has(key)) return;
+      if (attempted.has(key) || store.get().letterErrors?.[key]) return;
       attempted.add(key);
       void prepareLetter(activity.id);
     },
@@ -274,7 +316,13 @@ export function createResidentActions(core: ControllerCore) {
       store.set({ sheet: null });
     },
 
-    rememberProfile(patch: { panel?: number; draft?: string; nameDraft?: string; expectedName?: string }) {
+    rememberProfile(patch: {
+      panel?: number;
+      draft?: string;
+      nameDraft?: string;
+      expectedName?: string;
+      nameOpen?: boolean;
+    }) {
       store.remember((state) => (state.sheet?.kind === "profile" ? { sheet: { ...state.sheet, ...patch } } : {}));
     },
 

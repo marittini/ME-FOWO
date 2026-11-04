@@ -121,6 +121,8 @@ export interface AppState {
   /** 저장·백업 → 저장 공간 사용량, loaded when that screen opens. */
   storage: Loadable<StorageUsage> | null;
   /** The welcome-package sheet was put off for this session ("나중에"). */
+  ticketRefillMessage?: string | null;
+  letterErrors?: Partial<Record<string, { message: string; code: string | null }>>;
   starterSheetHidden: boolean;
   /** 주민 (board 03-1): tab, search, filter and the selected resident. */
   residentsView: ResidentsView;
@@ -154,7 +156,12 @@ export type Sheet = ResidentSheet | ProductionSheet | InviteSheet;
 /** What the action modules share. */
 export interface ControllerCore {
   store: Store<AppState>;
-  track<T>(actionKey: string, work: () => Promise<T>, fallback: string): Promise<T | null>;
+  track<T>(
+    actionKey: string,
+    work: () => Promise<T>,
+    fallback: string,
+    options?: { quiet?: boolean },
+  ): Promise<T | null>;
   runCommand(actionKey: string, type: string, payload?: Record<string, unknown>): Promise<CommandResponse | null>;
   currentWorld(): WorldView | null;
   requestIdFor(actionKey: string, signature: string, make?: () => string): string;
@@ -282,17 +289,22 @@ export function createController() {
     store.set((state) => ({ busy: { ...state.busy, [actionKey]: value } }));
   }
 
-  async function track<T>(actionKey: string, work: () => Promise<T>, fallback: string): Promise<T | null> {
+  async function track<T>(
+    actionKey: string,
+    work: () => Promise<T>,
+    fallback: string,
+    options: { quiet?: boolean } = {},
+  ): Promise<T | null> {
     if (store.get().busy[actionKey]) return null;
     setBusy(actionKey, true);
-    store.set({ notice: null });
+    if (!options.quiet) store.set({ notice: null });
     try {
       const value = await work();
       pending.delete(actionKey);
       return value;
     } catch (error) {
       if (isDefiniteRefusal(error)) pending.delete(actionKey);
-      store.set({ notice: { kind: "error", text: errorMessage(error, fallback) } });
+      if (!options.quiet) store.set({ notice: { kind: "error", text: errorMessage(error, fallback) } });
       if (errorCode(error) === "stale_view") void reloadWorld();
       return null;
     } finally {

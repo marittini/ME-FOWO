@@ -1,5 +1,5 @@
 import type { AppState, Controller } from "../../app/controller";
-import { button, h, statusLine } from "../../app/dom";
+import { button, errorLine, h, statusLine } from "../../app/dom";
 import { sheetDialog } from "../chrome/sheet";
 import { pagePicker } from "../chrome/page-picker";
 export function renderMailboxSheet(state: AppState, controller: Controller) {
@@ -19,14 +19,14 @@ export function renderMailboxSheet(state: AppState, controller: Controller) {
     .filter((l) => l.archived === Boolean(view.archived))
     .slice()
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id));
-  const selected = letters.find((l) => l.id === view.id);
+  const source = completed.find((item) => item.mailId === view.id);
+  const generated = source
+    ? world.state.mailbox.letters.find((item) => item.id === `resident-${source.id}`)
+    : undefined;
+  const selected = generated ?? world.state.mailbox.letters.find((item) => item.id === view.id);
   const page = Math.max(0, Math.min(view.page ?? 0, Math.ceil(letters.length / 4) - 1));
-  const activity = selected
-    ? world.state.activities?.completed?.find((item) => item.mailId === selected.id)
-    : undefined;
-  const generated = activity
-    ? world.state.mailbox.letters.find((item) => item.id === `resident-${activity.id}`)
-    : undefined;
+  const activity = source && selected?.id === source.mailId ? source : undefined;
+  const failure = activity ? state.letterErrors?.[`${world.worldId}:${activity.id}`] : undefined;
   const busy = Boolean(state.busy[`mail:${selected?.id}`] || (activity && state.busy[`letter:${activity.id}`]));
   return sheetDialog("fw-mailbox", "우편함", [
     h(
@@ -47,8 +47,28 @@ export function renderMailboxSheet(state: AppState, controller: Controller) {
           activity && !generated && busy
             ? statusLine("주민의 편지를 준비하고 있어요. 완성되면 바로 보여드릴게요.")
             : h("div", { className: "letter-content" }, [
-                activity && !generated ? h("h4", { text: "보관된 활동 기록" }) : null,
-                h("p", { className: "letter-body", text: selected.body }),
+                activity
+                  ? h("div", { className: "letter-retry-state" }, [
+                      h("h4", { text: "주민 편지를 기다리고 있어요" }),
+                      failure
+                        ? errorLine(failure.message)
+                        : h("p", { text: "활동 기록은 보관되어 있어요. 주민의 말로 쓴 편지를 받아 보세요." }),
+                      h("details", {}, [
+                        h("summary", { text: "보관된 활동 기록 확인" }),
+                        h("p", { className: "letter-body", text: selected.body }),
+                      ]),
+                      failure && failure.code !== "invalid_payload"
+                        ? button(
+                            "편지 모델 설정",
+                            () => {
+                              controller.setSettingsSection("manage");
+                              controller.navigate("settings");
+                            },
+                            { variant: "secondary" },
+                          )
+                        : null,
+                    ])
+                  : h("p", { className: "letter-body", text: selected.body }),
               ]),
           activity && !busy
             ? button(

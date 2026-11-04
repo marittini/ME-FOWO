@@ -60,11 +60,11 @@ export function createInviteActions(core: ControllerCore) {
     },
 
     openTicketShop() {
-      store.set({ sheet: { kind: "ticket-shop" } });
+      store.set({ sheet: { kind: "ticket-shop" }, ticketRefillMessage: null });
     },
     async refillTickets(pack: "small" | "large" | "chest") {
       const response = await core.runCommand("tickets-refill", "invite.refillTickets", { pack });
-      if (response) core.notify(`초대권 ${response.result.amount}장을 채웠어요. 언제든 다시 받을 수 있어요.`);
+      if (response) store.set({ ticketRefillMessage: `초대권 ${response.result.amount}장을 받았어요.` });
     },
     async draw(count: number) {
       const response = await core.runCommand(`invite:${count}`, "invite.draw", { count });

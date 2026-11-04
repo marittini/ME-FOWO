@@ -118,6 +118,9 @@ try {
       window.testRender();
     };
     window.testController = {
+      rememberProductionDetails(open) {
+        window.testState.work.advancedOpen = open;
+      },
       setWorkSection(section) {
         update({ section });
       },
@@ -139,6 +142,10 @@ try {
       },
       openResidents() {},
       changeTarget() {},
+      rememberGoalTarget(facilityId, policyId, targetStock) {
+        const rules = window.testState.work.drafts[facilityId];
+        for (const rule of rules ?? []) if (rule.policyId === policyId) rule.targetStock = targetStock;
+      },
       recommendRules() {},
       applyRules() {
         window.appliedRules = true;
@@ -186,9 +193,11 @@ try {
   await page.getByRole("button", { name: "채집터 — 시설과 창고 열기" }).click();
   assert.equal(await page.evaluate(() => window.facilitiesTab), "facilities");
   await page.getByRole("tab", { name: "생산 설정", exact: true }).click();
-  assert.equal(await page.getByRole("heading", { name: "생산 설정", exact: true }).count(), 1);
+  assert.equal(await page.locator(".production-manual").evaluate((node) => node.open), false);
+  await page.getByText("켜짐 · 목표 재고 · 작업 순서 직접 설정", { exact: true }).click();
+  assert.equal(await page.getByRole("heading", { name: "만들 물건을 골라 주세요", exact: true }).count(), 1);
   assert.equal(await page.getByRole("heading", { name: "작업 우선순위", exact: true }).count(), 1);
-  await page.getByRole("button", { name: "생산 설정 적용", exact: true }).click();
+  await page.getByRole("button", { name: "이 시설 설정 적용", exact: true }).click();
   assert.equal(await page.evaluate(() => window.appliedRules), true);
   await page.evaluate(() => {
     const state = window.testState;
@@ -216,8 +225,9 @@ try {
   assert.equal(await page.locator(".recipe-choice").count(), 3);
   assert.equal(await page.locator("select,details.page-picker").count(), 0);
   await page.getByRole("button", { name: "제작 1 생산 설정", exact: true }).click();
-  await page.getByRole("button", { name: "제작 1 제작 트리 적용", exact: true }).click();
-  assert.deepEqual(await page.evaluate(() => window.tree), { recipeId: "r1", targetStock: 5 });
+  await page.getByRole("spinbutton", { name: "목표 재고", exact: true }).fill("999");
+  await page.getByRole("button", { name: "제작 1 자동 생산", exact: true }).click();
+  assert.deepEqual(await page.evaluate(() => window.tree), { recipeId: "r1", targetStock: 999 });
   await page.getByRole("button", { name: "작업 우선순위 물품 · 다음 페이지" }).click();
   assert.equal(
     await page.getByRole("button", { name: "제작 2 생산 설정", exact: true }).getAttribute("aria-pressed"),
@@ -230,8 +240,8 @@ try {
       return panel.scrollWidth - panel.clientWidth;
     });
     assert.ok(overflow <= 1, `no horizontal overflow at ${width}`);
-    await page.getByRole("button", { name: "추천 설정", exact: true }).scrollIntoViewIfNeeded();
-    assert.equal(await page.getByRole("button", { name: "추천 설정", exact: true }).isVisible(), true);
+    await page.getByRole("button", { name: "기본 추천 불러오기", exact: true }).scrollIntoViewIfNeeded();
+    assert.equal(await page.getByRole("button", { name: "기본 추천 불러오기", exact: true }).isVisible(), true);
   }
   await page.getByRole("tab", { name: "작업 현황", exact: true }).click();
   assert.equal(await page.getByRole("heading", { name: "작업 우선순위", exact: true }).count(), 0);

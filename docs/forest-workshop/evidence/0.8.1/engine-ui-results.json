@@ -1,0 +1,8 @@
+[
+  "actual provider output-limit failure shown inline; opening it does not call model again",
+  "explicit retry succeeds with the same fenced JSON response; real letter opens",
+  "saved letter reopens without provider call",
+  "production: select target/quantity then one action; returns to actual work status",
+  "resident dialog actually centered; compact summary and X close",
+  "shop centered; balance and inline receipt update without moving refill button"
+]

@@ -8,7 +8,7 @@ import type { AppState, Controller } from "../../app/controller";
 import { h, statusLine } from "../../app/dom";
 import { visibleResidents, type ResidentsView } from "../../app/resident-actions";
 import type { GameContent, Resident, WorldView } from "../../app/types";
-import { card, renderFrame } from "../chrome/frame";
+import { renderFrame } from "../chrome/frame";
 import { ICONS, type IconFactory } from "../chrome/icons";
 import { FIELD_ICONS, FIELD_LABELS, passiveOf, percent, talentOf } from "../work/production-view";
 import { searchField } from "../chrome/search-field";
@@ -158,35 +158,38 @@ function passiveBlock(resident: Resident, world: WorldView, content: GameContent
 }
 
 function detail(resident: Resident, world: WorldView, content: GameContent | null, controller: Controller) {
-  return card(
-    null,
-    [
-      h("div", { className: "resident-detail" }, [
-        h("span", { className: "detail-stage" }, [residentFigure(resident)]),
-        h("div", { className: "detail-info" }, [
-          h("strong", { className: "detail-name", text: resident.displayName }),
-          h("span", { className: "tag-row" }, [kindTag(resident), fieldTag(resident, controller)]),
-        ]),
+  return h("div", { className: "resident-summary" }, [
+    h("div", { className: "resident-detail" }, [
+      h("span", { className: "detail-stage" }, [residentFigure(resident)]),
+      h("div", { className: "detail-info" }, [
+        h("strong", {
+          className: "detail-status",
+          text: resident.recruited ? "함께 지내는 주민" : "아직 초대 전이에요",
+        }),
+        h("span", { className: "tag-row" }, [kindTag(resident), fieldTag(resident, controller)]),
       ]),
+    ]),
+
+    h("div", { className: "detail-actions" }, [
+      actionButton(ICONS.image, "주민 그림", () => controller.openResidentImage(resident.residentId)),
+      actionButton(ICONS.document, "프로필", () =>
+        controller.openSheet({ kind: "profile", residentId: resident.residentId }),
+      ),
+      actionButton(ICONS.heart, "관계", () => controller.openRelations(resident.residentId)),
+    ]),
+    h("details", { className: "resident-abilities" }, [
+      h("summary", { text: "특기와 공방에서 하는 일" }),
       passiveBlock(resident, world, content),
-      h("div", { className: "detail-actions" }, [
-        actionButton(ICONS.image, "주민 그림", () => controller.openResidentImage(resident.residentId)),
-        actionButton(ICONS.document, "프로필", () =>
-          controller.openSheet({ kind: "profile", residentId: resident.residentId }),
-        ),
-        actionButton(ICONS.heart, "관계", () => controller.openRelations(resident.residentId)),
-      ]),
-      resident.recruited
-        ? null
-        : h("button", {
-            className: "button",
-            text: "초대하러 가기",
-            attrs: { type: "button" },
-            on: { click: () => controller.navigate("invite") },
-          }),
-    ],
-    { className: "detail-card" },
-  );
+    ]),
+    resident.recruited
+      ? null
+      : h("button", {
+          className: "button",
+          text: "초대하러 가기",
+          attrs: { type: "button" },
+          on: { click: () => controller.navigate("invite") },
+        }),
+  ]);
 }
 
 function body(world: WorldView, state: AppState, controller: Controller) {
@@ -256,7 +259,7 @@ export function renderResidentsScreen(state: AppState, controller: Controller) {
               h(
                 "section",
                 {
-                  className: "sheet card",
+                  className: "sheet card resident-summary-dialog",
                   attrs: { role: "dialog", "aria-modal": "true", "aria-label": `${selected.displayName} 주민 상세` },
                 },
                 [

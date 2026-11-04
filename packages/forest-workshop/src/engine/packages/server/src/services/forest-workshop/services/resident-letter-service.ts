@@ -1,3 +1,4 @@
+import { reusableActivityReport } from "../domain/commands/mailbox";
 import { FwError } from "../domain/errors";
 import { assertWorldId } from "../domain/ids";
 import type { HostPersistence, HostRuntime } from "../host/engine-adapter";
@@ -54,8 +55,16 @@ export function createResidentLetterService(
             revision: world.revision,
             state: world.state,
           };
-        if (world.state.mailbox.letters.length + (world.state.activities.running ? 1 : 0) >= 200)
-          throw new FwError("invalid_payload", { message: "우편 저장 한도에 도달했어요." });
+        if (
+          world.state.mailbox.letters.length -
+            (reusableActivityReport(world.state, activity) ? 1 : 0) +
+            (world.state.activities.running ? 1 : 0) >=
+          200
+        )
+          throw new FwError("invalid_payload", {
+            message: "우편 저장 한도에 도달해 새 편지를 저장할 수 없어요. 보관함으로 옮겨도 저장 공간은 줄지 않아요.",
+            details: { stage: "capacity" },
+          });
         await profiles.ensure(worldId, [activity.residentId], profileConnection);
         world = await loadWorld(persistence.documents, worldId);
         const resident = world.state.residents[activity.residentId];
@@ -77,18 +86,46 @@ export function createResidentLetterService(
           memory: world.state.memory,
           worldGuideline: world.state.guidelines.world.enabled ? world.state.guidelines.world.text : "",
         });
-        if (model.maxContext && model.maxContext <= 600) throw new FwError("context_too_large");
-        const fit = model.fitContext(messages, {
-          maxTokens: model.maxContext ? Math.min(Math.floor(model.maxContext * 0.6), model.maxContext - 600) : 6000,
-        });
-        if (fit.trimmed) throw new FwError("context_too_large");
+        const outputTokens = Math.min(
+          2048,
+          model.maxOutputTokens && model.maxOutputTokens > 0 ? model.maxOutputTokens : 2048,
+        );
+        if (outputTokens < 256)
+          throw new FwError("generation_failed", {
+            message: "현재 연결의 출력 한도가 편지를 쓰기에 너무 작아요. AI 연결의 최대 출력 길이를 늘려 주세요.",
+            details: { stage: "output_limit" },
+          });
+        const inputTokens = model.maxContext ? model.maxContext - outputTokens - 256 : 12000;
+        if (inputTokens <= 0 || model.fitContext(messages, { maxTokens: inputTokens }).trimmed)
+          throw new FwError("context_too_large");
+        let completion;
+        try {
+          completion = await model.chatComplete(messages, { temperature: 0.8, maxTokens: outputTokens });
+        } catch {
+          throw new FwError("generation_failed", {
+            message: "AI 연결에서 편지 응답을 받지 못했어요. 연결을 확인한 뒤 다시 시도해 주세요.",
+            details: { stage: "request" },
+          });
+        }
+        if (["length", "max_tokens", "max_output_tokens"].includes((completion.finishReason ?? "").toLowerCase()))
+          throw new FwError("generation_failed", {
+            message:
+              "AI가 편지를 끝까지 쓰기 전에 출력 한도에 도달했어요. 연결의 출력 길이를 늘린 뒤 다시 시도해 주세요.",
+            details: { stage: "output_limit" },
+          });
+        if (!completion.content?.trim())
+          throw new FwError("generation_failed", {
+            message: "AI가 빈 응답을 보냈어요. 선택한 편지 모델과 출력 설정을 확인해 주세요.",
+            details: { stage: "empty" },
+          });
         let draft;
         try {
-          draft = parseResidentLetter(
-            (await model.chatComplete(messages, { temperature: 0.8, maxTokens: 600 })).content ?? "",
-          );
+          draft = parseResidentLetter(completion.content);
         } catch {
-          throw new FwError("generation_failed");
+          throw new FwError("generation_failed", {
+            message: "AI의 편지 응답 형식을 읽지 못했어요. 활동 기록은 그대로 있으니 다시 시도할 수 있어요.",
+            details: { stage: "format" },
+          });
         }
         return commands.execute(
           {

@@ -451,6 +451,95 @@ try {
       world.progress.starterKitClaimed = false;
     }),
   });
+  cases.push({
+    name: "work-manual-settings",
+    route: "work",
+    patch: { work: { ...base.work, section: "recipe", advancedOpen: true } },
+  });
+  cases.push({
+    name: "work-goal-page-two",
+    route: "work",
+    patch: { work: { ...base.work, section: "recipe", recipePage: 1 } },
+  });
+  cases.push({
+    name: "work-locked-goal",
+    route: "work",
+    patch: {
+      work: { ...base.work, section: "recipe", facilityId: "craft-bench" },
+      ...withWorld((world) => {
+        world.production.facilities["craft-bench"].unlocked = false;
+      }),
+    },
+  });
+  cases.push({
+    name: "profile-name-edit",
+    route: "residents",
+    patch: {
+      sheet: { kind: "profile", residentId: "r", nameDraft: "긴 공방 이름을 편집하는 중이에요", nameOpen: true },
+    },
+  });
+  cases.push({
+    name: "ticket-shop-received",
+    route: "invite",
+    patch: { sheet: { kind: "ticket-shop" }, ticketRefillMessage: "초대권 1000장을 받았어요." },
+  });
+  const letterActivity = "33333333-3333-4333-8333-333333333333",
+    reportId = `activity-${letterActivity}`;
+  const activityMail = withWorld((world) => {
+    world.activities.completed = [
+      {
+        id: letterActivity,
+        kind: "survey",
+        residentId: "r",
+        completedAt: world.createdAt,
+        summary: "풀잎을 살펴봤어요.",
+        mailId: reportId,
+      },
+    ];
+    world.mailbox.letters.unshift({
+      id: reportId,
+      eventId: reportId,
+      sender: "숲길 이웃",
+      title: "조사 기록",
+      body: "풀잎을 살펴봤어요.",
+      createdAt: world.createdAt,
+      readAt: null,
+      archived: false,
+    });
+  });
+  cases.push({
+    name: "mail-pending",
+    route: "home",
+    patch: { ...activityMail, sheet: { kind: "mailbox", id: reportId }, busy: { [`letter:${letterActivity}`]: true } },
+  });
+  cases.push({
+    name: "mail-model-error",
+    route: "home",
+    patch: {
+      ...activityMail,
+      sheet: { kind: "mailbox", id: reportId },
+      letterErrors: {
+        [`${base.world.value.worldId}:${letterActivity}`]: {
+          message:
+            "AI가 편지를 끝까지 쓰기 전에 출력 한도에 도달했어요. 연결의 출력 길이를 늘린 뒤 다시 시도해 주세요.",
+          code: "generation_failed",
+        },
+      },
+    },
+  });
+  const replacedMail = structuredClone(activityMail);
+  replacedMail.world.value.state.mailbox.letters[0] = {
+    ...replacedMail.world.value.state.mailbox.letters[0],
+    id: `resident-${letterActivity}`,
+    eventId: `resident-${letterActivity}`,
+    title: "풀잎에 남은 안부",
+    body: "공방지기님, 오늘 숲길에서 작은 풀잎을 살펴봤어요. 돌아오면 따뜻한 차를 나누고 싶어요.",
+  };
+  cases.push({
+    name: "mail-replaced-slot",
+    route: "home",
+    patch: { ...replacedMail, sheet: { kind: "mailbox", id: reportId } },
+  });
   const findings = [];
   for (const config of [
     { width: 320, height: 640, font: 22 },
@@ -496,6 +585,30 @@ try {
             cityHidden: true,
             celestial: true,
           });
+        }
+        if (["resident-detail-popup", "ticket-shop", "profile"].includes(test.name)) {
+          const centered = await page.locator("fw-audit-host").evaluate((host) => {
+            const a = host.getBoundingClientRect(),
+              b = host.shadowRoot.querySelector(".player-popup .sheet").getBoundingClientRect();
+            return Math.abs((a.top + a.bottom - b.top - b.bottom) / 2) < 2;
+          });
+          assert.equal(centered, true, `${test.name} must be centered at ${config.width}x${config.height}`);
+        }
+        if (test.name === "work-production-settings" && config.width === 390 && config.height === 844) {
+          const reachableWithoutScroll = await page.locator("fw-audit-host").evaluate((host) => {
+            const root = host.shadowRoot,
+              action = root.querySelector(".goal-start").getBoundingClientRect(),
+              nav = root.querySelector(".tabbar").getBoundingClientRect();
+            const advanced = root.querySelector(".production-manual > summary").getBoundingClientRect();
+            return (
+              action.bottom <= nav.top && action.top >= host.getBoundingClientRect().top && advanced.bottom <= nav.top
+            );
+          });
+          assert.equal(
+            reachableWithoutScroll,
+            true,
+            "production action and named manual settings entry are visible without scrolling at default mobile size",
+          );
         }
         const result = await page.locator("fw-audit-host").evaluate((host) => {
           const root = host.shadowRoot,
