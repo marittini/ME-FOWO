@@ -437,6 +437,15 @@ function waitingGuide(content: GameContent, world: WorldView, facilityId: string
         on: { click: () => controller.setWorkSection("priority") },
       }),
     );
+  } else if (waiting.reason === "queue_empty" || waiting.reason === "target_reached") {
+    actions.push(
+      h("button", {
+        className: "outline-button",
+        text: waiting.reason === "target_reached" ? "목표 재고 바꾸기" : "생산 설정 열기",
+        attrs: { type: "button" },
+        on: { click: () => controller.setWorkSection("recipe") },
+      }),
+    );
   } else if (waiting.reason === "materials" && waiting.itemId) {
     const itemId = waiting.itemId;
     const sources = [

@@ -122,7 +122,7 @@ export interface AppState {
   storage: Loadable<StorageUsage> | null;
   /** The welcome-package sheet was put off for this session ("나중에"). */
   ticketRefillMessage?: string | null;
-  letterErrors?: Partial<Record<string, { message: string; code: string | null }>>;
+  letterErrors?: Partial<Record<string, { message: string; code: string | null; purpose?: "profile" | "letter" }>>;
   starterSheetHidden: boolean;
   /** 주민 (board 03-1): tab, search, filter and the selected resident. */
   residentsView: ResidentsView;

@@ -16,7 +16,7 @@ export interface ResidentsView {
 }
 
 export type ResidentSheet =
-  | { kind: "mailbox"; archived?: boolean; page?: number; id?: string }
+  | { kind: "mailbox"; archived?: boolean; page?: number; id?: string; modelsOpen?: boolean }
   | { kind: "guidelines"; pairId?: string; draft?: { enabled: boolean; text: string } }
   | {
       kind: "memory";
@@ -107,6 +107,11 @@ export function createResidentActions(core: ControllerCore) {
                     [key]: {
                       message: errorMessage(error, "편지를 준비하지 못했어요. 다시 시도해 주세요."),
                       code: errorCode(error),
+                      purpose:
+                        (error as { payload?: { details?: { purpose?: unknown } } }).payload?.details?.purpose ===
+                        "profile"
+                          ? "profile"
+                          : "letter",
                     },
                   },
                 }));
@@ -207,7 +212,7 @@ export function createResidentActions(core: ControllerCore) {
       store.set({ sheet: { kind: "mailbox", archived: letter.archived } });
       await openLetter(letter.id);
     },
-    setMailboxView(patch: { archived?: boolean; page?: number; id?: string }) {
+    setMailboxView(patch: { archived?: boolean; page?: number; id?: string; modelsOpen?: boolean }) {
       store.set((state) => (state.sheet?.kind === "mailbox" ? { sheet: { ...state.sheet, ...patch } } : {}));
     },
     openLetter,

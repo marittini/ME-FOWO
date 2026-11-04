@@ -1,3 +1,4 @@
+import { modelConnections } from "../settings/model-connections";
 import type { AppState, Controller } from "../../app/controller";
 import { button, errorLine, h, statusLine } from "../../app/dom";
 import { sheetDialog } from "../chrome/sheet";
@@ -28,6 +29,30 @@ export function renderMailboxSheet(state: AppState, controller: Controller) {
   const activity = source && selected?.id === source.mailId ? source : undefined;
   const failure = activity ? state.letterErrors?.[`${world.worldId}:${activity.id}`] : undefined;
   const busy = Boolean(state.busy[`mail:${selected?.id}`] || (activity && state.busy[`letter:${activity.id}`]));
+  const modelSettings =
+    failure && failure.code !== "invalid_payload"
+      ? h(
+          "details",
+          {
+            className: "letter-model-settings",
+            attrs: view.modelsOpen ? { open: "" } : {},
+            on: {
+              toggle: () => {
+                if (Boolean(view.modelsOpen) !== modelSettings?.open)
+                  controller.setMailboxView({ modelsOpen: modelSettings?.open });
+              },
+            },
+          },
+          [
+            h("summary", { text: failure.purpose === "profile" ? "주민 설정 연결 확인" : "편지 모델 설정" }),
+            modelConnections(true, [failure.purpose ?? "letter"]),
+            h("p", {
+              className: "hint",
+              text: "연결을 고른 뒤 아래에서 편지를 다시 불러오세요. 저장된 편지는 바뀌지 않아요.",
+            }),
+          ],
+        )
+      : null;
   return sheetDialog("fw-mailbox", "우편함", [
     h(
       "div",
@@ -57,16 +82,7 @@ export function renderMailboxSheet(state: AppState, controller: Controller) {
                         h("summary", { text: "보관된 활동 기록 확인" }),
                         h("p", { className: "letter-body", text: selected.body }),
                       ]),
-                      failure && failure.code !== "invalid_payload"
-                        ? button(
-                            "편지 모델 설정",
-                            () => {
-                              controller.setSettingsSection("manage");
-                              controller.navigate("settings");
-                            },
-                            { variant: "secondary" },
-                          )
-                        : null,
+                      modelSettings,
                     ])
                   : h("p", { className: "letter-body", text: selected.body }),
               ]),

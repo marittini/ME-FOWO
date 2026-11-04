@@ -65,7 +65,20 @@ export function createResidentLetterService(
             message: "우편 저장 한도에 도달해 새 편지를 저장할 수 없어요. 보관함으로 옮겨도 저장 공간은 줄지 않아요.",
             details: { stage: "capacity" },
           });
-        await profiles.ensure(worldId, [activity.residentId], profileConnection);
+        try {
+          await profiles.ensure(worldId, [activity.residentId], profileConnection);
+        } catch (error) {
+          if (
+            error instanceof FwError &&
+            ["generation_failed", "lm_unavailable", "context_too_large"].includes(error.code)
+          )
+            throw new FwError(error.code, {
+              message:
+                "편지에 사용할 주민 설정을 먼저 준비하지 못했어요. 주민 설정 제안의 모델 연결과 출력·문맥 한도를 확인한 뒤 다시 시도해 주세요.",
+              details: { stage: "profile", purpose: "profile" },
+            });
+          throw error;
+        }
         world = await loadWorld(persistence.documents, worldId);
         const resident = world.state.residents[activity.residentId];
         if (!resident) throw new FwError("invalid_payload");
@@ -77,15 +90,28 @@ export function createResidentLetterService(
         } catch {
           throw new FwError("lm_unavailable");
         }
-        const messages = buildResidentLetterMessages({
+        const ownLetterIds = new Set(
+          world.state.activities.completed
+            .filter((item) => item.residentId === resident.residentId && item.id !== activityId)
+            .map((item) => `resident-${item.id}`),
+        );
+        const recentLetters = world.state.mailbox.letters
+          .filter((letter) => ownLetterIds.has(letter.id))
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
+          .slice(-2)
+          .map(({ title, body }) => ({ title, body }));
+        const letterInput = {
           residentId: resident.residentId,
           residentName: resident.displayName,
           playerNickname: world.state.settings.playerNickname,
+          trust: resident.trust,
+          recentLetters,
           worldSetting: resident.worldSetting,
           activitySummary: activity.summary,
           memory: world.state.memory,
           worldGuideline: world.state.guidelines.world.enabled ? world.state.guidelines.world.text : "",
-        });
+        };
+        let messages = buildResidentLetterMessages(letterInput);
         const outputTokens = Math.min(
           2048,
           model.maxOutputTokens && model.maxOutputTokens > 0 ? model.maxOutputTokens : 2048,
@@ -96,8 +122,17 @@ export function createResidentLetterService(
             details: { stage: "output_limit" },
           });
         const inputTokens = model.maxContext ? model.maxContext - outputTokens - 256 : 12000;
+        // Earlier letters are optional style references; never let them displace the canonical profile or memories.
+        if (inputTokens > 0)
+          while (model.fitContext(messages, { maxTokens: inputTokens }).trimmed && letterInput.recentLetters.length) {
+            letterInput.recentLetters.shift();
+            messages = buildResidentLetterMessages(letterInput);
+          }
         if (inputTokens <= 0 || model.fitContext(messages, { maxTokens: inputTokens }).trimmed)
-          throw new FwError("context_too_large");
+          throw new FwError("context_too_large", {
+            message:
+              "편지에 필요한 주민 설정과 기억이 연결의 문맥 한도보다 길어요. 문맥이 더 큰 모델 연결을 선택해 주세요. 원문은 그대로 보관되어 있어요.",
+          });
         let completion;
         try {
           completion = await model.chatComplete(messages, { temperature: 0.8, maxTokens: outputTokens });

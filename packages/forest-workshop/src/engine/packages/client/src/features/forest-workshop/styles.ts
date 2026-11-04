@@ -866,7 +866,7 @@ button:focus-visible, .locked-block:focus-visible, .input:focus-visible, .slider
 .goal-start { width: 100%; }
 .goal-hint { margin: .25em 0; }
 .production-manual { border-top: 1px solid var(--ink); padding-top: .6em; }
-.production-manual > summary, .resident-abilities > summary, .profile-name-edit > summary, .letter-retry-state summary { min-height: 44px; padding: .6em .2em; font-weight: 700; cursor: pointer; }
+.production-manual > summary, .resident-abilities > summary, .profile-name-edit > summary, .letter-retry-state summary, .letter-model-settings > summary { min-height: 44px; padding: .6em .2em; font-weight: 700; cursor: pointer; }
 .production-manual[open] > * + * { margin-top: .8em; }
 .resident-summary-dialog .resident-detail { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .8em; }
 .resident-summary-dialog .detail-stage { max-height: 10em; min-height: 7em; }
@@ -883,6 +883,9 @@ button:focus-visible, .locked-block:focus-visible, .input:focus-visible, .slider
 .ticket-pack-reward strong { font-size: 1.3em; font-variant-numeric: tabular-nums; }
 .ticket-store .ticket-pack > .button { flex: none; padding: .6em .7em; }
 .ticket-store-received { margin: 0; min-height: 2.5em; padding: .5em; font-size: .8em; background: var(--fw-leaf-soft); border-radius: .6em; }
+.letter-model-settings .setting-block { padding: .5em 0; }
+.letter-model-settings .setting-row { grid-template-columns: 1fr; gap: .3em; }
+.letter-model-settings select { width: 100%; max-width: 100%; }
 .letter-retry-state > .error-line { margin: .6em 0; }
 @media (max-width: 350px) { .ticket-store .ticket-pack { flex-wrap: wrap; } .ticket-store .ticket-pack > .button { width: 100%; } }
 `;

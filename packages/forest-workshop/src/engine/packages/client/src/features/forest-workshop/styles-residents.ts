@@ -274,6 +274,7 @@ export const HOME_REACTION_STYLES = `
 .resident-touch:focus-visible { outline:3px solid var(--fw-accent); border-radius:1em; }
 .ground-stage .resident-spot.filled.left, .ground-stage .resident-spot.filled.right, .ground-stage .resident-spot.filled .figure, .ground-stage .resident-spot.filled .figure-body { animation-delay:-4s; }
 .resident-spot .figure-body { transform-origin:50% 100%; animation:fw-footsteps 18s linear infinite; }
+.ground-stage .resident-spot.filled.reacting .figure-body { animation:fw-greeting 550ms ease-in-out both; }
 .resident-reaction { position:absolute; z-index:5; bottom:55%; left:65%; display:grid; justify-items:center; gap:.25em; padding:0; border:0; background:transparent; pointer-events:none; }
 .resident-spot.right .resident-reaction { left:auto; right:65%; }
 .resident-reaction[hidden] { display:none; }
@@ -283,5 +284,5 @@ export const HOME_REACTION_STYLES = `
 22%,26%,30%,34%,38%,42%,72%,76%,80%,84%,88%,92% { transform:translateX(-50%) translateY(-3%) scale(.98,1.02); }
 24%,28%,32%,36%,40%,44%,74%,78%,82%,86%,90%,94% { transform:translateX(-50%) scale(1.025,.975); } }
 .editing-ground .figure-body { animation-play-state:paused; }
-@media (prefers-reduced-motion:reduce) { .resident-spot .figure-body, .resident-spot.reacting .figure-body { animation:none; } }
+@media (prefers-reduced-motion:reduce) { .resident-spot .figure-body, .ground-stage .resident-spot.filled.reacting .figure-body { animation:none; } }
 `;

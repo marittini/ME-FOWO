@@ -1,0 +1,8 @@
+[
+  "actual unavailable profile connection attributed correctly; choose profile connection in the same letter without altering letter/story choices",
+  "one explicit retry prepares legacy profile once then writes the letter once through actual engine connections",
+  "saved letter reopens without provider call",
+  "production: select target/quantity then one action; returns to actual work status",
+  "resident dialog actually centered; compact summary and X close",
+  "shop centered; balance and inline receipt update without moving refill button"
+]

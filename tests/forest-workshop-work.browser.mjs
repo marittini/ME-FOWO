@@ -250,6 +250,27 @@ try {
   assert.equal(await page.evaluate(() => window.facilitiesTab), "protection");
   await page.getByRole("button", { name: "창고 · 판매", exact: true }).click();
   assert.equal(await page.evaluate(() => window.facilitiesTab), "storage");
+  await page.evaluate(() => {
+    window.testState.world.value.state.production.facilities["gather-yard"].waiting = { reason: "queue_empty" };
+    window.testRender();
+  });
+  await page.getByRole("button", { name: "생산 설정 열기", exact: true }).click();
+  assert.equal(
+    await page.evaluate(() => window.testState.work.section),
+    "recipe",
+    "empty production directly opens its settings",
+  );
+  await page.evaluate(() => {
+    window.testState.work.section = "status";
+    window.testState.world.value.state.production.facilities["gather-yard"].waiting = { reason: "target_reached" };
+    window.testRender();
+  });
+  await page.getByRole("button", { name: "목표 재고 바꾸기", exact: true }).click();
+  assert.equal(
+    await page.evaluate(() => window.testState.work.section),
+    "recipe",
+    "reached target directly opens its stock settings",
+  );
   console.log("Work status/settings tabs, arrow priority selection, recipe tree and inventory access: OK");
 } finally {
   await browser?.close();

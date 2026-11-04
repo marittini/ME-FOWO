@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { FwError } from "../packages/forest-workshop/src/engine/packages/server/src/services/forest-workshop/domain/errors";
+import type { HostLanguageModelMessage } from "../packages/forest-workshop/src/engine/packages/server/src/services/forest-workshop/host/engine-adapter";
 import { FakeHost } from "./support/forest-workshop-fake-host";
 import { createWorldState } from "../packages/forest-workshop/src/engine/packages/server/src/services/forest-workshop/domain/world-model";
 import { residentSchema } from "../packages/forest-workshop/src/engine/packages/server/src/services/forest-workshop/domain/model/residents";
@@ -23,6 +25,9 @@ async function scenario(
     full?: boolean;
     preserveReport?: boolean;
     archived?: boolean;
+    profileFailure?: boolean;
+    previousLetters?: boolean;
+    optionalContextTooLarge?: boolean;
   } = {},
 ) {
   const host = new FakeHost(),
@@ -67,7 +72,39 @@ async function scenario(
   if (options.full)
     for (let i = state.mailbox.letters.length; i < 200; i++)
       state.mailbox.letters.push({ ...state.mailbox.letters[1]!, id: `fill-${i}`, eventId: `fill-${i}` });
+  state.residents[residentId]!.trust = 63;
+  if (options.previousLetters) {
+    const otherId = "55555555-5555-4555-8555-555555555555";
+    state.residents[otherId] = {
+      ...state.residents[residentId]!,
+      residentId: otherId,
+      sourceId: "other",
+      displayName: "이웃",
+    };
+    for (const [id, owner, date, text] of [
+      ["66666666-6666-4666-8666-666666666666", residentId, "2026-11-02T00:00:00.000Z", "오래된 내 편지"],
+      ["77777777-7777-4777-8777-777777777777", otherId, "2026-11-03T12:00:00.000Z", "다른 주민의 편지 원문"],
+      ["88888888-8888-4888-8888-888888888888", residentId, "2026-11-03T00:00:00.000Z", "최근 내 편지"],
+    ] as const) {
+      state.activities.completed.push({
+        ...state.activities.completed[0]!,
+        id,
+        residentId: owner,
+        completedAt: date,
+        mailId: `activity-${id}`,
+      });
+      state.mailbox.letters.unshift({
+        ...state.mailbox.letters[0]!,
+        id: `resident-${id}`,
+        eventId: `resident-${id}`,
+        createdAt: date,
+        title: text,
+        body: text,
+      });
+    }
+  }
   await createWorldDocument(host.documents, state, now, "letter test");
+  let captured: HostLanguageModelMessage[] = [];
   let calls = 0,
     tokens = 0;
   const model: HostResolvedLanguageModel = {
@@ -79,9 +116,13 @@ async function scenario(
       messages,
       estimatedTokensBefore: 100,
       estimatedTokensAfter: 100,
-      trimmed: options.trimmed ?? false,
+      trimmed:
+        options.trimmed ??
+        (options.optionalContextTooLarge && JSON.parse(messages[1]!.content).recentLetters.length > 0) ??
+        false,
     }),
-    chatComplete: async (_messages, request) => {
+    chatComplete: async (messages, request) => {
+      captured = messages;
       calls++;
       tokens = request?.maxTokens ?? 0;
       if (options.throws) throw new Error("secret provider error must not be exposed");
@@ -97,8 +138,23 @@ async function scenario(
     { languageModels: { resolve: async () => model } },
     host.persistence,
     createCommandService(host.persistence, () => new Date(now)),
+    options.profileFailure
+      ? {
+          ensure: async () => {
+            throw new FwError("lm_unavailable");
+          },
+        }
+      : undefined,
   );
-  return { state, host, service, calls: () => calls, tokens: () => tokens, request: { worldId, activityId } };
+  return {
+    state,
+    host,
+    service,
+    calls: () => calls,
+    tokens: () => tokens,
+    messages: () => captured,
+    request: { worldId, activityId },
+  };
 }
 async function main() {
   const one = await scenario({ full: true, archived: true });
@@ -144,6 +200,35 @@ async function main() {
   const full = await scenario({ full: true, preserveReport: true });
   await assert.rejects(full.service.generate(full.request), { code: "invalid_payload" });
   assert.equal(full.calls(), 0, "cannot overwrite non-system prose to make room");
+  const profile = await scenario({ profileFailure: true });
+  await assert.rejects(profile.service.generate(profile.request), (error) => {
+    const e = error as FwError;
+    assert.equal(e.code, "lm_unavailable");
+    assert.equal(e.details?.purpose, "profile");
+    assert.equal(e.details?.stage, "profile");
+    return true;
+  });
+  assert.equal(profile.calls(), 0, "profile failure does not call the letter model");
+  assert.deepEqual((await loadWorld(profile.host.documents, worldId)).state.mailbox, profile.state.mailbox);
+  const personal = await scenario({ previousLetters: true });
+  await personal.service.generate(personal.request);
+  const personalInput = JSON.parse(personal.messages()[1]!.content);
+  assert.equal(personalInput.trust, 63);
+  assert.deepEqual(
+    personalInput.recentLetters.map((l: { body: string }) => l.body),
+    ["오래된 내 편지", "최근 내 편지"],
+  );
+  assert.ok(!JSON.stringify(personalInput).includes("다른 주민의 편지 원문"));
+  const optional = await scenario({ previousLetters: true, optionalContextTooLarge: true });
+  await optional.service.generate(optional.request);
+  const fittedInput = JSON.parse(optional.messages()[1]!.content);
+  assert.deepEqual(fittedInput.recentLetters, []);
+  assert.equal(
+    fittedInput.setting,
+    optional.state.residents[residentId]!.worldSetting,
+    "canonical profile remains intact when optional references do not fit",
+  );
+  assert.equal(optional.calls(), 1, "fitting optional references does not add model calls");
   const context = await scenario({ trimmed: true });
   await assert.rejects(context.service.generate(context.request), { code: "context_too_large" });
   assert.equal(context.calls(), 0, "do not silently truncate canonical profiles");

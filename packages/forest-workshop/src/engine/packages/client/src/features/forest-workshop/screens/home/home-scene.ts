@@ -73,6 +73,7 @@ function spot(side: "left" | "right", resident: Resident | null, world: WorldSta
   if (resident) {
     const reaction = h("div", { className: "resident-reaction", attrs: { hidden: "" } });
     let hideReaction: ReturnType<typeof setTimeout> | undefined;
+    let endGreeting: ReturnType<typeof setTimeout> | undefined;
     const figure = h(
       "button",
       {
@@ -80,6 +81,12 @@ function spot(side: "left" | "right", resident: Resident | null, world: WorldSta
         attrs: { type: "button", "aria-label": `${resident.displayName}에게 인사하기` },
         on: {
           click: () => {
+            clearTimeout(endGreeting);
+            container.classList.remove("reacting");
+            const body = container.querySelector(".figure-body");
+            if (body instanceof HTMLElement) void body.offsetWidth;
+            container.classList.add("reacting");
+            endGreeting = setTimeout(() => container.classList.remove("reacting"), 600);
             reaction.hidden = false;
             clearTimeout(hideReaction);
             hideReaction = setTimeout(() => {

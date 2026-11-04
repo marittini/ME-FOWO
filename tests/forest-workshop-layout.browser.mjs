@@ -90,7 +90,11 @@ try {
         name: "host",
         setup(b) {
           b.onResolve({ filter: /^marinara:host$/ }, () => ({ path: "host", namespace: "test" }));
-          b.onLoad({ filter: /.*/, namespace: "test" }, () => ({ contents: "export const host={};", loader: "js" }));
+          b.onLoad({ filter: /.*/, namespace: "test" }, () => ({
+            contents:
+              'export const host={api:{api:{get:async(path)=>{if(path==="/connections") return [{id:"letter-model",name:"편지용 연결",model:"test-letter"},{id:"profile-model",name:"주민 설정용 연결",model:"test-profile"}];throw new Error("fixture unavailable");}}}};',
+            loader: "js",
+          }));
         },
       },
     ],
@@ -527,6 +531,26 @@ try {
       },
     },
   });
+  for (const purpose of ["letter", "profile"]) {
+    cases.push({
+      name: `mail-${purpose}-connection-open`,
+      route: "home",
+      patch: {
+        ...activityMail,
+        sheet: { kind: "mailbox", id: reportId, modelsOpen: true },
+        letterErrors: {
+          [`${base.world.value.worldId}:${letterActivity}`]: {
+            message:
+              purpose === "profile"
+                ? "편지에 사용할 주민 설정을 먼저 준비하지 못했어요. 주민 설정 제안의 모델 연결과 출력·문맥 한도를 확인한 뒤 다시 시도해 주세요."
+                : "AI 연결에서 편지 응답을 받지 못했어요. 연결을 확인한 뒤 다시 시도해 주세요.",
+            code: "generation_failed",
+            purpose,
+          },
+        },
+      },
+    });
+  }
   const replacedMail = structuredClone(activityMail);
   replacedMail.world.value.state.mailbox.letters[0] = {
     ...replacedMail.world.value.state.mailbox.letters[0],
