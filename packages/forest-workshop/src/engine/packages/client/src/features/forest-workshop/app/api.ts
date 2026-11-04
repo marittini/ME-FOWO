@@ -41,6 +41,13 @@ export const gameApi = {
       connectionId: readModelConnection("story"),
       profileConnectionId: readModelConnection("profile"),
     }),
+  preparePairRelationship: (worldId: string, pairId: string) =>
+    hostApi().post<{ ok: boolean }>(`${ROOT}/pairs/relationship`, {
+      worldId,
+      pairId,
+      connectionId: readModelConnection("story"),
+      profileConnectionId: readModelConnection("profile"),
+    }),
   getStoryOverview: (worldId: string) =>
     hostApi().get<StoryOverview>(`${ROOT}/stories?worldId=${encodeURIComponent(worldId)}`),
   getStory: (worldId: string, storyId: string) =>

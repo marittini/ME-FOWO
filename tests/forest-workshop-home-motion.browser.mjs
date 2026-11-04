@@ -194,7 +194,7 @@ try {
   );
   assert.equal(
     await resident.locator(".figure").evaluate((node) => getComputedStyle(node).animationName),
-    "fw-facing-left",
+    "fw-home-cast-facing",
   );
   await page.getByRole("button", { name: "산딸기 진행 중 · 작업 관리 열기" }).click();
   assert.equal(await page.evaluate(() => window.facility), "gather");

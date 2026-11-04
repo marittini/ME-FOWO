@@ -67,7 +67,9 @@ export const STORY_STYLES = `
 .stage-cast { position: absolute; inset: 0; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; align-items: end; padding: 0 4%; }
 .stage-spot { position: relative; display: block; height: 92%; }
 .stage-spot .figure { position: absolute; inset: 0; }
-.emotion-bubble { position: absolute; z-index: 2; bottom: var(--mark-bottom, 78%); left: var(--mark-left, 50%); transform: translateX(-50%); display: inline-grid; place-items: center; min-width: 2.2em; height: 2.2em; padding: 0 0.4em; border-radius: 999px; border: var(--line-in) solid var(--ink); background: #fff8e8; font-weight: 900; font-size: calc(var(--fs) * 1.2); }
+.story-stage .story-figure-body { container-type: inline-size; }
+.story-stage .story-figure-body > .emotion-bubble { bottom: calc(min(100%, 100cqw / var(--story-image-ratio, 1)) - 0.4em + var(--story-mark-height, 0%)); left: 50%; transform: translate(-50%, 0); }
+.emotion-bubble { position: absolute; z-index: 2; bottom: var(--mark-bottom, 78%); left: var(--mark-left, 50%); transform: translateX(-50%); display: inline-grid; place-items: center; min-width: calc(2.2em * var(--mark-scale, 1)); height: calc(2.2em * var(--mark-scale, 1)); padding: 0 calc(0.4em * var(--mark-scale, 1)); border-radius: 999px; border: var(--line-in) solid var(--ink); background: #fff8e8; font-weight: 900; font-size: calc(var(--fs) * 1.2 * var(--mark-scale, 1)); }
 .dialogue-box { position: relative; display: grid; gap: 0.5em; margin-top: -2.4em; padding: 1.4em 1.1em 1em; border-radius: 1.1em; border: var(--line) solid var(--ink); background: var(--fw-surface-3); box-shadow: var(--drop); min-height: 7.5em; }
 .dialogue-box p { margin: 0; }
 .speaker-tag { position: absolute; top: -1.1em; left: 0.9em; display: inline-flex; align-items: center; gap: 0.3em; padding: 0.25em 0.9em; border-radius: 0.6em; border: var(--line-in) solid var(--ink); background: #f2e2bd; font-weight: 900; }

@@ -34,7 +34,7 @@ async function main() {
   const before = JSON.stringify(old),
     migrated = migrateWorld(old);
   assert.equal(JSON.stringify(old), before, "migration never mutates old backup");
-  assert.equal(migrated.schemaVersion, 14);
+  assert.equal(migrated.schemaVersion, 15);
   assert.equal(migrated.production.sharedTargetStock, 17);
   for (const [id, facility] of Object.entries(migrated.production.facilities)) {
     assert.ok(facility.rules.every((rule) => rule.targetStock === 17));

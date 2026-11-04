@@ -49,7 +49,7 @@ async function main() {
     facility.job,
     "in-flight count job finishes once with its original inputs/time",
   );
-  assert.equal(migrated.schemaVersion, 14);
+  assert.equal(migrated.schemaVersion, 15);
   assert.equal(migrated.production.facilities["gather-yard"]!.mode, "auto");
   assert.deepEqual(migrated.production.facilities["gather-yard"]!.queue, []);
   assert.ok(migrated.production.facilities["gather-yard"]!.rules.every((r) => r.enabled));

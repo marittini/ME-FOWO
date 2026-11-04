@@ -177,20 +177,69 @@ window.renderHomeScene=renderHomeScene;window.readCount=readHomeDisplayCount;win
     castSamples[0].frames[2].foot,
     "shared movement continues along the path",
   );
+  const depthSamples = await page.evaluate(() => {
+    window.castState.homeDisplayCount = 2;
+    window.renderCast();
+    const spots = [...window.castRoot.querySelectorAll(".resident-spot.filled")];
+    const motion = (spot) =>
+      spot.getAnimations().find((animation) => animation.animationName === "fw-home-cast-wander");
+    const sample = (phases) => {
+      spots.forEach((spot, index) => {
+        const animation = motion(spot);
+        animation.pause();
+        const delay = Number.parseFloat(spot.style.animationDelay) * 1000;
+        animation.currentTime = phases[index] * 42000 + delay;
+      });
+      return spots.map((spot) => ({
+        footY: spot.getBoundingClientRect().bottom,
+        z: Number.parseInt(getComputedStyle(spot).zIndex, 10),
+      }));
+    };
+    const durations = spots.map((spot) => motion(spot).effect.getTiming().duration);
+    return { durations, first: sample([0.3, 0.65]), second: sample([0.65, 0.3]) };
+  });
+  assert.deepEqual(depthSamples.durations, [42000, 42000], "home wandering takes 42 seconds per loop");
+  for (const sample of [depthSamples.first, depthSamples.second]) {
+    assert.notEqual(sample[0].footY, sample[1].footY, "sampled residents stand at different depths");
+    const lower = sample[0].footY > sample[1].footY ? sample[0] : sample[1];
+    const higher = lower === sample[0] ? sample[1] : sample[0];
+    assert.ok(lower.z > higher.z, "the resident lower on screen paints in front");
+  }
+  const facing = await page.evaluate(() => {
+    const spots = [...window.castRoot.querySelectorAll(".resident-spot.filled")];
+    return spots.map((spot) => {
+      const figure = spot.querySelector(".figure");
+      const animation = figure.getAnimations().find((a) => a.effect.target === figure);
+      animation.pause();
+      const delay = Number.parseFloat(getComputedStyle(figure).animationDelay) * 1000;
+      const turns = [0.2, 0.6].map((phase) => {
+        animation.currentTime = phase * 42000 + delay;
+        return new DOMMatrix(getComputedStyle(figure).transform).a;
+      });
+      return { delay: getComputedStyle(figure).animationDelay, parentDelay: spot.style.animationDelay, turns };
+    });
+  });
+  for (const value of facing) {
+    assert.equal(value.delay, value.parentDelay, "facing follows each resident's movement phase");
+    assert.deepEqual(value.turns, [1, -1], "facing turns when the path changes horizontal direction");
+  }
   const editMotion = await page.evaluate(() => {
     window.castState.homeDisplayCount = 6;
     window.renderCast();
     const scene = window.castRoot.querySelector(".scene"),
       spot = window.castRoot.querySelector(".ground-stage .resident-spot.filled");
     scene.classList.add("editing-ground");
-    return getComputedStyle(spot).animationPlayState;
+    return [
+      getComputedStyle(spot).animationPlayState,
+      getComputedStyle(spot.querySelector(".figure")).animationPlayState,
+    ];
   });
-  assert.equal(editMotion, "paused", "ground editing pauses resident movement");
+  assert.deepEqual(editMotion, ["paused", "paused"], "ground editing pauses resident movement");
   await page.emulateMedia({ reducedMotion: "reduce" });
   const reducedMotionCount = await page.evaluate(() => {
     window.castRoot.querySelector(".scene").classList.remove("editing-ground");
     window.renderCast();
-    return window.castRoot.querySelector(".ground-stage .resident-spot.filled").getAnimations().length;
+    return window.castRoot.querySelector(".ground-stage .resident-spot.filled").getAnimations({ subtree: true }).length;
   });
   assert.equal(reducedMotionCount, 0, "reduced motion disables resident movement");
   await page.emulateMedia({ reducedMotion: "no-preference" });

@@ -16,6 +16,7 @@ type RawWorld = Record<string, unknown>;
 
 /** `MIGRATIONS[n]` turns a version-n document into version n+1. Add one entry per schema bump; never edit old ones. */
 const MIGRATIONS: Readonly<Record<number, (world: RawWorld) => RawWorld>> = {
+  14: (world) => ({ ...world, schemaVersion: 15 }),
   13: (world) => {
     const production = world.production as WorldState["production"];
     const values = Object.values(production.facilities).flatMap((facility) =>

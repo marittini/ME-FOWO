@@ -25,6 +25,7 @@ import { PACKAGE_VERSION } from "./package-info";
 import { createBackupService } from "./services/backup-service";
 import { createCommandService } from "./services/command-service";
 import { createResidentLetterService } from "./services/resident-letter-service";
+import { createPairRelationshipService } from "./services/pair-relationship-service";
 import { createStoryService } from "./services/story-service";
 import { findStory } from "./store/story-repository";
 import { createProfileService } from "./services/profile-service";
@@ -70,6 +71,7 @@ export async function activate({ app, api }: ActivationContext) {
     settlement: createSettlementService(persistence),
     commands,
     residentLetters: createResidentLetterService(runtime, persistence, commands, profiles),
+    pairRelationships: createPairRelationshipService(runtime, persistence, profiles),
     stories,
     backups: createBackupService(persistence, PACKAGE_VERSION),
     storage: createStorageService(persistence),

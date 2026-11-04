@@ -363,6 +363,7 @@ export interface Pair {
   createdAt: string;
   archived: boolean;
   archivedAt: string | null;
+  initialRelationship?: string;
   familiarity: number;
   ease: number;
   lastEvent: { at: string; summary: string } | null;

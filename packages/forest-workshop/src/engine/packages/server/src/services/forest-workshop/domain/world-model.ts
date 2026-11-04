@@ -22,7 +22,7 @@ import { mailboxSchema, initialMailbox } from "./model/mailbox";
 
 import { activitiesSchema, initialActivities } from "./model/activities";
 
-export const CURRENT_SCHEMA_VERSION = 14;
+export const CURRENT_SCHEMA_VERSION = 15;
 
 const nonNegativeInt = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const displayText = (max: number) =>

@@ -66,6 +66,13 @@ function pairRow(
   const partner = partnerResident(pair, resident, world);
   const editing = state.relationsEditing;
   const busy = Boolean(state.busy[`pair-archive:${pair.pairId}`]);
+  const progress = world.state.stories.pairs[pair.pairId];
+  const hasDevelopedStory = Boolean(
+    progress?.completed.length || progress?.current?.episodes.some((episode) => episode.state !== "idle"),
+  );
+  const initialRelationship =
+    pair.familiarity === 0 && !pair.lastEvent && !hasDevelopedStory ? pair.initialRelationship : undefined;
+  const relationshipPending = Boolean(state.busy[`pair-relationship:${pair.pairId}`]);
   return h("li", { className: "pair-row card" }, [
     h("div", { className: "pair-faces" }, [
       h("span", { className: "pair-letters" }, [
@@ -83,7 +90,22 @@ function pairRow(
     h("div", { className: "pair-info" }, [
       h("div", { className: "relation-now" }, [
         h("small", { text: "현재 관계" }),
-        h("strong", { text: stageLabel(state.content, pair.familiarity) }),
+        h("strong", {
+          text:
+            initialRelationship ??
+            (pair.familiarity === 0 && !pair.lastEvent && !hasDevelopedStory
+              ? relationshipPending
+                ? "프로필을 바탕으로 관계를 살펴보고 있어요"
+                : "프로필 관계를 아직 살펴보지 않았어요"
+              : stageLabel(state.content, pair.familiarity)),
+        }),
+        !editing && !pair.initialRelationship && !hasDevelopedStory && pair.familiarity === 0 && !pair.lastEvent
+          ? button(
+              state.busy[`pair-relationship:${pair.pairId}`] ? "살펴보는 중…" : "프로필로 관계 살펴보기",
+              () => void controller.retryPairRelationship(pair.pairId),
+              { variant: "secondary", disabled: Boolean(state.busy[`pair-relationship:${pair.pairId}`]) },
+            )
+          : null,
       ]),
       h("p", { className: "recent" }, [
         h("span", { className: "recent-label", text: "최근 사건" }),

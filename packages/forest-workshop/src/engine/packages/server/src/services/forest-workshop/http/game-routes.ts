@@ -61,6 +61,7 @@ import { FwError } from "../domain/errors";
 import type { RebuildService } from "../services/rebuild-service";
 import type { SettlementService } from "../services/settlement-service";
 import type { ResidentLetterService } from "../services/resident-letter-service";
+import type { PairRelationshipService } from "../services/pair-relationship-service";
 import type { StoryService } from "../services/story-service";
 import type { SourceService } from "../services/source-service";
 import type { StorageService } from "../services/storage-service";
@@ -82,6 +83,7 @@ export interface GameRouteServices {
   settlement: SettlementService;
   stories: StoryService;
   residentLetters: ResidentLetterService;
+  pairRelationships: PairRelationshipService;
   logger: RouteLogger | undefined;
 }
 
@@ -156,6 +158,13 @@ export function registerGameRoutes(router: FastifyInstance, services: GameRouteS
 
   router.post("/mail/generate", async (request: FastifyRequest, reply: FastifyReply) =>
     respond(reply, logger, "resident letter generate", async () => services.residentLetters.generate(request.body)),
+  );
+
+  router.post("/pairs/relationship", async (request: FastifyRequest, reply: FastifyReply) =>
+    respond(reply, logger, "pair relationship", async () => {
+      await services.pairRelationships.ensure(request.body);
+      return { ok: true };
+    }),
   );
 
   router.post("/stories/prepare", async (request: FastifyRequest, reply: FastifyReply) =>

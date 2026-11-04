@@ -385,7 +385,16 @@ try {
       weatherError: "현재 날씨를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.",
     },
   });
-  for (const background of ["forest-clearing", "river-bridge", "herb-garden"])
+  for (const background of [
+    "forest-clearing",
+    "river-bridge",
+    "herb-garden",
+    "forest-trail",
+    "workshop-yard-spring",
+    "workshop-yard-summer",
+    "workshop-yard-autumn",
+    "workshop-yard-winter",
+  ])
     cases.push({
       name: `story-${background}`,
       route: "story",

@@ -44,7 +44,10 @@ export function emotionPosition(placement: Placement) {
  * The full-body figure on a stage. `placement` overrides the saved one (주민 그림 preview while sliding).
  * The stage is sized by its container; the figure stands on the stage's bottom edge.
  */
-export function residentFigure(resident: Resident, options: { placement?: Placement; marker?: boolean } = {}) {
+export function residentFigure(
+  resident: Resident,
+  options: { placement?: Placement; marker?: boolean; storyMarker?: Element } = {},
+) {
   const placement = options.placement ?? resident.image.placement;
   const stage = h("span", { className: "figure", attrs: { "aria-hidden": "true" } });
   if (!resident.image.current) {
@@ -55,10 +58,24 @@ export function residentFigure(resident: Resident, options: { placement?: Placem
       ]),
     );
   } else {
-    const body = h("span", { className: "figure-body" }, [picture(resident, "figure-image")]);
+    const body = h("span", { className: `figure-body${options.storyMarker ? " story-figure-body" : ""}` }, [
+      picture(resident, "figure-image"),
+      options.storyMarker,
+    ]);
     body.style.height = `${placement.scale * 0.9}%`;
     body.style.left = `${50 + placement.offsetX * 0.5}%`;
+    body.style.setProperty("--story-mark-height", `${placement.markerHeight * 0.4}%`);
+    body.style.setProperty("--mark-scale", `${placement.scale / 100}`);
+    body.style.setProperty("--story-image-ratio", `${resident.image.current.width / resident.image.current.height}`);
     stage.append(body);
+  }
+  if (options.storyMarker && !resident.image.current) {
+    const position = emotionPosition(placement);
+    options.storyMarker.setAttribute(
+      "style",
+      `bottom:${position.bottom}%;left:${position.left}%;--mark-scale:${placement.scale / 100}`,
+    );
+    stage.append(options.storyMarker);
   }
   if (options.marker) {
     const marker = h("span", { className: "emotion-bubble", text: "?" });
