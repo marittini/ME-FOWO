@@ -51,7 +51,7 @@ try {
     const style = document.createElement("style");
     style.textContent = window.styles;
     const state = {
-      world: { state: "ready", value: { state: { progress: { starterKitClaimed: false } } } },
+      world: { state: "ready", value: { state: { progress: { starterKitClaimed: false, starterResidentId: null } } } },
       content: {
         starterKit: { gold: 200, tickets: 3, items: { "wild-berry": 4, wood: 2 } },
         items: [
@@ -61,7 +61,20 @@ try {
       },
       busy: {},
     };
-    root.append(style, window.renderStarterKitSheet(state, { runCommand() {}, hideStarterSheet() {} }));
+    const controller = { runCommand() {}, hideStarterSheet() {} };
+    root.append(style);
+    window.starterKitAudit = { root, state, controller };
+    root.append(window.renderStarterKitSheet(state, controller));
+  });
+  assert.equal(
+    await page.locator(".kit-gift").count(),
+    0,
+    "the starter kit stays hidden until a starter resident is selected",
+  );
+  await page.evaluate(() => {
+    const { root, state, controller } = window.starterKitAudit;
+    state.world.value.state.progress.starterResidentId = "starter-resident";
+    root.append(window.renderStarterKitSheet(state, controller));
   });
   const gift = page.locator(".kit-gift");
   const berry = page.locator(".item-wild-berry img");
