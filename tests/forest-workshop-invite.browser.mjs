@@ -205,6 +205,44 @@ try {
   assert.equal(await page.evaluate(() => window.delivered), "b");
   await orders.getByRole("button", { name: "완료 의뢰 납품 완료" }).click();
   assert.equal(await orders.getByText("납품 완료", { exact: true }).isVisible(), true);
+  await page.evaluate(() => {
+    window.testState.sheet = null;
+    window.testController.openTicketShop = () => {
+      window.testState.sheet = { kind: "ticket-shop" };
+      window.testRender();
+    };
+    window.testState.world.value.state.wallet = { gold: 0, tickets: 10, tokens: 0 };
+    window.testState.content.invite.goldPerTicket = 100;
+    window.testController.setTicketShopTab = (tab) => {
+      window.testState.sheet.tab = tab;
+      window.testRender();
+    };
+    window.testController.buyGold = (amount) => {
+      const wallet = window.testState.world.value.state.wallet;
+      wallet.tickets -= amount;
+      wallet.gold += amount * 100;
+      window.testRender();
+    };
+    window.testRender();
+  });
+  await page.getByRole("button", { name: /초대권.*무료 리필/ }).click();
+  assert.equal(await page.getByRole("button", { name: "초대권 10장 무료로 받기", exact: true }).count(), 1);
+  await page.getByRole("tab", { name: "골드 교환", exact: true }).click();
+  assert.equal(
+    await page
+      .getByRole("tab", { name: "골드 교환", exact: true })
+      .evaluate((node) => node.classList.contains("selected") && node.getBoundingClientRect().height >= 44),
+    true,
+  );
+  assert.equal(await page.getByRole("button", { name: "초대권 10장 무료로 받기", exact: true }).count(), 0);
+  await page.getByRole("button", { name: "초대권 10장을 사용해 1000 G 받기", exact: true }).click();
+  assert.equal(await page.getByText("보유 골드 1,000 G", { exact: true }).isVisible(), true);
+  assert.equal(
+    await page.getByRole("button", { name: "초대권 1장을 사용해 100 G 받기", exact: true }).isDisabled(),
+    true,
+  );
+  await page.getByRole("tab", { name: "초대권 리필", exact: true }).click();
+  assert.equal(await page.getByRole("button", { name: "초대권 10장 무료로 받기", exact: true }).isVisible(), true);
   console.log("Invite exchange and delivery selection: OK");
 } finally {
   await browser?.close();

@@ -564,6 +564,69 @@ try {
     route: "home",
     patch: { ...replacedMail, sheet: { kind: "mailbox", id: reportId } },
   });
+  const sixCast = withWorld((world) => {
+    const resident = world.residents.r;
+    for (let i = 2; i < 6; i++)
+      world.residents[`cast-${i}`] = {
+        ...structuredClone(resident),
+        residentId: `cast-${i}`,
+        displayName: `산책 주민 ${i}`,
+      };
+  });
+  cases.push({ name: "home-six-residents", route: "home", patch: { ...sixCast, homeDisplayCount: 6 } });
+  cases.push({ name: "home-one-resident", route: "home", patch: { homeDisplayCount: 1 } });
+  cases.push({ name: "ticket-shop-gold", route: "invite", patch: { sheet: { kind: "ticket-shop", tab: "gold" } } });
+  for (const category of ["gathered", "grown", "processed", "goods"])
+    cases.push({
+      name: `storage-${category}`,
+      route: "facilities",
+      patch: { facilitiesTab: "storage", work: { ...base.work, inventoryCategory: category } },
+    });
+  const readHistory = withWorld((world) => {
+    world.stories.pairs.p = {
+      current: {
+        episodes: [
+          { state: "read", storyId: "test-1" },
+          { state: "read", storyId: "test-2" },
+        ],
+      },
+      completed: [],
+    };
+  });
+  cases.push({
+    name: "history-long-korean-title",
+    route: "explore",
+    patch: {
+      ...readHistory,
+      explore: {
+        ...base.explore,
+        tab: "story",
+        pairId: "p",
+        section: "history",
+        overview: {
+          state: "ready",
+          value: {
+            pairs: [
+              {
+                pairId: "p",
+                episodes: [
+                  { index: 0, status: "read" },
+                  { index: 1, status: "read" },
+                  { index: 2, status: "locked" },
+                ],
+                arc: {
+                  title: "비늘 끝에 맺힌 진액과 공방에서 함께 보낸 긴 오후의 이야기",
+                  place: "숲",
+                  discovery: "풀잎",
+                },
+                completed: [{ title: "이전 편지와 함께 남긴 또 하나의 긴 이야기 제목", storyIds: ["old-1", "old-2"] }],
+              },
+            ],
+          },
+        },
+      },
+    },
+  });
   const findings = [];
   for (const config of [
     { width: 320, height: 640, font: 22 },
@@ -632,6 +695,63 @@ try {
             reachableWithoutScroll,
             true,
             "production action and named manual settings entry are visible without scrolling at default mobile size",
+          );
+        }
+        if (test.name === "history-long-korean-title") {
+          const rows = await page.locator(".completed-arc").evaluateAll((nodes) =>
+            nodes.map((node) => {
+              const title = node.querySelector(".completed-arc-title").getBoundingClientRect(),
+                actions = node.querySelector(".completed-arc-actions").getBoundingClientRect();
+              return { wide: title.width >= node.clientWidth * 0.7, below: actions.top >= title.bottom - 1 };
+            }),
+          );
+          assert.ok(
+            rows.length >= 2 && rows.every((row) => row.wide && row.below),
+            "both current and archived story titles have full-width rows above replay buttons",
+          );
+        }
+        if (test.name === "resident-detail-popup" && config.width === 390 && config.height === 844) {
+          const proof = await page.locator("fw-audit-host").evaluate((host) => {
+            const root = host.shadowRoot,
+              dialog = root.querySelector(".resident-summary-dialog"),
+              box = dialog.getBoundingClientRect(),
+              title = dialog.querySelector("h2").getBoundingClientRect(),
+              close = dialog.querySelector(".popup-close").getBoundingClientRect();
+            return {
+              portrait: dialog.querySelector(".detail-stage").getBoundingClientRect().width,
+              inside:
+                title.top >= box.top && title.left >= box.left && title.right <= box.right && close.right <= box.right,
+              always: dialog.querySelector(".resident-abilities").tagName === "SECTION",
+            };
+          });
+          assert.ok(proof.portrait >= 110 && proof.inside && proof.always, JSON.stringify(proof));
+        }
+        if (test.name === "home" && config.width === 390 && config.height === 844) {
+          const proof = await page.locator("fw-audit-host").evaluate((host) => {
+            const root = host.shadowRoot;
+            return {
+              scene: root.querySelector(".scene").getBoundingClientRect().height,
+              hudInFlow:
+                root.querySelector(".top-home").getBoundingClientRect().bottom <=
+                root.querySelector(".scene").getBoundingClientRect().top + 1,
+              footerRow:
+                Math.abs(
+                  root.querySelector(".strip.offline").getBoundingClientRect().top -
+                    root.querySelector(".delivery-summary").getBoundingClientRect().top,
+                ) < 1,
+              story: !!root.querySelector(".strip.story"),
+              delivery: !!root.querySelector(".delivery-summary"),
+              weatherTop: root.querySelector(".season-weather").parentElement === root.querySelector(".top-row"),
+            };
+          });
+          assert.ok(
+            proof.scene >= 350 &&
+              !proof.story &&
+              proof.delivery &&
+              proof.weatherTop &&
+              proof.hudInFlow &&
+              proof.footerRow,
+            JSON.stringify(proof),
           );
         }
         const result = await page.locator("fw-audit-host").evaluate((host) => {

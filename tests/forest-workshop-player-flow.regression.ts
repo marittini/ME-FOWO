@@ -49,7 +49,7 @@ async function main() {
     facility.job,
     "in-flight count job finishes once with its original inputs/time",
   );
-  assert.equal(migrated.schemaVersion, 13);
+  assert.equal(migrated.schemaVersion, 14);
   assert.equal(migrated.production.facilities["gather-yard"]!.mode, "auto");
   assert.deepEqual(migrated.production.facilities["gather-yard"]!.queue, []);
   assert.ok(migrated.production.facilities["gather-yard"]!.rules.every((r) => r.enabled));
@@ -85,9 +85,11 @@ async function main() {
   assert.ok((finished.inventory["berry-pie"] ?? 0) >= 2, "tree actually produces its goal from raw inputs");
   assert.ok((finished.inventory["wild-berry"] ?? 0) >= 5, "protected material remains");
   assert.ok(worldStateSchema.safeParse(finished).success);
-  assert.throws(() => cmd(original, "production.setTree", { recipeId: "berry-pie", targetStock: 999 }), {
-    code: "invalid_request",
-  });
+  assert.equal(
+    cmd(original, "production.setTree", { recipeId: "berry-pie", targetStock: 999 }).state.production.sharedTargetStock,
+    999,
+    "global target does not multiply intermediate targets past the cap",
+  );
   assert.equal(original.inventory["berry-pie"], undefined, "configuration grants no free products");
   const host = new FakeHost();
   await createWorldDocument(host.documents, fresh(), now, "test");

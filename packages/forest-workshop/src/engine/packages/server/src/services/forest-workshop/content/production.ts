@@ -1,3 +1,4 @@
+export const DEFAULT_SHARED_TARGET_STOCK = 30;
 // Facilities and recipes (plan §7.2, §7.2-F). Content data: one facility per field (채집 · 재배 · 조사 · 가공 · 제작).
 // A new world opens with the first two (채집터 · 가공대), the small gather → process loop of the first play test
 // (plan §11 재미·부담 검증: 2시설 · 3제작법); the other three open by a one-time condition (해금 퀘스트, plan §7.2-F).

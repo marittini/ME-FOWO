@@ -26,8 +26,11 @@ import {
   type AutoReadingPreference,
   clampFontSize,
   readFontSize,
+  readHomeDisplayCount,
   readSeasonChoice,
   writeFontSize,
+  writeHomeDisplayCount,
+  normalizeHomeDisplayCount,
   writeSeasonChoice,
   type StoredSeasonChoice,
 } from "./preferences";
@@ -93,6 +96,8 @@ export interface AppState {
   restore: RestoreSelection | null;
   /** 설정 → 표시 → 글자 크기, per viewer. */
   fontSize: number;
+  homeDisplayCount: number;
+  homeVisit: number;
   autoReading: AutoReadingPreference;
   weatherEffects?: WeatherEffectsPreference;
   weatherCity?: string;
@@ -216,6 +221,8 @@ export function createController() {
     notice: null,
     restore: null,
     fontSize: readFontSize(),
+    homeDisplayCount: readHomeDisplayCount(),
+    homeVisit: 0,
     autoReading: readAutoReading(),
     weatherEffects: readWeatherEffects(),
     weatherCity: readWeatherCity(),
@@ -343,6 +350,7 @@ export function createController() {
   /** Opening a world the player chose (create, restore): a new navigation. */
   function enterWorld(view: WorldView, content?: GameContent) {
     gate.beginNavigation();
+    if (store.get().route !== "home") store.set((state) => ({ homeVisit: state.homeVisit + 1 }));
     applyWorld(view, content);
   }
 
@@ -372,7 +380,12 @@ export function createController() {
 
   async function openWorld(worldId: string) {
     const ticket = gate.beginNavigation();
-    store.set({ world: { state: "loading" }, route: "home", notice: null });
+    store.set((state) => ({
+      world: { state: "loading" },
+      route: "home",
+      notice: null,
+      homeVisit: state.route === "home" ? state.homeVisit : state.homeVisit + 1,
+    }));
     try {
       const view = await gameApi.getState(worldId);
       // The player may have opened another world meanwhile: this answer belongs to an older navigation.
@@ -407,7 +420,15 @@ export function createController() {
   }
 
   function navigate(route: Route) {
-    store.set({ route, notice: null, restore: null, sheet: null, relationsEditing: false });
+    const previousRoute = store.get().route;
+    store.set((state) => ({
+      route,
+      notice: null,
+      restore: null,
+      sheet: null,
+      relationsEditing: false,
+      homeVisit: route === "home" && previousRoute !== "home" ? state.homeVisit + 1 : state.homeVisit,
+    }));
     if (route === "worlds") void loadWorlds();
     if (route === "backup") void loadStorage();
   }
@@ -517,6 +538,13 @@ export function createController() {
       const fontSize = clampFontSize(value);
       writeFontSize(fontSize);
       store.set({ fontSize });
+    },
+
+    setHomeDisplayCount(value: number) {
+      if (!Number.isInteger(value) || value < 1 || value > 6) return;
+      const homeDisplayCount = normalizeHomeDisplayCount(value);
+      writeHomeDisplayCount(homeDisplayCount);
+      store.set({ homeDisplayCount });
     },
 
     setFacilitiesTab(tab: AppState["facilitiesTab"]) {

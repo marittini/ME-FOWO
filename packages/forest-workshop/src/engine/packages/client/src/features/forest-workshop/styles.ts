@@ -408,7 +408,7 @@ button.counter { cursor: pointer; }
 /* Home fits the available host viewport; detail sheets keep the full existing content. */
 .home-layout .scroll { overflow: hidden; }
 .home-layout .column { height: 100%; min-height: 0; position: relative; }
-.home-layout .top-home { position: absolute; inset: 0 0 auto; z-index: 3; }
+.home-layout .top-home { position: relative; flex:none; z-index: 3; }
 .home-layout .scene { flex: 1 1 auto; min-height: 0; aspect-ratio: auto; margin: 0; }
 .home-layout .scene-stage { bottom: 0.65em; }
 .home-layout .scene-caption { bottom: 0.2em; }
@@ -888,4 +888,33 @@ button:focus-visible, .locked-block:focus-visible, .input:focus-visible, .slider
 .letter-model-settings select { width: 100%; max-width: 100%; }
 .letter-retry-state > .error-line { margin: .6em 0; }
 @media (max-width: 350px) { .ticket-store .ticket-pack { flex-wrap: wrap; } .ticket-store .ticket-pack > .button { width: 100%; } }
+
+/* Home chrome occupies its own space; the stage receives the remaining viewport. */
+.home-layout .top-home { position:relative; inset:auto; flex:none; padding:.35em .6em .15em; }
+.top-home .top-row:first-child { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:.5em; align-items:center; }
+.top-home .sign-home { min-width:0; width:100%; max-width:12em; }
+.top-home .season-weather { display:flex; align-items:center; justify-content:flex-end; gap:.2em; min-width:0; }
+.top-home .season-badge { border:0; background:none; padding:0 .25em; font-size:calc(var(--fs)*.7); }
+.top-home .weather { min-height:44px; padding:.2em .4em; font-size:calc(var(--fs)*.8); }
+.top-home .weather .icon { width:1.15em; height:1.15em; }
+.top-home .top-row.second { display:flex; justify-content:flex-end; align-items:center; gap:.45em; padding:0; }
+.top-home .resources { margin:0; }
+.home-layout .work-summary { grid-column:1 / -1; min-height:3em; }
+.home-layout .strip.offline { grid-column:auto; min-height:44px; padding:.35em .45em; gap:.3em; font-size:calc(var(--fs)*.75); }
+.home-layout .strip.offline > span { display:grid; min-width:0; text-align:left; }
+.home-layout .offline-limit { display:none; }
+.home-layout .strip.offline > .muted-icon { display:none; }
+.home-layout .delivery-summary { min-height:44px; font-size:calc(var(--fs)*.82); justify-content:center; }
+.home-layout .delivery-summary > .icon:last-child { display:none; }
+.shared-goal { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:.35em; align-items:center; }
+.shared-goal > span { font-size:calc(var(--fs)*.8); }
+.shared-goal > .outline-button { min-height:44px; padding:.35em; font-size:calc(var(--fs)*.75); }
+[aria-label="창고 품목 분류"] { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.35em; width:100%; }
+[aria-label="창고 품목 분류"] .pill-tab { min-height:44px; padding:.3em; min-width:0; }
+@media(max-width:360px) { .shared-goal { grid-template-columns:minmax(0,1fr) auto; } .shared-goal > .outline-button { grid-column:1/-1; } }
+
+.home-layout .page > .strip.offline { grid-column:1; grid-row:2; }
+.home-layout .page > .delivery-summary { grid-column:2; grid-row:2; }
+
+.ticket-store .segment { min-height:44px; }
 `;

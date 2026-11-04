@@ -12,5 +12,6 @@ export const INVITE_RULES = {
   /** The draw that follows this many draws without a new resident brings a new one (if anyone is still waiting). */
   guaranteeAfter: 9,
   tokensPerExchange: 5,
+  goldPerTicket: 100,
   logLimit: 50,
 } as const;

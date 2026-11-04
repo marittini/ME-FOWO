@@ -56,17 +56,25 @@ function drawnBackdrop() {
   return svg;
 }
 
-/** Up to two recruited residents, the starting resident first. */
-function sceneResidents(world: WorldState): Resident[] {
-  const starter = world.progress.starterResidentId;
-  return Object.values(world.residents)
-    .filter((resident) => resident.recruited)
-    .sort(
-      (a, b) =>
-        Number(b.residentId === starter) - Number(a.residentId === starter) ||
-        a.registeredAt.localeCompare(b.registeredAt),
-    )
-    .slice(0, 2);
+let castCache: { key: string; residentIds: string[] } | null = null;
+function sceneResidents(world: WorldState, worldId: string, limit: number, visit: number): Resident[] {
+  const key = JSON.stringify([
+    worldId,
+    visit,
+    limit,
+    Object.values(world.residents)
+      .filter((r) => r.recruited)
+      .map((r) => r.residentId)
+      .sort(),
+  ]);
+  if (castCache?.key === key) return castCache.residentIds.map((id) => world.residents[id]).filter(Boolean);
+  const roster = Object.values(world.residents).filter((resident) => resident.recruited);
+  for (let i = roster.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [roster[i], roster[j]] = [roster[j], roster[i]];
+  }
+  castCache = { key, residentIds: roster.slice(0, limit).map((resident) => resident.residentId) };
+  return castCache.residentIds.map((id) => world.residents[id]).filter(Boolean);
 }
 
 function spot(side: "left" | "right", resident: Resident | null, world: WorldState, controller: Controller) {
@@ -158,14 +166,31 @@ function deliveryBoard(state: AppState, controller: Controller, editing: boolean
 }
 
 export function renderHomeScene(state: AppState, controller: Controller) {
-  const world = state.world?.state === "ready" ? state.world.value.state : null;
-  const residents = world ? sceneResidents(world) : [];
+  const worldView = state.world?.state === "ready" ? state.world.value : null;
+  const world = worldView?.state ?? null;
+  const displayCount = state.homeDisplayCount ?? 2;
+  const visit = state.homeVisit ?? 0;
+  const residents = world && worldView ? sceneResidents(world, worldView.worldId, displayCount, visit) : [];
   const ground = world?.settings.ground ?? { left: 12, right: 88, top: 58, bottom: 90 };
+  const inviteSlot = Boolean(world && residents.length < 2 && displayCount >= 2);
+  const firstInvite = Boolean(world && residents.length === 0 && world.progress.starterResidentId === null);
+  const slotCount = Math.max(residents.length, inviteSlot ? residents.length + 1 : 0, firstInvite ? 1 : 0);
   const cast = world
-    ? h("div", { className: "scene-stage ground-stage" }, [
-        spot("left", residents[0] ?? null, world, controller),
-        spot("right", residents[1] ?? null, world, controller),
-      ])
+    ? h(
+        "div",
+        {
+          className: `scene-stage ground-stage home-cast cast-count-${slotCount}`,
+          attrs: { "data-cast-count": String(slotCount) },
+        },
+        Array.from({ length: slotCount }, (_, index) => {
+          const side = index % 2 === 0 ? "left" : "right";
+          const resident = residents[index] ?? null;
+          const node = spot(side, resident, world, controller);
+          node.classList.add("cast-slot", `cast-slot-${index}`);
+          node.style.animationDelay = `${-4 - index * 1.7}s`;
+          return node;
+        }),
+      )
     : null;
   if (cast)
     cast.style.cssText = `left:${ground.left}%;top:${ground.top}%;width:${ground.right - ground.left}%;height:${ground.bottom - ground.top}%;right:auto;bottom:auto;padding:0;`;
@@ -212,6 +237,8 @@ export function renderHomeScene(state: AppState, controller: Controller) {
     world?.settings.board,
     state.settingsBoardDraft,
     editingGround(state),
+    visit,
+    displayCount,
   ]);
   return scene;
 }

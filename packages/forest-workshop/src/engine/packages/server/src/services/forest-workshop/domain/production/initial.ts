@@ -1,6 +1,12 @@
 // The production state a world starts with: every facility at level 1 in automatic mode with the recommended rules,
 // so the first session already shows a small gather → process loop running by itself (plan §7.2-E).
-import { FACILITIES, RECIPES, RECOMMENDED_RULES, facilityDefinition } from "../../content/production";
+import {
+  DEFAULT_SHARED_TARGET_STOCK,
+  FACILITIES,
+  RECIPES,
+  RECOMMENDED_RULES,
+  facilityDefinition,
+} from "../../content/production";
 import { seededUuid } from "../ids";
 import type { FacilityState, ProductionState, Rule } from "../model/production";
 
@@ -38,7 +44,10 @@ export function initialFacility(worldId: string, facilityId: string): FacilitySt
     unlocked: facilityDefinition(facilityId)?.unlock === null,
     level: 1,
     mode: "auto",
-    rules: completeRules(worldId, facilityId, recommendedRules(worldId, facilityId)),
+    rules: completeRules(worldId, facilityId, recommendedRules(worldId, facilityId)).map((rule) => ({
+      ...rule,
+      targetStock: DEFAULT_SHARED_TARGET_STOCK,
+    })),
     queue: [],
     residentId: null,
     job: null,
@@ -52,6 +61,7 @@ export function initialProduction(worldId: string): ProductionState {
     facilities[facility.id] = initialFacility(worldId, facility.id);
   }
   return {
+    sharedTargetStock: DEFAULT_SHARED_TARGET_STOCK,
     simMs: 0,
     facilities,
     protectedStock: {},

@@ -52,7 +52,7 @@ img.scene-art { object-fit: cover; object-position: 50% 20%; }
 .scene-board {
   position: absolute;
   left: clamp(calc(12px - var(--scene-image-left)), 84%, calc(100cqw - var(--scene-image-left) - clamp(56px, 16%, 96px) - 12px));
-  top: max(31%, calc(12em - var(--scene-image-top)));
+  top: clamp(calc(12px - var(--scene-image-top)), 31%, calc(100cqh - var(--scene-image-top) - clamp(56px, 16%, 96px) - 12px));
   width: clamp(56px, 16%, 96px);
   aspect-ratio: 1;
   min-height: 44px;
@@ -75,7 +75,6 @@ img.emotion-bubble.emotion-art { min-width: 0; width: 2.6em; height: 2.6em; padd
 
 /* 홈 (board 01-1): the workshop scene fills the top of the screen and the sign, money and 날씨 sit on it. */
 .column:has(> .scene img.scene-art) { position: relative; }
-.column:has(> .scene img.scene-art) > .top-home { position: absolute; z-index: 3; top: 0; left: 0; right: 0; }
 .scene:has(img.scene-art) { aspect-ratio: 390 / 470; min-height: 22em; margin-bottom: 0; }
 .home-layout .scene:has(img.scene-art) { min-height: 0; aspect-ratio: auto; margin: 0; }
 @media (max-height: 480px) { .home-layout .scene:has(img.scene-art) { min-height: 12em; } }
@@ -184,33 +183,11 @@ img.emotion-bubble.emotion-art { min-width: 0; width: 2.6em; height: 2.6em; padd
 .tab.current { background: var(--fw-leaf-soft); box-shadow: inset 0 0 0 1px #769b55; }
 .tab.current .tab-label { border: 0; background: none; color: var(--fw-text); padding: 0; }
 
-/* Restore the report illustration and story banner; content may scroll instead of shrinking. */
-.home-layout .scroll { overflow-y: auto; }
-.home-layout .column { height: 100%; min-height: 100%; }
-.home-layout .scene { flex: 1 0 18em; min-height: 18em; height: auto; }
-.home-layout .page { grid-template-columns: minmax(0, 1fr); gap: 0.6em; }
-.home-layout .report-card { padding: 1em 1.15em; }
-.home-layout .report-title { font-size: calc(var(--fs) * 1.2); }
-.home-layout .report-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.5em; }
-.home-layout .report-items { padding: 0; border: 0; }
-.home-layout .report-slot { padding: 0; border: 0; background: none; }
-.home-layout .report-actions { min-width: 0; }
-.home-layout .report-button { min-width: 0; width: 100%; font-size: var(--fs); }
-.home-layout .strip.story { min-height: 5em; padding: 0.5em 0.8em; }
-.home-layout .story-art { display: flex; flex: none; width: 4em; height: 4em; padding: 0; border: 0; background: none; }
-.story-vignette { width: 100%; height: 100%; object-fit: contain; }
-.home-layout .story-text { flex: 1; min-width: 0; }
-.home-layout .story-text strong { font-size: var(--fs); }
-.home-layout .story-text span { font-size: calc(var(--fs) * 0.875); }
-.home-layout .strip.offline { grid-row: 2; }
 .trail-scene { position: relative; background: #dcebc4; aspect-ratio: 360 / 200; overflow: hidden; }
 .trail-background { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .trail-scene .trail-art { position: absolute; inset: 0; width: 100%; height: 100%; }
 .invite-scene { display: block; width: 100%; max-height: 17em; object-fit: cover; border-radius: 1em; }
 @media (max-width: 340px) {
-  .home-layout .report-body { grid-template-columns: minmax(0, 1fr); }
-  .home-layout .report-items { justify-content: space-around; }
-  .home-layout .report-button { min-height: 44px; }
   .rule-actions { grid-template-columns: minmax(0, 1fr); }
 }
 

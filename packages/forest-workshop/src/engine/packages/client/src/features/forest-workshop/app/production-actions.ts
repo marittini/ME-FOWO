@@ -17,7 +17,9 @@ export interface WorkView {
   recipePage?: number;
   advancedOpen?: boolean;
   inventoryPage?: number;
+  inventoryCategory?: "all" | "gathered" | "grown" | "misc" | "processed" | "goods";
   priorityPage?: number;
+  sharedTargetDraft?: number;
 }
 
 export type ProductionSheet =
@@ -155,16 +157,26 @@ export function createProductionActions(core: ControllerCore) {
     rememberProductionDetails(advancedOpen: boolean) {
       if (store.get().work.advancedOpen !== advancedOpen) patchWork({ advancedOpen });
     },
-    rememberGoalTarget(facilityId: string, policyId: string, targetStock: number) {
-      if (!Number.isInteger(targetStock) || targetStock < 1 || targetStock > 999) return;
-      editDraft(
-        facilityId,
-        (rules) => rules.map((rule) => (rule.policyId === policyId ? { ...rule, targetStock } : rule)),
-        true,
-      );
+    rememberSharedTarget(targetStock: number) {
+      if (Number.isInteger(targetStock) && targetStock >= 1 && targetStock <= 999)
+        store.remember((state) => ({ work: { ...state.work, sharedTargetDraft: targetStock } }));
+    },
+    async applySharedTarget(targetStock: number) {
+      const response = await core.runCommand("shared-target", "production.setSharedTarget", { targetStock });
+      if (response) {
+        const work = store.get().work;
+        const drafts = Object.fromEntries(
+          Object.entries(work.drafts).map(([id, rules]) => [id, rules.map((rule) => ({ ...rule, targetStock }))]),
+        );
+        patchWork({ drafts, ...(work.sharedTargetDraft === targetStock ? { sharedTargetDraft: undefined } : {}) });
+        core.notify("모든 품목의 공동 목표 재고를 적용했어요.");
+      }
     },
     setInventoryPage(page: number) {
       patchWork({ inventoryPage: Math.max(0, page) });
+    },
+    setInventoryCategory(category: NonNullable<WorkView["inventoryCategory"]>) {
+      patchWork({ inventoryCategory: category, inventoryPage: 0 });
     },
 
     setPriorityPage(priorityPage: number) {
@@ -186,17 +198,6 @@ export function createProductionActions(core: ControllerCore) {
 
     selectRule(facilityId: string, policyId: string) {
       patchWork({ selected: { ...store.get().work.selected, [facilityId]: policyId } });
-    },
-
-    changeTarget(facilityId: string, policyId: string, delta: number) {
-      const range = content()?.production.targetStock ?? { min: 1, max: 999 };
-      editDraft(facilityId, (rules) =>
-        rules.map((rule) =>
-          rule.policyId === policyId
-            ? { ...rule, targetStock: Math.min(range.max, Math.max(range.min, rule.targetStock + delta)) }
-            : rule,
-        ),
-      );
     },
 
     toggleRule(facilityId: string, policyId: string) {
@@ -226,7 +227,7 @@ export function createProductionActions(core: ControllerCore) {
         policyId: saved.find((rule) => rule.recipeId === template.recipeId)?.policyId ?? newUuid(),
         enabled: true,
         recipeId: template.recipeId,
-        targetStock: template.targetStock,
+        targetStock: world.state.production.sharedTargetStock,
         priority: template.priority,
       }));
       const recommendedIds = new Set(recommended.map((rule) => rule.recipeId));
@@ -299,6 +300,7 @@ export function createProductionActions(core: ControllerCore) {
       if (JSON.stringify(store.get().work.drafts) === draftsBefore)
         patchWork({
           drafts: {},
+          sharedTargetDraft: undefined,
           ...(store.get().route === "work" && store.get().work.facilityId === facilityBefore
             ? { section: "status" }
             : {}),

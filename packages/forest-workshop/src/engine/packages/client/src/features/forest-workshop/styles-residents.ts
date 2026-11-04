@@ -1,7 +1,9 @@
+import { HOME_CAST_STYLES } from "./styles-home-cast";
 // Styles for the resident boards: 03-1 주민, 03-2 관계, 04-2 주민 그림, 05-3 주민 등록, the 프로필 sheet and the
 // resident figure used everywhere (home scene included). Same tokens and sizing rules as styles.ts, which appends
 // this sheet.
 export const RESIDENT_STYLES = `
+
 .mail-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4em; }
 .mail-tabs [aria-pressed="true"] { outline: 2px solid var(--fw-accent); }
 .mail-list,.letter-detail { display: grid; gap: 0.6em; }
@@ -265,6 +267,51 @@ export const RESIDENT_STYLES = `
   .step-arrow { display: none; }
   .detail-action { flex-direction: column; gap: 0.1em; font-size: calc(var(--fs) * 0.85); }
 }
+/* Resident summary popup: keep its art inside the panel and give the profile room. */
+.sheet-backdrop.player-popup .sheet.resident-summary-dialog > .sheet-head {
+  background:transparent;
+  position: static;
+  top: auto;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+.player-popup .resident-summary-dialog .resident-dialog-title {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+.player-popup .resident-summary-dialog .popup-close {
+  flex: none;
+  margin: 0;
+}
+.player-popup .resident-summary-dialog .resident-detail {
+  grid-template-columns: minmax(8rem, 1fr) minmax(0, 1fr);
+  align-items: center;
+}
+.player-popup .resident-summary-dialog .detail-stage {
+  width: 100%;
+  max-height: none;
+  min-height: 0;
+  aspect-ratio: 1;
+}
+.player-popup .resident-summary-dialog .resident-abilities {
+  min-width: 0;
+  padding-top: 0.65em;
+  border-top: 1px solid var(--ink);
+}
+.player-popup .resident-summary-dialog .resident-abilities h3 {
+  margin: 0 0 0.45em;
+  font-size: calc(var(--fs) * 1.05);
+}
+@media (max-width: 380px) {
+  .player-popup .resident-summary-dialog .resident-detail {
+    grid-template-columns: minmax(7rem, 0.85fr) minmax(0, 1fr);
+    gap: 0.6em;
+  }
+}
+
+${HOME_CAST_STYLES}
 `;
 
 export const HOME_REACTION_STYLES = `

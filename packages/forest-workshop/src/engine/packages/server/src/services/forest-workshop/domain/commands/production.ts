@@ -58,8 +58,36 @@ export const setRules = defineCommand({
       recipes.add(rule.recipeId);
       policies.add(rule.policyId);
     }
-    const next = { ...facility, rules: completeRules(state.worldId, payload.facilityId, payload.rules) };
+    const next = {
+      ...facility,
+      rules: completeRules(state.worldId, payload.facilityId, payload.rules).map((rule) => ({
+        ...rule,
+        targetStock: state.production.sharedTargetStock,
+      })),
+    };
     return { state: putFacility(state, payload.facilityId, next), result: { facilityId: payload.facilityId } };
+  },
+});
+
+/** One stock goal for every item, independent of selected facility or recipe. */
+export const setSharedTarget = defineCommand({
+  type: "production.setSharedTarget",
+  requiresFreshView: false,
+  payloadSchema: z.object({ targetStock: z.number().int().min(1).max(999) }).strict(),
+  apply(state, payload) {
+    const facilities = Object.fromEntries(
+      Object.entries(state.production.facilities).map(([id, facility]) => [
+        id,
+        {
+          ...facility,
+          rules: facility.rules.map((rule) => ({ ...rule, targetStock: payload.targetStock })),
+        },
+      ]),
+    );
+    return {
+      state: { ...state, production: { ...state.production, sharedTargetStock: payload.targetStock, facilities } },
+      result: { targetStock: payload.targetStock },
+    };
   },
 });
 

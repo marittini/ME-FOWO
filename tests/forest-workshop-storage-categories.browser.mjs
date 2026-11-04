@@ -1,0 +1,250 @@
+// Browser regression for work section navigation and unapplied rule visibility.
+import assert from "node:assert/strict";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { build } from "esbuild";
+import { chromium } from "playwright";
+const temp = await mkdtemp(join(tmpdir(), "forest-storage-"));
+const client = resolve("packages/forest-workshop/src/engine/packages/client/src/features/forest-workshop");
+async function goToPage(scope, label, target) {
+  const picker = scope.getByRole("navigation", { name: label, exact: true });
+  const current = Number((await picker.locator("strong").innerText()).split("/")[0]) - 1;
+  for (let index = current; index !== target; index += index < target ? 1 : -1)
+    await scope
+      .getByRole("button", { name: `${label} · ${index < target ? "다음" : "이전"} 페이지`, exact: true })
+      .click();
+}
+let browser;
+try {
+  const entry = join(temp, "entry.ts"),
+    bundle = join(temp, "bundle.js");
+  await writeFile(
+    entry,
+    `import { renderFacilitiesScreen } from ${JSON.stringify(join(client, "screens/work/facilities-screen.ts"))};\nimport { STYLES } from ${JSON.stringify(join(client, "styles.ts"))};\nimport { RESIDENT_STYLES } from ${JSON.stringify(join(client, "styles-residents.ts"))};\nimport { PRODUCTION_STYLES } from ${JSON.stringify(join(client, "styles-production.ts"))};\nimport { INVITE_STYLES } from ${JSON.stringify(join(client, "styles-invite.ts"))};\nimport { STORY_STYLES } from ${JSON.stringify(join(client, "styles-story.ts"))};\nimport { ART_STYLES } from ${JSON.stringify(join(client, "styles-art.ts"))};\nwindow.renderFacilitiesScreen = renderFacilitiesScreen; window.fwStyles = STYLES + RESIDENT_STYLES + PRODUCTION_STYLES + INVITE_STYLES + STORY_STYLES + ART_STYLES;`,
+  );
+  await build({
+    entryPoints: [entry],
+    outfile: bundle,
+    bundle: true,
+    platform: "browser",
+    format: "iife",
+    logLevel: "silent",
+    plugins: [
+      {
+        name: "host",
+        setup(b) {
+          b.onResolve({ filter: /^marinara:host$/ }, () => ({ path: "host", namespace: "test" }));
+          b.onLoad({ filter: /.*/, namespace: "test" }, () => ({ contents: "export const host = {};", loader: "js" }));
+        },
+      },
+    ],
+  });
+  browser = await chromium.launch({
+    ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }
+      : {}),
+    args: ["--no-sandbox"],
+  });
+  const page = await browser.newPage({ viewport: { width: 390, height: 740 }, isMobile: true, hasTouch: true });
+  await page.setContent(
+    '<meta name="viewport" content="width=device-width, initial-scale=1"><div id="host" style="height:740px;width:390px"></div>',
+  );
+  await page.addScriptTag({ content: await readFile(bundle, "utf8") });
+  await page.evaluate(() => {
+    const root = document.querySelector("#host").attachShadow({ mode: "open" });
+    const ids = [
+      "wild-berry",
+      "herb",
+      "wheat",
+      "plank",
+      "berry-pie",
+      "honey",
+      "flour",
+      "berry-jam",
+      "dried-herb",
+      "thread",
+      "herb-tea",
+    ];
+    const items = ids.map((id, i) => ({
+      id,
+      name: `물건 ${i}`,
+      category:
+        id === "berry-pie"
+          ? "goods"
+          : ["plank", "flour", "berry-jam", "dried-herb", "thread", "herb-tea"].includes(id)
+            ? "processed"
+            : "material",
+      sellPrice: 1,
+    }));
+    window.testState = {
+      route: "facilities",
+      facilitiesTab: "storage",
+      work: { facilityId: "gather-yard", inventoryPage: 0, drafts: {}, selected: {}, queueRecipe: {} },
+      world: {
+        state: "ready",
+        value: {
+          state: {
+            inventory: Object.fromEntries(items.map((item) => [item.id, 3])),
+            production: { protectedStock: {}, autoSell: {}, facilities: {}, sales: { day: "2026-10-30", sold: {} } },
+            wallet: { gold: 0, tickets: 0 },
+          },
+        },
+      },
+      content: { items, production: { protectedStock: { min: 0, max: 999 } } },
+      sheet: null,
+      notice: null,
+      seasonChoice: "spring",
+      artReady: [
+        "ui/title-sign.webp",
+        "ui/paper-panel.webp",
+        "ui/primary-button.webp",
+        "backgrounds/workshop-base-spring.webp",
+      ],
+      busy: {},
+    };
+    window.testController = {
+      setInventoryPage(page) {
+        window.testState.work.inventoryPage = page;
+        window.testRender();
+      },
+      setInventoryCategory(category) {
+        window.testState.work.inventoryCategory = category;
+        window.testState.work.inventoryPage = 0;
+        window.testRender();
+      },
+      setFacilitiesTab(tab) {
+        window.testState.facilitiesTab = tab;
+        window.testState.work.inventoryPage = 0;
+        window.testRender();
+      },
+      openSheet(sheet) {
+        window.openedSheet = sheet;
+        if (sheet.kind === "protect-edit" || sheet.kind === "auto-sell") {
+          window.testState.sheet = sheet;
+          window.testRender();
+        }
+      },
+      rememberProtection(patch) {
+        const sheet = window.testState.sheet;
+        if (sheet?.kind !== "protect-edit") return;
+        sheet.page = patch.page ?? sheet.page;
+        if (patch.itemId !== undefined) sheet.drafts = { ...sheet.drafts, [patch.itemId]: patch.amount };
+      },
+      setProtected(itemId, amount) {
+        window.protectedSave = { itemId, amount };
+      },
+      rememberAutoSellPage(page) {
+        window.testState.sheet.page = page;
+      },
+      setAutoSell(itemId, setting) {
+        window.autoSaleSave = { itemId, setting };
+      },
+      closeSheet() {},
+      navigate() {},
+      openResidents() {},
+      openDeliveries() {},
+    };
+    window.testRender = () => {
+      root.innerHTML = "";
+      const style = document.createElement("style");
+      style.textContent = window.fwStyles;
+      root.append(style, window.renderFacilitiesScreen(window.testState, window.testController));
+    };
+    window.testRender();
+  });
+  assert.equal(await page.getByText("물건 0", { exact: true }).count(), 1);
+  const size = await page.locator("#host").evaluate((host) => {
+    const scroller = host.shadowRoot.querySelector(".scroll");
+    return { content: scroller.scrollWidth, available: scroller.clientWidth };
+  });
+  assert.ok(size.content <= size.available + 1, `storage must not scroll horizontally: ${JSON.stringify(size)}`);
+  assert.equal(await page.getByText("물건 3", { exact: true }).count(), 0);
+  await goToPage(page, "재고 목록 고르기", 2);
+  assert.equal(await page.getByText("물건 6", { exact: true }).count(), 1);
+  await goToPage(page, "재고 목록 고르기", 1);
+  assert.equal(await page.getByText("물건 3", { exact: true }).count(), 1);
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.locator("#host").evaluate((host) => {
+    host.style.width = "320px";
+    host.style.height = "640px";
+  });
+  const smallSize = await page.locator("#host").evaluate((host) => {
+    const scroller = host.shadowRoot.querySelector(".scroll");
+    return { content: scroller.scrollWidth, available: scroller.clientWidth };
+  });
+  assert.ok(
+    smallSize.content <= smallSize.available + 1,
+    `small storage must not scroll horizontally: ${JSON.stringify(smallSize)}`,
+  );
+  await page.getByRole("button", { name: "물건 3 팔기" }).click();
+  assert.deepEqual(await page.evaluate(() => window.openedSheet), { kind: "sell", itemId: "plank" });
+  await page.getByRole("button", { name: "제작품", exact: true }).click();
+  assert.equal(
+    await page.getByText("물건 4", { exact: true }).count(),
+    1,
+    "category selection resets to its first page",
+  );
+  assert.equal(await page.getByText("물건 3", { exact: true }).count(), 0);
+  await page.getByRole("button", { name: "가공품", exact: true }).click();
+  assert.equal(await page.getByText("물건 3", { exact: true }).count(), 1);
+  assert.equal(await page.getByText("물건 6", { exact: true }).count(), 1);
+  assert.equal(await page.getByText("물건 0", { exact: true }).count(), 0);
+  await goToPage(page, "재고 목록 고르기", 1);
+  assert.equal(await page.getByText("물건 9", { exact: true }).count(), 1);
+  assert.equal(await page.getByText("물건 10", { exact: true }).count(), 1);
+  assert.equal(await page.getByText("물건 0", { exact: true }).count(), 0);
+  await page.getByRole("button", { name: "기타 재료", exact: true }).click();
+  assert.equal(await page.getByText("물건 5", { exact: true }).count(), 1, "uncategorized material stays accessible");
+  await page.getByRole("button", { name: "전체", exact: true }).click();
+  await page.getByRole("tab", { name: "시설", exact: true }).click();
+  assert.equal(await page.getByText("물건 0", { exact: true }).count(), 1);
+  await goToPage(page, "재고 목록 고르기", 1);
+  assert.equal(await page.getByText("물건 3", { exact: true }).count(), 1);
+  await page.getByRole("button", { name: "편집하기" }).click();
+  await page.getByRole("button", { name: "늘리기 1", exact: true }).click();
+  await page.getByLabel("보호할 아이템").selectOption("3");
+  await page.getByLabel("보호할 아이템").selectOption("0");
+  await page.evaluate(() => window.testRender());
+  await page.getByRole("button", { name: "물건 0 보호 수량 저장" }).click();
+  assert.deepEqual(await page.evaluate(() => window.protectedSave), { itemId: "wild-berry", amount: 1 });
+  await page.locator("#host").evaluate((host) => host.style.setProperty("--fw-font-size", "22px"));
+  const controls = await page
+    .locator("#host")
+    .locator(".protect-row:not([hidden]) .step, .protect-row:not([hidden]) > .button")
+    .evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const box = button.getBoundingClientRect();
+        const range = document.createRange();
+        range.selectNodeContents(button);
+        return { text: button.textContent, width: box.width, height: box.height, lines: range.getClientRects().length };
+      }),
+    );
+  assert.ok(
+    controls.every((button) => button.width >= 44 && button.height >= 44 && button.lines === 1),
+    JSON.stringify(controls),
+  );
+  await page.getByRole("button", { name: "늘리기 10", exact: true }).click();
+  await page.getByRole("button", { name: "물건 0 보호 수량 저장" }).click();
+  assert.deepEqual(await page.evaluate(() => window.protectedSave), { itemId: "wild-berry", amount: 11 });
+  await page.evaluate(() => {
+    window.testState.sheet = { kind: "auto-sell" };
+    window.testRender();
+  });
+  assert.equal(await page.locator(".auto-sell-row:visible").count(), 1);
+  await page.getByRole("button", { name: "물건 0 남길 수량 늘리기 1", exact: true }).click();
+  await page.getByLabel("자동 판매할 품목").selectOption("3");
+  await page.getByLabel("자동 판매할 품목").selectOption("0");
+  await page.getByRole("button", { name: "켜기", exact: true }).click();
+  assert.deepEqual(await page.evaluate(() => window.autoSaleSave), {
+    itemId: "wild-berry",
+    setting: { enabled: true, keep: 1, dailyMax: 10, continuous: false },
+  });
+  await page.getByLabel("자동 판매할 품목").selectOption("3");
+  await page.evaluate(() => window.testRender());
+  assert.equal(await page.getByLabel("자동 판매할 품목").inputValue(), "3", "selected item survives a render");
+  console.log("Inventory category tabs, paging, and actions: OK");
+} finally {
+  await browser?.close();
+  await rm(temp, { recursive: true, force: true });
+}

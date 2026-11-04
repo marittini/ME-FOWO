@@ -227,47 +227,6 @@ function recipeCard(content: GameContent, rule: Rule | undefined, level: number,
   ]);
 }
 
-function targetRow(content: GameContent, world: WorldView, facilityId: string, rule: Rule, controller: Controller) {
-  const recipe = recipeOf(content, rule.recipeId);
-  const output = recipe ? Object.keys(recipe.outputs)[0]! : "";
-  const production = world.state.production;
-  const stock = world.state.inventory[output] ?? 0;
-  const pending = Object.values(production.facilities).reduce(
-    (total, facility) => total + (facility.job?.outputs[output] ?? 0),
-    0,
-  );
-  const fill = h("span", { className: "bar-fill red" });
-  fill.style.width = `${Math.min(100, Math.round(((stock + pending) / Math.max(1, rule.targetStock)) * 100))}%`;
-  const step = (delta: number, icon: IconFactory, label: string, plus = false) =>
-    h(
-      "button",
-      {
-        className: `step${plus ? " plus" : ""}`,
-        attrs: { type: "button", "aria-label": label },
-        on: { click: () => controller.changeTarget(facilityId, rule.policyId, delta) },
-      },
-      [icon("icon")],
-    );
-  return h("div", { className: "plan-row" }, [
-    h("span", { className: "plan-label", text: "목표 재고" }),
-    h("span", { className: "stepper" }, [
-      step(-1, ICONS.minus, "목표 1 줄이기"),
-      h("span", { className: "step-value", text: String(rule.targetStock), attrs: { "aria-live": "polite" } }),
-      step(1, ICONS.plus, "목표 1 늘리기", true),
-    ]),
-    h("span", { className: "plan-progress" }, [
-      h("span", { className: "muted" }, [
-        `현재 ${itemName(content, output)} `,
-        h("strong", { text: String(stock) }),
-        pending ? ` (+${pending} 진행 중)` : "",
-        " / 목표 ",
-        h("strong", { text: String(rule.targetStock) }),
-      ]),
-      h("span", { className: "bar" }, [fill]),
-    ]),
-  ]);
-}
-
 function materialsBlock(content: GameContent, world: WorldView, rule: Rule | undefined) {
   const recipe = rule ? recipeOf(content, rule.recipeId) : null;
   const inputs = recipe ? Object.entries(recipe.inputs) : [];
@@ -351,11 +310,7 @@ function priorityList(
                   },
                 },
               },
-              [
-                itemTile(output),
-                h("span", { className: "priority-name", text: recipe?.name ?? rule.recipeId }),
-                h("small", { className: "muted", text: `목표 ${rule.targetStock}` }),
-              ],
+              [itemTile(output), h("span", { className: "priority-name", text: recipe?.name ?? rule.recipeId })],
             ),
             h("button", {
               className: `chip-toggle${rule.enabled ? " on" : ""}`,
@@ -494,9 +449,12 @@ function productionSettings(
       on: { toggle: () => controller.rememberProductionDetails(advanced.open) },
     },
     [
-      h("summary", { text: "켜짐 · 목표 재고 · 작업 순서 직접 설정", attrs: { id: "fw-production-manual" } }),
+      h("summary", { text: "켜짐 · 작업 순서 직접 설정", attrs: { id: "fw-production-manual" } }),
       recipeCard(content, selected, facility.level, crewBonus(content, world.state, facilityId)),
-      selected ? targetRow(content, world, facilityId, selected, controller) : null,
+      h("p", {
+        className: "hint",
+        text: `전 품목 공동 목표 ${world.state.production.sharedTargetStock ?? 30}개 · 품목별 켜짐과 순서만 아래에서 바꿔요.`,
+      }),
       materialsBlock(content, world, selected),
       h("h3", { className: "section-title", text: "작업 우선순위" }),
       priorityList(content, facilityId, rules, selected?.policyId, controller),
@@ -537,12 +495,11 @@ function productionSettings(
       required: "",
       inputmode: "numeric",
       enterkeyhint: "done",
-      "aria-label": "목표 재고",
+      "aria-label": "공동 목표 재고",
     },
     on: {
       input: () => {
-        if (selected && quantity.checkValidity())
-          controller.rememberGoalTarget(facilityId, selected.policyId, quantity.valueAsNumber);
+        if (selected && quantity.checkValidity()) controller.rememberSharedTarget(quantity.valueAsNumber);
       },
       keydown: (event) => {
         if ((event as KeyboardEvent).key === "Enter") {
@@ -552,18 +509,20 @@ function productionSettings(
       },
     },
   });
-  quantity.value = String(selected?.targetStock ?? 1);
+  quantity.value = String(state.work.sharedTargetDraft ?? world.state.production.sharedTargetStock ?? 30);
   const step = (delta: number) =>
     h("button", {
       className: "step",
       text: delta < 0 ? "−" : "+",
-      attrs: { type: "button", "aria-label": `목표 재고 ${delta < 0 ? "1 줄이기" : "1 늘리기"}` },
+      attrs: { type: "button", "aria-label": `공동 목표 재고 ${delta < 0 ? "1 줄이기" : "1 늘리기"}` },
       on: {
         click: () => {
           if (!selected) return;
-          const current = quantity.checkValidity() ? quantity.valueAsNumber : selected.targetStock;
+          const current = quantity.checkValidity()
+            ? quantity.valueAsNumber
+            : (world.state.production.sharedTargetStock ?? 30);
           quantity.value = String(Math.max(1, Math.min(999, current + delta)));
-          controller.rememberGoalTarget(facilityId, selected.policyId, quantity.valueAsNumber);
+          controller.rememberSharedTarget(quantity.valueAsNumber);
         },
       },
     });
@@ -600,7 +559,21 @@ function productionSettings(
       Array.from({ length: pages }, (_, index) => `${index * 4 + 1}–${Math.min(rules.length, index * 4 + 4)}`),
       (value) => controller.setRecipePage(value),
     ),
-    selected ? h("div", { className: "goal-quantity" }, [h("span", { text: "목표 재고" }), picker]) : null,
+    h("div", { className: "goal-quantity shared-goal" }, [
+      h("span", { text: "공동 목표 재고" }),
+      picker,
+      h("button", {
+        className: "outline-button",
+        text: "전체 적용",
+        attrs: { type: "button" },
+        disabled: Boolean(state.busy["shared-target"]),
+        on: {
+          click: () => {
+            if (quantity.reportValidity()) void controller.applySharedTarget(quantity.valueAsNumber);
+          },
+        },
+      }),
+    ]),
     selected
       ? h("button", {
           className: "button goal-start",
@@ -619,7 +592,7 @@ function productionSettings(
       : null,
     h("p", {
       className: "hint goal-hint",
-      text: "재료도 준비 · 다른 품목은 쉬어요",
+      text: "재료는 한 번분 확보 · 다른 품목은 쉬어요",
     }),
     advanced,
   ];

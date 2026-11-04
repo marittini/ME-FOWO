@@ -21,8 +21,8 @@ export function inviteCounters(state: AppState, controller: Controller) {
       "button",
       {
         className: "counter ticket",
-        attrs: { type: "button", "aria-label": `초대권 ${tickets}장 — 초대권 받기` },
-        on: { click: () => controller.openDeliveries() },
+        attrs: { type: "button", "aria-label": `초대권 ${tickets}장 — 상점 · 무료 리필과 골드 교환` },
+        on: { click: () => controller.openTicketShop() },
       },
       [
         h("span", { className: "ticket-mark" }, [ICONS.ticket("icon")]),
@@ -245,12 +245,6 @@ export function renderInviteScreen(state: AppState, controller: Controller) {
     body: ready
       ? [
           tabs(state, controller),
-          h("button", {
-            className: "button secondary",
-            text: "초대권 상점 · 무료 리필",
-            attrs: { type: "button" },
-            on: { click: () => controller.openTicketShop() },
-          }),
           ...(state.inviteTab === "invite"
             ? inviteBody(state, world, content, controller)
             : exchangeBody(state, world, content, controller)),

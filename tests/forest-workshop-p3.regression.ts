@@ -217,6 +217,7 @@ async function main() {
       ...base,
       production: {
         ...base.production,
+        sharedTargetStock: 999,
         facilities: {
           ...base.production.facilities,
           "gather-yard": { ...yard, rules: [{ ...yard.rules[1]!, targetStock: 999 }] },
@@ -236,7 +237,7 @@ async function main() {
   // Targets, overproduction by at most one batch, protection, resume after use.
   {
     // Berry target 30: stock 29 + 3 from one run = 32 (one batch over), then the yard turns to herbs.
-    let state = world({ "wild-berry": 29, herb: 10, wood: 8 });
+    let state = world({ "wild-berry": 29, herb: 30, wood: 30 });
     state = {
       ...state,
       production: {
@@ -253,7 +254,7 @@ async function main() {
     assert.equal(
       state.production.facilities["gather-yard"]!.waiting?.reason,
       "target_reached",
-      "herbs (10) and wood (8) at target too",
+      "every gathered item shares target 30",
     );
 
     // Protection: 20 of 22 berries protected → jam waits, naming the protected amount.
@@ -362,7 +363,11 @@ async function main() {
       changed.state.production.facilities["gather-yard"]!.rules.every((rule) => rule.enabled),
       "new recipes are enabled by default",
     );
-    assert.equal(changed.state.production.facilities["gather-yard"]!.rules[0]!.targetStock, 12);
+    assert.equal(
+      changed.state.production.facilities["gather-yard"]!.rules[0]!.targetStock,
+      changed.state.production.sharedTargetStock,
+      "per-recipe payload cannot override shared target",
+    );
 
     // Upgrade: the server's cost, once even if the same tap is sent twice.
     const claimed = await run("onboarding.claimStarterKit", {});

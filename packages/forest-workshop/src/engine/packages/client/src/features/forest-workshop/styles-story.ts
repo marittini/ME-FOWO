@@ -45,7 +45,8 @@ export const STORY_STYLES = `
 .explore-strip { cursor: default; justify-content: flex-start; flex-wrap: wrap; }
 .strip-progress { display: grid; flex: 1; gap: 0.25em; min-width: 10em; }
 .completed-arc { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5em; padding: 0.45em 0.6em; border-radius: 0.8em; border: var(--line-in) solid var(--ink); background: var(--fw-surface-3); }
-.completed-arc strong { flex: 1; }
+.completed-arc > .completed-arc-title { flex: 1 1 100%; min-width: 0; overflow-wrap: anywhere; }
+.completed-arc > .completed-arc-actions { flex: 1 1 100%; width: 100%; min-width: 0; justify-content: flex-start; }
 
 /* 공방 이야기 */
 .story-layout .column { height: 100%; min-height: 0; }

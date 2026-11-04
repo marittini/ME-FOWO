@@ -8,7 +8,7 @@ import type { DrawResult } from "./types";
 export type InviteTab = "invite" | "exchange";
 
 export type InviteSheet =
-  | { kind: "ticket-shop" }
+  | { kind: "ticket-shop"; tab?: "refill" | "gold" }
   | { kind: "invite-result"; draws: DrawResult[]; page?: number }
   | { kind: "invite-chances"; page?: number }
   | { kind: "invite-log"; page?: number }
@@ -62,9 +62,21 @@ export function createInviteActions(core: ControllerCore) {
     openTicketShop() {
       store.set({ sheet: { kind: "ticket-shop" }, ticketRefillMessage: null });
     },
+    setTicketShopTab(tab: "refill" | "gold") {
+      store.set((state) =>
+        state.sheet?.kind === "ticket-shop" ? { sheet: { ...state.sheet, tab }, ticketRefillMessage: null } : {},
+      );
+    },
     async refillTickets(pack: "small" | "large" | "chest") {
       const response = await core.runCommand("tickets-refill", "invite.refillTickets", { pack });
       if (response) store.set({ ticketRefillMessage: `초대권 ${response.result.amount}장을 받았어요.` });
+    },
+    async buyGold(amount: number) {
+      const response = await core.runCommand(`tickets-gold:${amount}`, "invite.buyGold", { amount });
+      if (response)
+        store.set({
+          ticketRefillMessage: `초대권 ${response.result.ticketsSpent}장을 사용해 ${response.result.goldReceived} G를 받았어요.`,
+        });
     },
     async draw(count: number) {
       const response = await core.runCommand(`invite:${count}`, "invite.draw", { count });

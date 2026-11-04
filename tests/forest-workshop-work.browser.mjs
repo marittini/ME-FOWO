@@ -146,6 +146,13 @@ try {
         const rules = window.testState.work.drafts[facilityId];
         for (const rule of rules ?? []) if (rule.policyId === policyId) rule.targetStock = targetStock;
       },
+      rememberSharedTarget(targetStock) {
+        window.testState.work.sharedTargetDraft = targetStock;
+      },
+      applySharedTarget(targetStock) {
+        window.sharedApplied = targetStock;
+        window.testState.world.value.state.production.sharedTargetStock = targetStock;
+      },
       recommendRules() {},
       applyRules() {
         window.appliedRules = true;
@@ -194,7 +201,7 @@ try {
   assert.equal(await page.evaluate(() => window.facilitiesTab), "facilities");
   await page.getByRole("tab", { name: "생산 설정", exact: true }).click();
   assert.equal(await page.locator(".production-manual").evaluate((node) => node.open), false);
-  await page.getByText("켜짐 · 목표 재고 · 작업 순서 직접 설정", { exact: true }).click();
+  await page.getByText("켜짐 · 작업 순서 직접 설정", { exact: true }).click();
   assert.equal(await page.getByRole("heading", { name: "만들 물건을 골라 주세요", exact: true }).count(), 1);
   assert.equal(await page.getByRole("heading", { name: "작업 우선순위", exact: true }).count(), 1);
   await page.getByRole("button", { name: "이 시설 설정 적용", exact: true }).click();
@@ -225,9 +232,18 @@ try {
   assert.equal(await page.locator(".recipe-choice").count(), 3);
   assert.equal(await page.locator("select,details.page-picker").count(), 0);
   await page.getByRole("button", { name: "제작 1 생산 설정", exact: true }).click();
-  await page.getByRole("spinbutton", { name: "목표 재고", exact: true }).fill("999");
+  await page.getByRole("spinbutton", { name: "공동 목표 재고", exact: true }).fill("999");
   await page.getByRole("button", { name: "제작 1 자동 생산", exact: true }).click();
   assert.deepEqual(await page.evaluate(() => window.tree), { recipeId: "r1", targetStock: 999 });
+  await page.getByRole("button", { name: "전체 적용", exact: true }).click();
+  assert.equal(await page.evaluate(() => window.sharedApplied), 999);
+  await page.getByRole("button", { name: "제작 2 생산 설정", exact: true }).click();
+  assert.equal(
+    await page.getByRole("spinbutton", { name: "공동 목표 재고", exact: true }).inputValue(),
+    "999",
+    "switching recipe does not switch stock target",
+  );
+  await page.getByRole("button", { name: "제작 1 생산 설정", exact: true }).click();
   await page.getByRole("button", { name: "작업 우선순위 물품 · 다음 페이지" }).click();
   assert.equal(
     await page.getByRole("button", { name: "제작 2 생산 설정", exact: true }).getAttribute("aria-pressed"),

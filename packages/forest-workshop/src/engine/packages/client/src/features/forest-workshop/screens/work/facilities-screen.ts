@@ -21,6 +21,64 @@ function holdings(view: WorldView, content: GameContent | null) {
     .map(([itemId, amount]) => ({ itemId, amount, name: itemName(content, itemId) }));
 }
 
+type InventoryCategory = NonNullable<AppState["work"]["inventoryCategory"]>;
+const inventoryCategories: { id: InventoryCategory; label: string }[] = [
+  { id: "all", label: "전체" },
+  { id: "gathered", label: "채집물" },
+  { id: "grown", label: "재배물" },
+  { id: "misc", label: "기타 재료" },
+  { id: "processed", label: "가공품" },
+  { id: "goods", label: "제작품" },
+];
+const gatheredItems = new Set(["wild-berry", "herb", "wood", "pinecone", "acorn"]);
+const grownItems = new Set(["wheat", "flower", "pumpkin", "cotton", "tea-leaf"]);
+
+function inventoryCategory(item: GameContent["items"][number], content: GameContent): InventoryCategory {
+  const source = content.recipes?.find((recipe) => (recipe.outputs[item.id] ?? 0) > 0);
+  const field = content.facilities?.find((facility) => facility.id === source?.facilityId)?.field;
+  if (field === "gather") return "gathered";
+  if (field === "grow") return "grown";
+  if (item.category === "processed") return "processed";
+  if (item.category === "goods") return "goods";
+  if (gatheredItems.has(item.id)) return "gathered";
+  if (grownItems.has(item.id)) return "grown";
+  return "misc";
+}
+
+function inventoryRows(state: AppState, world: WorldView, content: GameContent) {
+  const category = state.work.inventoryCategory ?? "all";
+  const included = new Set(
+    content.items
+      .filter((item) => category === "all" || inventoryCategory(item, content) === category)
+      .map((item) => item.id),
+  );
+  return holdings(world, content).filter(
+    (row) =>
+      category === "all" ||
+      included.has(row.itemId) ||
+      (category === "misc" && !content.items.some((item) => item.id === row.itemId)),
+  );
+}
+
+function inventoryCategoryTabs(state: AppState, controller: Controller) {
+  const selected = state.work.inventoryCategory ?? "all";
+  return h(
+    "div",
+    { className: "chip-row", attrs: { role: "group", "aria-label": "창고 품목 분류" } },
+    inventoryCategories.map(({ id, label }) =>
+      h(
+        "button",
+        {
+          className: `pill-tab${selected === id ? " current" : ""}`,
+          attrs: { type: "button", "aria-pressed": selected === id ? "true" : "false" },
+          on: { click: () => controller.setInventoryCategory(id) },
+        },
+        [h("span", { text: label })],
+      ),
+    ),
+  );
+}
+
 function tabs(state: AppState, controller: Controller) {
   const tab = (id: AppState["facilitiesTab"], label: string, icon: SVGSVGElement) =>
     h(
@@ -238,13 +296,14 @@ function protectionCard(state: AppState, world: WorldView, content: GameContent,
 }
 
 function storageCard(state: AppState, world: WorldView, content: GameContent, controller: Controller) {
-  const rows = holdings(world, content);
+  const rows = inventoryRows(state, world, content);
   const page = Math.min(state.work.inventoryPage ?? 0, Math.max(0, Math.ceil(rows.length / 3) - 1));
   return card(
     "창고",
     [
+      inventoryCategoryTabs(state, controller),
       rows.length === 0
-        ? h("p", { className: "empty", text: "창고가 비어 있어요." })
+        ? h("p", { className: "empty", text: "이 분류에 보관된 품목이 없어요." })
         : stockCards(rows, page, world, controller, true),
       inventoryPages(page, rows, controller),
     ],

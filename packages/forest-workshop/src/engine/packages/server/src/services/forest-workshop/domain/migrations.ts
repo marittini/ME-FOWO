@@ -3,7 +3,7 @@
 // the upgraded state is saved only by the next successful command, so a failed read changes nothing on disk.
 import { FwError } from "./errors";
 import { STARTER_KIT } from "../content/starter-kit";
-import { FACILITIES } from "../content/production";
+import { FACILITIES, DEFAULT_SHARED_TARGET_STOCK } from "../content/production";
 import { initialInvite } from "./model/invite";
 import { completeRules, initialFacility, initialProduction } from "./production/initial";
 import { assignTalent, type SourceText } from "./residents/talent-assign";
@@ -16,6 +16,30 @@ type RawWorld = Record<string, unknown>;
 
 /** `MIGRATIONS[n]` turns a version-n document into version n+1. Add one entry per schema bump; never edit old ones. */
 const MIGRATIONS: Readonly<Record<number, (world: RawWorld) => RawWorld>> = {
+  13: (world) => {
+    const production = world.production as WorldState["production"];
+    const values = Object.values(production.facilities).flatMap((facility) =>
+      facility.rules.map((rule) => rule.targetStock),
+    );
+    const sharedTargetStock = Math.max(1, ...(values.length ? values : [DEFAULT_SHARED_TARGET_STOCK]));
+    return {
+      ...world,
+      schemaVersion: 14,
+      production: {
+        ...production,
+        sharedTargetStock,
+        facilities: Object.fromEntries(
+          Object.entries(production.facilities).map(([id, facility]) => [
+            id,
+            {
+              ...facility,
+              rules: facility.rules.map((rule) => ({ ...rule, targetStock: sharedTargetStock })),
+            },
+          ]),
+        ),
+      },
+    };
+  },
   12: (world) => {
     const production = world.production as WorldState["production"];
     return {
