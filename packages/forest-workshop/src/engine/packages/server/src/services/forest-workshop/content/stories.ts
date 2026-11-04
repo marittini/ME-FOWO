@@ -8,7 +8,16 @@ export interface EpisodeDefinition {
   title: string;
   /** What happens, for the scene writer. Roles: {lead}, {partner}. Never shown to the player before reading. */
   beat: string;
-  background?: "forest-clearing" | "river-bridge" | "herb-garden" | "workshop";
+  background?:
+    | "forest-clearing"
+    | "river-bridge"
+    | "herb-garden"
+    | "forest-trail"
+    | "workshop-yard-spring"
+    | "workshop-yard-summer"
+    | "workshop-yard-autumn"
+    | "workshop-yard-winter"
+    | "workshop";
   /** "lead" = the lead resident alone; "pair" = both residents of the pair. */
   cast: "lead" | "pair";
   minutes: number;

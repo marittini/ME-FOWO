@@ -39,6 +39,13 @@ try {
     args: ["--no-sandbox"],
   });
   const page = await browser.newPage({ viewport: { width: 390, height: 740 }, isMobile: true, hasTouch: true });
+  await page.route("http://forest.test/test-character-*.svg*", async (route) => {
+    const ratio = new URL(route.request().url()).pathname.includes("wide") ? "360 120" : "120 360";
+    await route.fulfill({
+      contentType: "image/svg+xml",
+      body: `<svg xmlns="http://www.w3.org/2000/svg" width="${ratio.split(" ")[0]}" height="${ratio.split(" ")[1]}" viewBox="0 0 ${ratio}"><rect width="100%" height="100%" fill="#78a"/><circle cx="50%" cy="12%" r="10%" fill="#fc8"/></svg>`,
+    });
+  });
   await page.route("http://forest.test/api/capability-packages/forest-workshop/assets/assets/**", async (route) => {
     const relative = new URL(route.request().url()).pathname.split("/assets/assets/")[1];
     await route.fulfill({
@@ -76,7 +83,10 @@ try {
         pairId: "p",
         episode: 0,
         storyId: "s",
-        story: { state: "ready", value: { title: "첫 이야기", participants: [], segments } },
+        story: {
+          state: "ready",
+          value: { title: "첫 이야기", participants: ["r", "s"], background: "forest-trail", segments },
+        },
         index: 0,
         auto: false,
         backlog: false,
@@ -84,7 +94,38 @@ try {
       },
       world: {
         state: "ready",
-        value: { worldId: "w", state: { residents: { r: { displayName: "주민" } }, stories: { pairs: {} } } },
+        value: {
+          worldId: "w",
+          state: {
+            residents: {
+              r: {
+                displayName: "주민",
+                image: {
+                  current: {
+                    url: "http://forest.test/test-character-tall.svg",
+                    reference: "test",
+                    width: 120,
+                    height: 360,
+                  },
+                  placement: { scale: 70, offsetX: 20, markerHeight: 0 },
+                },
+              },
+              s: {
+                displayName: "동행",
+                image: {
+                  current: {
+                    url: "http://forest.test/test-character-wide.svg",
+                    reference: "test",
+                    width: 360,
+                    height: 120,
+                  },
+                  placement: { scale: 130, offsetX: -20, markerHeight: 0 },
+                },
+              },
+            },
+            stories: { pairs: {} },
+          },
+        },
       },
       content: null,
       artReady: [
@@ -155,6 +196,7 @@ try {
     window.testRender();
   });
   await page.locator(".stage-art").evaluate((i) => i.decode());
+  await page.locator(".figure-image").evaluateAll((images) => Promise.all(images.map((image) => image.decode())));
   await page.screenshot({ path: join(process.env.FW_ART_SCREENSHOTS ?? temp, "reader-art.png") });
 
   const fit = async () =>
@@ -284,13 +326,130 @@ try {
   const mark = await page.locator("#host").evaluate((host) => {
     const marker = host.shadowRoot.querySelector(".emotion-bubble");
     return {
-      bottom: getComputedStyle(marker).bottom,
-      left: getComputedStyle(marker).left,
-      spot: marker.parentElement.style.cssText,
+      bottom: marker.style.bottom,
+      left: marker.style.left,
+      parent: marker.parentElement.className,
+      size: getComputedStyle(marker).fontSize,
     };
   });
-  assert.match(mark.spot, /--mark-bottom: 46%;/);
-  assert.match(mark.spot, /--mark-left: 60%;/);
+  assert.equal(mark.parent, "figure");
+  assert.equal(mark.bottom, "46%");
+  assert.equal(mark.left, "60%");
+  assert.ok(parseFloat(mark.size) > 0);
+  const scaledMarks = await page.locator("#host").evaluate((host) => {
+    const state = window.testState;
+    const lead = state.world.value.state.residents.r;
+    lead.image.current = {
+      url: "http://forest.test/test-character-tall.svg",
+      reference: "test",
+      width: 120,
+      height: 360,
+    };
+    lead.image.placement = { scale: 70, offsetX: 20, markerHeight: 0 };
+    const companion = structuredClone(lead);
+    companion.image.current = {
+      url: "http://forest.test/test-character-wide.svg",
+      reference: "test",
+      width: 360,
+      height: 120,
+    };
+    companion.image.placement = { scale: 130, offsetX: -20, markerHeight: 0 };
+    state.world.value.state.residents.s = companion;
+    const third = structuredClone(lead);
+    third.image.current = {
+      url: "http://forest.test/test-character-tall.svg",
+      reference: "test",
+      width: 120,
+      height: 360,
+    };
+    third.image.placement = { scale: 100, offsetX: 0, markerHeight: 0 };
+    state.world.value.state.residents.t = third;
+    state.reader.story.value.participants = ["r", "s"];
+    const markerSize = () => {
+      const marker = host.shadowRoot.querySelector(".emotion-bubble");
+      if (!marker)
+        throw new Error(
+          JSON.stringify({
+            speaker: state.reader.story.value.segments[0].speakerId,
+            participants: state.reader.story.value.participants,
+            index: state.reader.index,
+            segment: state.reader.story.value.segments[0],
+            residents: Object.keys(state.world.value.state.residents),
+          }),
+        );
+      return parseFloat(getComputedStyle(marker).fontSize);
+    };
+    const leadSize = markerSize();
+    state.reader.story.value.segments[0].speakerId = "s";
+    window.testRender();
+    const marker = host.shadowRoot.querySelector(".emotion-bubble");
+    return {
+      leadSize,
+      companionSize: parseFloat(getComputedStyle(marker).fontSize),
+      actorCount: host.shadowRoot.querySelectorAll(".stage-spot").length,
+      anchoredToFigure: marker.parentElement.classList.contains("story-figure-body"),
+      centeredAtOffset: getComputedStyle(marker).left,
+      viewport: host.getBoundingClientRect().width,
+      imageRatio: marker.parentElement.style.getPropertyValue("--story-image-ratio"),
+    };
+  });
+  assert.equal(scaledMarks.actorCount, 2);
+  assert.equal(scaledMarks.anchoredToFigure, true);
+  assert.equal(scaledMarks.viewport, 320);
+  assert.ok(scaledMarks.companionSize > scaledMarks.leadSize * 2);
+  assert.ok(parseFloat(scaledMarks.centeredAtOffset) > 0);
+  assert.equal(scaledMarks.imageRatio, "3");
+  const imageAnchors = await page.locator("#host").evaluate(async (host) => {
+    const waitImages = [...host.shadowRoot.querySelectorAll(".figure-image")].map((image) =>
+      image.decode().catch(() => {}),
+    );
+    await Promise.all(waitImages);
+    const state = window.testState;
+    const results = [];
+    for (const count of [1, 2, 3]) {
+      state.reader.story.value.participants = ["r", "s", "t"].slice(0, count);
+      state.reader.story.value.segments[0].speakerId = count === 1 ? "r" : "s";
+      window.testRender();
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const marker = host.shadowRoot.querySelector(".emotion-bubble");
+      const body = marker.parentElement;
+      const image = body.querySelector(".figure-image");
+      const markRect = marker.getBoundingClientRect();
+      const imageRect = image.getBoundingClientRect();
+      const paintedHeight = Math.min(imageRect.height, imageRect.width / (image.naturalWidth / image.naturalHeight));
+      const paintedTop = imageRect.bottom - paintedHeight;
+      results.push({
+        count,
+        leftDelta: Math.abs(markRect.left + markRect.width / 2 - (imageRect.left + imageRect.width / 2)),
+        topDelta: markRect.bottom - paintedTop,
+        markerBottom: getComputedStyle(marker).bottom,
+        body: {
+          top: body.getBoundingClientRect().top,
+          bottom: body.getBoundingClientRect().bottom,
+          width: body.clientWidth,
+          height: body.clientHeight,
+        },
+        image: {
+          top: imageRect.top,
+          bottom: imageRect.bottom,
+          width: imageRect.width,
+          height: imageRect.height,
+          paintedTop,
+        },
+      });
+    }
+    return results;
+  });
+  for (const result of imageAnchors) {
+    assert.ok(
+      result.leftDelta < 2,
+      `badge is centered over its scaled picture at ${result.count} actors: ${JSON.stringify(result)}`,
+    );
+    assert.ok(
+      result.topDelta >= 2 && result.topDelta <= 10,
+      `badge meets picture head at ${result.count} actors: ${JSON.stringify(result)}`,
+    );
+  }
   await page.getByRole("button", { name: "다 읽고 보관" }).click();
   assert.equal(await page.evaluate(() => window.finished), true);
   console.log("Story viewport, choice and final action: OK");

@@ -42,7 +42,10 @@ export async function findCommandRecord(
 
 /** Throws if the record already exists (the host refuses a duplicate ID), which rolls the transaction back. */
 export async function createCommandRecord(documents: HostDocumentStore, record: CommandRecord): Promise<void> {
-  await documents.create({
+  if (await documents.getById(PACKAGE_ID, documentId.worldDeletion(record.worldId))) {
+    throw new Error("World has been deleted");
+  }
+  const created = await documents.create({
     id: documentId.command(record.worldId, record.commandId),
     packageId: PACKAGE_ID,
     kind: DOCUMENT_KIND.command,
@@ -52,4 +55,8 @@ export async function createCommandRecord(documents: HostDocumentStore, record: 
     createdAt: record.acceptedAt,
     updatedAt: record.acceptedAt,
   });
+  if (await documents.getById(PACKAGE_ID, documentId.worldDeletion(record.worldId))) {
+    await documents.remove(PACKAGE_ID, created.id, created.revision);
+    throw new Error("World has been deleted");
+  }
 }

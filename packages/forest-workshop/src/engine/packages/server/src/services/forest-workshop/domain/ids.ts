@@ -25,12 +25,15 @@ export const DOCUMENT_KIND = {
   world: "fw-world",
   command: "fw-command",
   story: "fw-story",
+  history: "fw-history",
+  worldDeletion: "fw-world-deletion",
 } as const;
 
 export const documentId = {
   world: (worldId: string) => `fw-world-${worldId}`,
   command: (worldId: string, commandId: string) => `fw-command-${worldId}-${commandId}`,
   story: (worldId: string, storyId: string) => `fw-story-${worldId}-${storyId}`,
+  worldDeletion: (worldId: string) => `fw-world-deletion-${worldId}`,
 };
 
 /** JSON with object keys sorted, so equal values always hash the same regardless of key order. */

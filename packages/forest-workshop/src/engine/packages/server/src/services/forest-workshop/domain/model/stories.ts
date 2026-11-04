@@ -27,7 +27,17 @@ export const episodeProgressSchema = z
   .strict();
 export type EpisodeProgress = z.infer<typeof episodeProgressSchema>;
 
-export const STORY_BACKGROUNDS = ["forest-clearing", "river-bridge", "herb-garden", "workshop"] as const;
+export const STORY_BACKGROUNDS = [
+  "forest-clearing",
+  "river-bridge",
+  "herb-garden",
+  "forest-trail",
+  "workshop-yard-spring",
+  "workshop-yard-summer",
+  "workshop-yard-autumn",
+  "workshop-yard-winter",
+  "workshop",
+] as const;
 const plannedEpisodeSchema = z
   .object({
     title: z.string().trim().min(1).max(60),

@@ -761,6 +761,9 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
 .menu-row.quiet .menu-title { font-size: var(--fs); }
 .menu-detail { color: var(--fw-muted); font-size: calc(var(--fs) * 0.85); overflow-wrap: anywhere; }
 .menu-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5em; }
+.fw-world-row { display: flex; align-items: stretch; gap: 0.5em; }
+.fw-world-row > .menu-row { flex: 1; min-width: 0; }
+.fw-world-row > .button { flex: 0 0 auto; }
 label.menu-row:focus-within { outline: 3px solid var(--fw-accent); outline-offset: 2px; }
 .restore { display: grid; gap: 0.6em; }
 .preview-box { display: grid; gap: 0.45em; padding: 0.75em; border-radius: 0.9em; border: var(--line-in) dashed var(--ink); background: var(--fw-surface); }

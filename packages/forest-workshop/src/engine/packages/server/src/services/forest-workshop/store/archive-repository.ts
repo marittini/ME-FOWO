@@ -2,10 +2,9 @@
 import { z } from "zod";
 import { activityResultSchema } from "../domain/model/activities";
 import { letterSchema } from "../domain/model/mailbox";
-import { assertWorldId, sha256Hex, stableStringify } from "../domain/ids";
+import { assertWorldId, DOCUMENT_KIND, sha256Hex, stableStringify, documentId } from "../domain/ids";
 import { PACKAGE_ID, type HostDocumentStore } from "../host/engine-adapter";
 
-const KIND = "fw-history";
 const archiveSchema = z.discriminatedUnion("type", [
   z
     .object({
@@ -26,6 +25,9 @@ function idOf(record: ArchiveRecord): string {
 export async function appendArchive(documents: HostDocumentStore, input: ArchiveRecord, now: string): Promise<void> {
   const record = archiveSchema.parse(input);
   assertWorldId(record.worldId);
+  if (await documents.getById(PACKAGE_ID, documentId.worldDeletion(record.worldId))) {
+    throw new Error("World has been deleted");
+  }
   const id = idOf(record);
   const existing = await documents.getById(PACKAGE_ID, id);
   if (existing) {
@@ -34,17 +36,22 @@ export async function appendArchive(documents: HostDocumentStore, input: Archive
     return;
   }
   try {
-    await documents.create({
+    const created = await documents.create({
       id,
       packageId: PACKAGE_ID,
-      kind: KIND,
+      kind: DOCUMENT_KIND.history,
       name: record.value.id,
       description: "Forest Workshop archived record",
       data: record,
       createdAt: now,
       updatedAt: now,
     });
+    if (await documents.getById(PACKAGE_ID, documentId.worldDeletion(record.worldId))) {
+      await documents.remove(PACKAGE_ID, created.id, created.revision);
+      throw new Error("World has been deleted");
+    }
   } catch (error) {
+    if (await documents.getById(PACKAGE_ID, documentId.worldDeletion(record.worldId))) throw error;
     const raced = await documents.getById(PACKAGE_ID, id);
     if (!raced || stableStringify(archiveSchema.parse(raced.data)) !== stableStringify(record)) throw error;
   }
@@ -52,7 +59,7 @@ export async function appendArchive(documents: HostDocumentStore, input: Archive
 export async function listArchive(documents: HostDocumentStore, worldId: string): Promise<ArchiveRecord[]> {
   assertWorldId(worldId);
   const prefix = `fw-history-${worldId}-`;
-  const records = await documents.list(PACKAGE_ID, KIND);
+  const records = await documents.list(PACKAGE_ID, DOCUMENT_KIND.history);
   return records
     .filter((record) => record.id.startsWith(prefix))
     .map((record) => {

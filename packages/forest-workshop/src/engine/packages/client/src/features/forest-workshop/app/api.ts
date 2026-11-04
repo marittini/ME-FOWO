@@ -32,10 +32,19 @@ export const gameApi = {
   listWorlds: () => hostApi().get<{ worlds: WorldSummary[] }>(`${ROOT}/worlds`),
   createWorld: (input: { worldId: string; worldName: string; playerNickname: string }) =>
     hostApi().post<WorldView & { created: boolean; content: GameContent }>(`${ROOT}/worlds`, input),
+  deleteWorld: (worldId: string) =>
+    hostApi().delete<{ deleted: boolean }>(`${ROOT}/worlds/${encodeURIComponent(worldId)}`),
   getState: (worldId: string) =>
     hostApi().get<WorldView & { content: GameContent }>(`${ROOT}/state?worldId=${encodeURIComponent(worldId)}`),
   prepareStory: (worldId: string, pairId: string) =>
     hostApi().post<StoryOverview>(`${ROOT}/stories/prepare`, {
+      worldId,
+      pairId,
+      connectionId: readModelConnection("story"),
+      profileConnectionId: readModelConnection("profile"),
+    }),
+  preparePairRelationship: (worldId: string, pairId: string) =>
+    hostApi().post<{ ok: boolean }>(`${ROOT}/pairs/relationship`, {
       worldId,
       pairId,
       connectionId: readModelConnection("story"),

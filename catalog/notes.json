@@ -4,6 +4,12 @@
     "forest-workshop": {
       "versions": [
         {
+          "version": "0.9.2",
+          "date": "2026-11-04",
+          "notes": "- 세계 목록에서 기존 세계를 삭제할 수 있습니다. 이름이 표시된 확인창에서 삭제를 확정하며 해당 세계의 진행·이야기·편지 기록을 제거합니다. 다른 세계·원본 캐릭터 카드·공용 갤러리·내보낸 백업 파일은 보존합니다.\n\n- 홈 주민의 발 위치에 따라 아래쪽 주민이 앞에 보이도록 깊이 순서를 바꿉니다. 크기와 이동 영역은 유지하고 보행 주기를 18초에서 42초로 늘리며 좌우 반전을 이동 방향·주민별 시차에 맞춥니다.\n- 탐험 감정표현을 실제 그림 크기에 맞춰 붙입니다. 기존 묶음의 숲길·사계절 공방 앞마당을 탐험에도 사용해 배경 선택을 4종에서 9종으로 늘립니다. 새 장면에 적용하며 게시된 이야기는 유지합니다.\n- 페어 지정 직후 두 주민의 공방 프로필을 근거로 현재 관계를 생성합니다. 프로필에 명시된 기존 관계를 존중하며 근거 없는 친분·연애는 만들지 않습니다. 실패해도 페어는 보존하고 관계 화면에서 재시도할 수 있습니다. 기존 진행 관계는 유지합니다.\n- 저장 스키마 15로 이전 데이터를 순차 업그레이드합니다. 업그레이드 후 저장한 데이터는 이전 버전으로 열지 마세요.",
+          "highlight": false
+        },
+        {
           "version": "0.9.1",
           "date": "2026-11-04",
           "notes": "- 홈 표시 인원은 주민 수만 바꿉니다. 3명 이상일 때 주민을 축소하고 좁은 슬롯에 가두던 처리를 제거해 1~6명 모두 같은 기본 크기와 지면 이동 경로를 사용합니다. 저장된 지면 영역·초상 배치·주민별 동작 시차·터치 반응·모션 줄이기는 유지합니다. 인원이 많을 때 서로 겹칠 수 있습니다.",
@@ -115,12 +121,6 @@
           "version": "0.6.9",
           "date": "2026-10-29",
           "notes": "- Display settings now control automatic story advance by default with a 2–10 second interval. Questions, backlog, leaving the story and backgrounding pause it. Finishing and saving a story stays explicit. Preferences are local to this browser.",
-          "highlight": false
-        },
-        {
-          "version": "0.6.8",
-          "date": "2026-10-28",
-          "notes": "- Edit the rectangular movement area directly over the home background by dragging its four edges. Save, cancel and reset are available on Home. Home residents move horizontally and vertically within this range. Ground is included in world backups. Schema 8 worlds cannot be opened by older packages. Obstacles, polygon editing and full interaction behavior remain in development.",
           "highlight": false
         }
       ]

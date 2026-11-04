@@ -76,6 +76,19 @@ export function createResidentActions(core: ControllerCore) {
     return world && residentId ? (world.state.residents[residentId] ?? null) : null;
   }
 
+  async function preparePairRelationship(worldId: string, pairId: string) {
+    const key = `pair-relationship:${pairId}`;
+    const response = await core.track(
+      key,
+      () => gameApi.preparePairRelationship(worldId, pairId),
+      "프로필을 바탕으로 관계를 정리하지 못했어요. 관계 화면에서 다시 시도할 수 있어요.",
+    );
+    if (response && core.currentWorld()?.worldId === worldId) {
+      const view = await gameApi.getState(worldId);
+      if (core.currentWorld()?.worldId === worldId) core.showWorld(view, view.content);
+    }
+  }
+
   function patchView(patch: Partial<ResidentsView>) {
     store.set((state) => ({ residentsView: { ...state.residentsView, ...patch } }));
   }
@@ -372,7 +385,8 @@ export function createResidentActions(core: ControllerCore) {
     async addPair(residentId: string, partnerId: string) {
       const resident = residentIn(residentId);
       const partner = residentIn(partnerId);
-      if (!resident || !partner) return;
+      const world = core.currentWorld();
+      if (!world || !resident || !partner) return;
       const key = pairAddKey(resident.residentId, partner.residentId);
       // The pair ID is made once per couple and kept across retries, so a retried add cannot make two rows.
       const pairId = core.requestIdFor(`${key}:id`, key, newUuid);
@@ -384,7 +398,13 @@ export function createResidentActions(core: ControllerCore) {
         core.forgetRequest(`${key}:id`);
         store.set({ sheet: null });
         core.notify(`${resident.displayName} × ${partner.displayName} 페어를 만들었어요.`);
+        await preparePairRelationship(world.worldId, pairId);
       }
+    },
+
+    retryPairRelationship(pairId: string) {
+      const world = core.currentWorld();
+      if (world) return preparePairRelationship(world.worldId, pairId);
     },
 
     archivePair: (pairId: string) => core.runCommand(`pair-archive:${pairId}`, "pairs.archive", { pairId }),

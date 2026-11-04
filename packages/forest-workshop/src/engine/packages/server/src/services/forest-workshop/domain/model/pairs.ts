@@ -21,6 +21,8 @@ export const pairSchema = z
     createdAt: z.string().datetime(),
     archived: z.boolean(),
     archivedAt: z.string().datetime().nullable(),
+    /** Profile-grounded first impression, generated after pairing. Optional for existing worlds. */
+    initialRelationship: z.string().trim().min(1).max(180).optional(),
     familiarity: relationValue,
     ease: relationValue,
     /** The latest shared event, written by the story phase (P4); null until then. */

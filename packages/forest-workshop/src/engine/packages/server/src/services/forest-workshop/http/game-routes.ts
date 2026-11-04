@@ -2,6 +2,7 @@
 // routes because they act on a world that does not exist yet or on the whole world.
 //   GET  /worlds                    list worlds
 //   POST /worlds                    create a world { worldId, worldName, playerNickname }
+//   DELETE /worlds/:worldId         remove a world and its package-owned records; reply { deleted: true }
 //   GET  /state?worldId=            current world, its revision and the content the screens need
 //   POST /commands                  { worldId, commandId, expectedRevision, type, payload }
 //   GET  /backup?worldId=           download a backup JSON
@@ -61,6 +62,7 @@ import { FwError } from "../domain/errors";
 import type { RebuildService } from "../services/rebuild-service";
 import type { SettlementService } from "../services/settlement-service";
 import type { ResidentLetterService } from "../services/resident-letter-service";
+import type { PairRelationshipService } from "../services/pair-relationship-service";
 import type { StoryService } from "../services/story-service";
 import type { SourceService } from "../services/source-service";
 import type { StorageService } from "../services/storage-service";
@@ -82,6 +84,7 @@ export interface GameRouteServices {
   settlement: SettlementService;
   stories: StoryService;
   residentLetters: ResidentLetterService;
+  pairRelationships: PairRelationshipService;
   logger: RouteLogger | undefined;
 }
 
@@ -146,6 +149,12 @@ export function registerGameRoutes(router: FastifyInstance, services: GameRouteS
     }),
   );
 
+  router.delete("/worlds/:worldId", async (request: FastifyRequest, reply: FastifyReply) =>
+    respond(reply, logger, "delete world", async () =>
+      worlds.delete((request.params as Record<string, unknown>).worldId),
+    ),
+  );
+
   // Reading settles production to now (not presence: a read is not the player being here) and saves it first.
   router.get("/state", async (request: FastifyRequest, reply: FastifyReply) =>
     respond(reply, logger, "read state", async () => ({
@@ -156,6 +165,13 @@ export function registerGameRoutes(router: FastifyInstance, services: GameRouteS
 
   router.post("/mail/generate", async (request: FastifyRequest, reply: FastifyReply) =>
     respond(reply, logger, "resident letter generate", async () => services.residentLetters.generate(request.body)),
+  );
+
+  router.post("/pairs/relationship", async (request: FastifyRequest, reply: FastifyReply) =>
+    respond(reply, logger, "pair relationship", async () => {
+      await services.pairRelationships.ensure(request.body);
+      return { ok: true };
+    }),
   );
 
   router.post("/stories/prepare", async (request: FastifyRequest, reply: FastifyReply) =>

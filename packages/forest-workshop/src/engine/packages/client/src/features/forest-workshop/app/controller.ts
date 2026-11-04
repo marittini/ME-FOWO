@@ -111,6 +111,8 @@ export interface AppState {
   facilitiesTab: "facilities" | "protection" | "storage";
   invitePage?: number;
   worldsPage?: number;
+  deletingWorldId?: string;
+  deleteWorldError?: string;
   worldCreateOpen?: boolean;
   worldDraft?: { worldName: string; nickname: string };
   settingsSection?: "workshop" | "display" | "manage";
@@ -246,6 +248,7 @@ export function createController() {
   });
   const pending = new Map<string, PendingRequest>();
   const gate = new WorldGate();
+  const deletedWorldIds = new Set<string>();
 
   /** Asks for the current season's backdrop and the four UI panels; each one switches on when it has loaded. */
   function loadFrameArt() {
@@ -370,8 +373,9 @@ export function createController() {
     store.set({ worlds: { state: "loading" } });
     try {
       const { worlds } = await gameApi.listWorlds();
-      store.set({ worlds: { state: "ready", value: worlds } });
-      return worlds;
+      const visibleWorlds = worlds.filter((world) => !deletedWorldIds.has(world.worldId));
+      store.set({ worlds: { state: "ready", value: visibleWorlds } });
+      return visibleWorlds;
     } catch (error) {
       store.set({ worlds: { state: "error", message: errorMessage(error, "세계 목록을 불러오지 못했습니다.") } });
       return null;
@@ -390,6 +394,11 @@ export function createController() {
       const view = await gameApi.getState(worldId);
       // The player may have opened another world meanwhile: this answer belongs to an older navigation.
       if (!gate.isCurrentNavigation(ticket)) return;
+      if (deletedWorldIds.has(worldId)) {
+        if (readLastWorld() === worldId) writeLastWorld(null);
+        store.set({ world: null, content: null, storage: null, route: "worlds" });
+        return;
+      }
       applyWorld(view, view.content);
     } catch (error) {
       if (!gate.isCurrentNavigation(ticket)) return;
@@ -498,6 +507,54 @@ export function createController() {
 
     setWorldsPage(page: number) {
       store.set({ worldsPage: Math.max(0, page) });
+    },
+
+    requestWorldDeletion(worldId: string) {
+      if (store.get().busy["delete-world"]) return;
+      const worlds = store.get().worlds;
+      const world = worlds.state === "ready" ? worlds.value.find((entry) => entry.worldId === worldId) : null;
+      if (!world) return;
+      store.set({ deletingWorldId: worldId, deleteWorldError: undefined, notice: null });
+    },
+
+    cancelWorldDeletion() {
+      if (store.get().busy["delete-world"]) return;
+      store.set({ deletingWorldId: undefined, deleteWorldError: undefined });
+    },
+
+    async confirmWorldDeletion() {
+      const worldId = store.get().deletingWorldId;
+      if (!worldId || store.get().busy["delete-world"]) return;
+      store.set({ deleteWorldError: undefined });
+      const result = await track("delete-world", () => gameApi.deleteWorld(worldId), "세계를 삭제하지 못했습니다.");
+      if (!result?.deleted) {
+        store.set({ deleteWorldError: store.get().notice?.text ?? "세계를 삭제하지 못했습니다. 다시 시도해 주세요." });
+        return;
+      }
+      deletedWorldIds.add(worldId);
+      if (readLastWorld() === worldId) writeLastWorld(null);
+      const worlds = store.get().worlds;
+      const remaining = worlds.state === "ready" ? worlds.value.filter((world) => world.worldId !== worldId) : null;
+      if (remaining) store.set({ worlds: { state: "ready", value: remaining } });
+      store.set({ deletingWorldId: undefined, deleteWorldError: undefined });
+      const active = store.get().world;
+      if (active?.state === "ready" && active.value.worldId === worldId) {
+        gate.beginNavigation();
+        store.set({
+          world: null,
+          content: null,
+          storage: null,
+          restore: null,
+          sheet: null,
+          route: "worlds",
+          notice: null,
+          explore: { tab: "story", pairId: null, overview: null },
+          reader: null,
+          register: null,
+        });
+      }
+      const count = Math.ceil((remaining?.length ?? 0) / 2);
+      store.set({ worldsPage: Math.min(store.get().worldsPage ?? 0, Math.max(0, count - 1)) });
     },
 
     rememberWorldDraft(worldDraft: NonNullable<AppState["worldDraft"]>) {

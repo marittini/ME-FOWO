@@ -5,6 +5,7 @@ import { button, errorLine, h, statusLine } from "../app/dom";
 import { card, renderFrame } from "./chrome/frame";
 import { ICONS } from "./chrome/icons";
 import { renderRestorePanel } from "./settings/restore-panel";
+import { sheetDialog } from "./chrome/sheet";
 
 const NAME_LIMIT = { world: 40, nickname: 24 };
 
@@ -35,28 +36,35 @@ function worldList(state: AppState, controller: Controller) {
         { className: "menu-list" },
         worlds.value.slice(page * 2, page * 2 + 2).map((world) =>
           h("li", {}, [
-            h(
-              "button",
-              {
-                className: "menu-row",
-                attrs: { type: "button" },
-                disabled: !world.readable,
-                on: { click: () => void controller.openWorld(world.worldId) },
-              },
-              [
-                h("span", { className: "menu-icon" }, [ICONS.house()]),
-                h("span", { className: "menu-text" }, [
-                  h("span", { className: "menu-title", text: world.worldName }),
-                  h("span", {
-                    className: "menu-detail",
-                    text: world.readable
-                      ? `마지막 저장 ${formatDate(world.updatedAt)}`
-                      : "이 버전에서 읽을 수 없는 세계",
-                  }),
-                ]),
-                h("span", { className: "menu-chevron" }, [ICONS.chevron()]),
-              ],
-            ),
+            h("div", { className: "fw-world-row" }, [
+              h(
+                "button",
+                {
+                  className: "menu-row",
+                  attrs: { type: "button" },
+                  disabled: !world.readable,
+                  on: { click: () => void controller.openWorld(world.worldId) },
+                },
+                [
+                  h("span", { className: "menu-icon" }, [ICONS.house()]),
+                  h("span", { className: "menu-text" }, [
+                    h("span", { className: "menu-title", text: world.worldName }),
+                    h("span", {
+                      className: "menu-detail",
+                      text: world.readable
+                        ? `마지막 저장 ${formatDate(world.updatedAt)}`
+                        : "이 버전에서 읽을 수 없는 세계",
+                    }),
+                  ]),
+                  h("span", { className: "menu-chevron" }, [ICONS.chevron()]),
+                ],
+              ),
+              button("삭제", () => controller.requestWorldDeletion(world.worldId), {
+                variant: "secondary",
+                disabled: Boolean(state.busy["delete-world"]),
+                attrs: { "aria-label": `${world.worldName} 삭제` },
+              }),
+            ]),
           ]),
         ),
       ),
@@ -155,6 +163,35 @@ export function renderWorldsScreen(state: AppState, controller: Controller) {
     h("summary", { className: "section-title", text: "백업에서 복원" }),
     renderRestorePanel(state, controller, "fw-worlds-restore"),
   ]);
+  const deletingWorld =
+    state.deletingWorldId && state.worlds.state === "ready"
+      ? state.worlds.value.find((world) => world.worldId === state.deletingWorldId)
+      : null;
+  const deleteDialog = deletingWorld
+    ? sheetDialog("fw-delete-world", "세계 삭제", [
+        h("p", {
+          text: `‘${deletingWorld.worldName}’ 세계와 그 안의 주민 및 이야기를 모두 삭제합니다. 이 작업은 되돌릴 수 없습니다.`,
+        }),
+        h("p", {
+          className: "hint",
+          text: "원본 캐릭터·페르소나 카드와 갤러리 그림은 삭제되지 않습니다.",
+        }),
+        state.deleteWorldError ? errorLine(state.deleteWorldError) : null,
+        button(
+          state.busy["delete-world"] ? "삭제하는 중…" : "세계 삭제",
+          () => void controller.confirmWorldDeletion(),
+          {
+            disabled: Boolean(state.busy["delete-world"]),
+            attrs: { "data-wide": "" },
+          },
+        ),
+        button("닫기", () => controller.cancelWorldDeletion(), {
+          variant: "secondary",
+          disabled: Boolean(state.busy["delete-world"]),
+          attrs: { "data-wide": "" },
+        }),
+      ])
+    : null;
   return renderFrame(state, controller, {
     top: open
       ? { kind: "sub", title: "세계 고르기", back: { route: "backup", label: "저장·백업" }, resources: false }
@@ -162,5 +199,6 @@ export function renderWorldsScreen(state: AppState, controller: Controller) {
     backdrop: "wood",
     body: [firstWorld ? null : worldList(state, controller), create, restore],
     nav: false,
+    sheet: deleteDialog,
   });
 }

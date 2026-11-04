@@ -2,11 +2,18 @@
 // already succeeded returns the stored world instead of a second one.
 import { z } from "zod";
 import { FwError } from "../domain/errors";
-import { assertWorldId } from "../domain/ids";
+import { assertWorldId, documentId } from "../domain/ids";
 import { presentActivity } from "../domain/production/activity";
 import { createWorldState, nicknameSchema, worldNameSchema, type WorldState } from "../domain/world-model";
-import type { HostPersistence } from "../host/engine-adapter";
-import { createWorldDocument, findWorld, listWorlds, loadWorld, type WorldSummary } from "../store/world-repository";
+import { PACKAGE_ID, type HostPersistence } from "../host/engine-adapter";
+import {
+  createWorldDocument,
+  deleteWorldDocuments,
+  findWorld,
+  listWorlds,
+  loadWorld,
+  type WorldSummary,
+} from "../store/world-repository";
 
 const createWorldSchema = z
   .object({ worldId: z.string(), worldName: worldNameSchema, playerNickname: nicknameSchema })
@@ -23,6 +30,7 @@ export interface WorldService {
   list(): Promise<WorldSummary[]>;
   get(worldId: string): Promise<WorldView>;
   create(body: unknown): Promise<WorldView & { created: boolean }>;
+  delete(worldId: unknown): Promise<{ deleted: true }>;
 }
 
 export function createWorldService(persistence: HostPersistence, clock: () => Date = () => new Date()): WorldService {
@@ -41,6 +49,7 @@ export function createWorldService(persistence: HostPersistence, clock: () => Da
         throw new FwError("invalid_payload", { details: { issues: parsed.error.issues.map((i) => i.path.join(".")) } });
       }
       const worldId = assertWorldId(parsed.data.worldId);
+      if (await documents.getById(PACKAGE_ID, documentId.worldDeletion(worldId))) throw new FwError("world_exists");
       const existing = await findWorld(documents, worldId);
       if (existing) {
         const sameRequest =
@@ -70,6 +79,12 @@ export function createWorldService(persistence: HostPersistence, clock: () => Da
           return { worldId, revision: raced.revision, updatedAt: raced.updatedAt, state: raced.state, created: false };
         throw error;
       }
+    },
+
+    async delete(worldIdRaw) {
+      const worldId = assertWorldId(worldIdRaw);
+      await deleteWorldDocuments(persistence, worldId, clock().toISOString());
+      return { deleted: true };
     },
   };
 }

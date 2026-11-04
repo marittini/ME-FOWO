@@ -14,6 +14,7 @@ import {
 } from "../packages/forest-workshop/src/engine/packages/server/src/services/forest-workshop/store/world-repository";
 import { createProfileService } from "../packages/forest-workshop/src/engine/packages/server/src/services/forest-workshop/services/profile-service";
 import { createChapterPlanService } from "../packages/forest-workshop/src/engine/packages/server/src/services/forest-workshop/services/chapter-plan-service";
+import { createPairRelationshipService } from "../packages/forest-workshop/src/engine/packages/server/src/services/forest-workshop/services/pair-relationship-service";
 import { createResidentLetterService } from "../packages/forest-workshop/src/engine/packages/server/src/services/forest-workshop/services/resident-letter-service";
 import { createCommandService } from "../packages/forest-workshop/src/engine/packages/server/src/services/forest-workshop/services/command-service";
 import {
@@ -88,7 +89,9 @@ async function setup() {
   const connections: (string | null | undefined)[] = [];
   let beforeAnswer: (() => Promise<void>) | undefined;
   let badPlan = false;
+  let badPairRelationship = false;
   let letterPrompt = "";
+  let relationshipPrompt = "";
   const runtime: HostRuntime = {
     persistence: host.persistence,
     languageModels: {
@@ -114,6 +117,16 @@ async function setup() {
             }
             const system = messages[0]!.content;
             if (system.includes("3편짜리")) return { content: badPlan ? "{}" : JSON.stringify(plan) };
+            if (system.includes("두 주민의 공방 프로필")) {
+              relationshipPrompt = JSON.stringify(messages);
+              return {
+                content: badPairRelationship
+                  ? "{}"
+                  : JSON.stringify({
+                      relationship: "다람은 차분히 살피고 토끼는 먼저 궁금해해, 서로 다른 속도로 알아가요.",
+                    }),
+              };
+            }
             if (system.includes("편지")) {
               letterPrompt = JSON.stringify(messages);
               return {
@@ -145,11 +158,67 @@ async function setup() {
     bad: () => {
       badPlan = true;
     },
+    badPairRelationship: () => {
+      badPairRelationship = true;
+    },
     letterPrompt: () => letterPrompt,
+    relationshipPrompt: () => relationshipPrompt,
   };
 }
 
 async function main() {
+  // Pair assignment summarizes only the two saved canonical profiles and preserves game progression.
+  {
+    const env = await setup();
+    await env.change((state) => ({
+      ...state,
+      residents: {
+        ...state.residents,
+        [A]: { ...state.residents[A]!, profileVersion: 2, worldSetting: "차분히 관찰하고 존댓말을 쓴다." },
+        [B]: { ...state.residents[B]!, profileVersion: 2, worldSetting: "궁금한 점을 바로 묻고 먼저 움직인다." },
+      },
+    }));
+    const service = createPairRelationshipService(env.runtime, env.host.persistence);
+    await Promise.all([service.ensure({ worldId: W, pairId: P }), service.ensure({ worldId: W, pairId: P })]);
+    const pair = (await loadWorld(env.host.documents, W)).state.pairs[P]!;
+    assert.equal(pair.initialRelationship, "다람은 차분히 살피고 토끼는 먼저 궁금해해, 서로 다른 속도로 알아가요.");
+    assert.equal(pair.familiarity, 0);
+    assert.equal(pair.lastEvent, null);
+    assert.ok(env.relationshipPrompt().includes("차분히 관찰하고 존댓말을 쓴다."));
+    assert.ok(env.relationshipPrompt().includes("궁금한 점을 바로 묻고 먼저 움직인다."));
+    assert.equal(env.calls(), 1, "concurrent retries share one profile relationship generation");
+  }
+  // An invalid model answer leaves the pair untouched so the player can retry.
+  {
+    const env = await setup();
+    await env.change((state) => ({
+      ...state,
+      residents: Object.fromEntries(
+        Object.entries(state.residents).map(([id, resident]) => [id, { ...resident, profileVersion: 2 }]),
+      ),
+    }));
+    env.badPairRelationship();
+    await assert.rejects(
+      createPairRelationshipService(env.runtime, env.host.persistence).ensure({ worldId: W, pairId: P }),
+      {
+        code: "story_generation_failed",
+      },
+    );
+    assert.equal((await loadWorld(env.host.documents, W)).state.pairs[P]!.initialRelationship, undefined);
+  }
+  // Removing the pair while its model call is in flight does not recreate or mutate it afterward.
+  {
+    const env = await setup();
+    await env.change((state) => ({
+      ...state,
+      residents: Object.fromEntries(
+        Object.entries(state.residents).map(([id, resident]) => [id, { ...resident, profileVersion: 2 }]),
+      ),
+    }));
+    env.before(() => env.change((state) => ({ ...state, pairs: {} })));
+    await createPairRelationshipService(env.runtime, env.host.persistence).ensure({ worldId: W, pairId: P });
+    assert.equal((await loadWorld(env.host.documents, W)).state.pairs[P], undefined);
+  }
   // Legacy profile upgrade is single-flight, persistent, and keeps unrelated concurrent progress.
   {
     const env = await setup();
@@ -303,7 +372,12 @@ async function main() {
   {
     const env = await setup();
     const raw = structuredClone((await loadWorld(env.host.documents, W)).state);
-    raw.schemaVersion = 11 as 14;
+    const beforePairRelationship = structuredClone(raw);
+    beforePairRelationship.schemaVersion = 14 as 15;
+    const afterPairRelationship = migrateWorld(beforePairRelationship);
+    assert.equal(afterPairRelationship.schemaVersion, 15);
+    assert.equal(afterPairRelationship.pairs[P]!.initialRelationship, undefined);
+    raw.schemaVersion = 11 as 15;
     raw.production.facilities["gather-yard"]!.rules = [
       { ...raw.production.facilities["gather-yard"]!.rules[0]!, enabled: false, targetStock: 37 },
     ];

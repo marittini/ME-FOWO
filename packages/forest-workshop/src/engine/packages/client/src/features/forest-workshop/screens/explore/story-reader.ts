@@ -14,7 +14,7 @@ import type { ReaderState } from "../../app/story-actions";
 import { renderFrame } from "../chrome/frame";
 import { ICONS } from "../chrome/icons";
 import { sheetDialog } from "../chrome/sheet";
-import { emotionPosition, residentFigure } from "../residents/resident-figure";
+import { residentFigure } from "../residents/resident-figure";
 
 /** Scenes written before prompt v2 carry the earlier emotion names; they show as the nearest of the six arts. */
 const LEGACY: Record<string, Emotion> = {
@@ -63,14 +63,9 @@ function stage(_season: Season, world: WorldView, story: StoryDocument | null, c
         if (!resident) return null;
         const mark =
           speaking !== id ? null : current?.kind === "line" ? emotionArt(current.emotion) : emotionArt("curiosity");
-        const spot = h("span", { className: `stage-spot${speaking === id ? " speaking" : ""}` }, [
-          mark,
-          residentFigure(resident),
+        return h("span", { className: `stage-spot${speaking === id ? " speaking" : ""}` }, [
+          residentFigure(resident, { storyMarker: mark ?? undefined }),
         ]);
-        const position = emotionPosition(resident.image.placement);
-        spot.style.setProperty("--mark-bottom", `${position.bottom}%`);
-        spot.style.setProperty("--mark-left", `${position.left}%`);
-        return spot;
       }),
     ),
   ]);

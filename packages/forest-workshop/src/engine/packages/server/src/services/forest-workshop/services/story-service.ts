@@ -93,9 +93,16 @@ export function createStoryService(
       .replaceAll("{partner}", partner?.displayName ?? lead!.displayName);
     const shared = sharedBy(state.memory, participants).slice(-30);
     const familiarity = state.pairs[pairId]?.familiarity ?? 0;
+    const pair = state.pairs[pairId];
+    const stageLabel = [...RELATION_STAGES].reverse().find((stage) => familiarity >= stage.from)?.label ?? "";
     const relationLabel =
       participants.length > 1
-        ? ([...RELATION_STAGES].reverse().find((stage) => familiarity >= stage.from)?.label ?? null)
+        ? [
+            stageLabel,
+            pair?.initialRelationship ? `페어 지정 시 프로필에 근거한 관계: ${pair.initialRelationship}` : "",
+          ]
+            .filter(Boolean)
+            .join(" · ")
         : null;
     const messages = buildSceneMessages({
       worldName: state.settings.worldName,

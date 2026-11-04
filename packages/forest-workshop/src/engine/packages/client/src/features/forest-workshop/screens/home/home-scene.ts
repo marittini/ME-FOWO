@@ -188,6 +188,7 @@ export function renderHomeScene(state: AppState, controller: Controller) {
           const node = spot(side, resident, world, controller);
           node.classList.add("cast-slot", `cast-slot-${index}`);
           node.style.animationDelay = `${-4 - index * 1.7}s`;
+          node.style.setProperty("--cast-delay", node.style.animationDelay);
           return node;
         }),
       )

@@ -85,6 +85,21 @@ for (const path of [
   ...Object.values(MANAGEMENT_ART),
 ])
   assert.ok(byPath.has(path), path);
+assert.deepEqual(
+  STORY_BACKGROUND_ART,
+  {
+    "forest-clearing": "backgrounds/story-forest-clearing.webp",
+    "river-bridge": "backgrounds/story-river-bridge.webp",
+    "herb-garden": "backgrounds/story-herb-garden.webp",
+    "forest-trail": "backgrounds/forest-trail.webp",
+    "workshop-yard-spring": "backgrounds/workshop-scene-spring.webp",
+    "workshop-yard-summer": "backgrounds/workshop-scene-summer.webp",
+    "workshop-yard-autumn": "backgrounds/workshop-scene-autumn.webp",
+    "workshop-yard-winter": "backgrounds/workshop-scene-winter.webp",
+    workshop: "backgrounds/workshop-interior.webp",
+  },
+  "story destinations route to bundled artwork",
+);
 for (const [name, path] of Object.entries(NAV_ART)) {
   assert.equal(path, keyPath(manifest.uiMap[`nav-${name}`]!), `navigation ${name}`);
   assert.ok(byPath.get(path)?.hasTransparency, `${path} is transparent`);

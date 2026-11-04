@@ -94,6 +94,11 @@ export const STORY_BACKGROUND_ART: Readonly<Record<string, string>> = {
   "forest-clearing": "backgrounds/story-forest-clearing.webp",
   "river-bridge": "backgrounds/story-river-bridge.webp",
   "herb-garden": "backgrounds/story-herb-garden.webp",
+  "forest-trail": "backgrounds/forest-trail.webp",
+  "workshop-yard-spring": "backgrounds/workshop-scene-spring.webp",
+  "workshop-yard-summer": "backgrounds/workshop-scene-summer.webp",
+  "workshop-yard-autumn": "backgrounds/workshop-scene-autumn.webp",
+  "workshop-yard-winter": "backgrounds/workshop-scene-winter.webp",
   workshop: "backgrounds/workshop-interior.webp",
 };
 
