@@ -42,7 +42,7 @@ window.renderHomeScene=renderHomeScene;window.readCount=readHomeDisplayCount;win
     executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined,
     args: ["--no-sandbox"],
   });
-  const page = await browser.newPage({ viewport: { width: 390, height: 740 }, isMobile: true });
+  const page = await browser.newPage({ viewport: { width: 390, height: 350 }, isMobile: true });
   await page.route("http://forest.test/**", (route) =>
     route.fulfill({
       body: '<meta name="viewport" content="width=device-width, initial-scale=1"><div id="host"></div>',
@@ -81,7 +81,7 @@ window.renderHomeScene=renderHomeScene;window.readCount=readHomeDisplayCount;win
         value: {
           worldId: "w",
           state: {
-            settings: { ground: { left: 12, right: 88, top: 58, bottom: 90 }, board: null },
+            settings: { ground: { left: 8, right: 92, top: 45, bottom: 95 }, board: null },
             progress: { starterResidentId: "r0" },
             residents,
           },
@@ -120,24 +120,80 @@ window.renderHomeScene=renderHomeScene;window.readCount=readHomeDisplayCount;win
   });
   const six = await page.evaluate(() => window.renderCast());
   assert.equal(six.length, 6, "limit six displays six recruited residents");
-  const bounds = await page.locator(".resident-spot").evaluateAll((nodes) =>
-    nodes.map((node) => {
-      const b = node.getBoundingClientRect(),
-        s = node.closest(".ground-stage").getBoundingClientRect();
-      return { foot: [b.left + b.width / 2, b.bottom], stage: [s.left, s.top, s.right, s.bottom] };
-    }),
+  const castSamples = [];
+  for (const count of [1, 2, 3, 4, 5, 6]) {
+    const sample = await page.evaluate((displayCount) => {
+      window.castState.homeDisplayCount = displayCount;
+      window.renderCast();
+      const stage = window.castRoot.querySelector(".ground-stage"),
+        spot = stage.querySelector(".resident-spot.filled"),
+        ground = stage.getBoundingClientRect(),
+        groundStyle = stage.style,
+        motions = spot.getAnimations().filter((animation) => animation.effect?.target === spot);
+      for (const motion of motions) motion.pause();
+      const frames = [0, 8100, 13000].map((time) => {
+        for (const motion of motions) motion.currentTime = time;
+        const rect = spot.getBoundingClientRect();
+        return { time, foot: [rect.left + rect.width / 2, rect.bottom] };
+      });
+      return {
+        dimensions: [spot.getBoundingClientRect().width, spot.getBoundingClientRect().height],
+        ground: [ground.width, ground.height, ground.left, ground.top, ground.right, ground.bottom],
+        groundStyle: [groundStyle.left, groundStyle.top, groundStyle.width, groundStyle.height],
+        frames,
+        animationCount: motions.length,
+      };
+    }, count);
+    assert.equal(sample.animationCount > 0, true, `count ${count} has a CSS movement animation`);
+    assert.equal(sample.dimensions[0] > 0 && sample.dimensions[1] > 0, true);
+    assert.deepEqual(sample.groundStyle, ["8%", "45%", "84%", "50%"], "changed saved ground rectangle is applied");
+    assert.equal(
+      sample.frames.every(
+        ({ foot: [x, y] }) =>
+          x >= sample.ground[2] - 2 &&
+          x <= sample.ground[4] + 2 &&
+          y >= sample.ground[3] - 2 &&
+          y <= sample.ground[5] + 2,
+      ),
+      true,
+      `count ${count} keeps every sampled foot inside its saved ground: ${JSON.stringify(sample.frames)}`,
+    );
+    castSamples.push(sample);
+  }
+  for (const sample of castSamples.slice(1)) {
+    assert.ok(Math.abs(sample.dimensions[0] - castSamples[0].dimensions[0]) < 0.5, "resident width stays constant");
+    assert.ok(Math.abs(sample.dimensions[1] - castSamples[0].dimensions[1]) < 0.5, "resident height stays constant");
+    assert.deepEqual(sample.ground, castSamples[0].ground, "ground rectangle size stays constant by cast count");
+    assert.deepEqual(
+      sample.frames.map(({ foot }) => foot),
+      castSamples[0].frames.map(({ foot }) => foot),
+      "cast counts share the same sampled foot path",
+    );
+  }
+  assert.notEqual(castSamples[0].frames[0].foot[0], castSamples[0].frames[1].foot[0], "movement changes X");
+  assert.notEqual(castSamples[0].frames[0].foot[1], castSamples[0].frames[1].foot[1], "movement changes Y");
+  assert.notDeepEqual(
+    castSamples[0].frames[1].foot,
+    castSamples[0].frames[2].foot,
+    "shared movement continues along the path",
   );
-  assert.equal(
-    bounds.every(
-      (b) =>
-        b.foot[0] >= b.stage[0] - 2 &&
-        b.foot[0] <= b.stage[2] + 2 &&
-        b.foot[1] >= b.stage[1] - 2 &&
-        b.foot[1] <= b.stage[3] + 2,
-    ),
-    true,
-    JSON.stringify(bounds),
-  );
+  const editMotion = await page.evaluate(() => {
+    window.castState.homeDisplayCount = 6;
+    window.renderCast();
+    const scene = window.castRoot.querySelector(".scene"),
+      spot = window.castRoot.querySelector(".ground-stage .resident-spot.filled");
+    scene.classList.add("editing-ground");
+    return getComputedStyle(spot).animationPlayState;
+  });
+  assert.equal(editMotion, "paused", "ground editing pauses resident movement");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const reducedMotionCount = await page.evaluate(() => {
+    window.castRoot.querySelector(".scene").classList.remove("editing-ground");
+    window.renderCast();
+    return window.castRoot.querySelector(".ground-stage .resident-spot.filled").getAnimations().length;
+  });
+  assert.equal(reducedMotionCount, 0, "reduced motion disables resident movement");
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   const nextVisit = await page.evaluate(() => {
     Math.random = () => 0.99;
     window.castState.homeVisit++;
