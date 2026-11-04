@@ -4,6 +4,12 @@
     "forest-workshop": {
       "versions": [
         {
+          "version": "0.8.2",
+          "date": "2026-11-04",
+          "notes": "- 편지 실패 화면에서 해당 모델 연결을 고르고 바로 재시도할 수 있습니다. 관리 화면으로 이동하지 않아도 선택한 편지로 돌아오며 다른 기능의 연결은 유지합니다.\n- 편지에 앞서 주민 설정 준비가 실패한 경우를 구분해 주민 설정용 연결을 안내합니다. 편지 모델을 바꿔도 해결되지 않던 잘못된 복구 동선을 수정했습니다.\n- 편지에 플레이어와의 비연애 친밀도, 주민이 아는 기억의 종류, 같은 주민의 최근 편지 두 통을 참고 맥락으로 제공합니다. 감정을 객관적 사건으로 단정하거나 이전 편지 내용을 새 사실로 취급하지 않도록 하고, 보고서보다 개인적인 반응을 전하도록 작성 지침을 보완했습니다.\n- 문맥이 부족하면 선택적인 이전 편지 참고부터 제외하며 공방 프로필과 기억 원문은 임의로 자르지 않습니다. 기존 편지 재작성이나 추가 자동 모델 호출은 하지 않습니다.\n- 목표 재고를 채워 쉬는 시설에서 목표 재고 설정을 바로 열 수 있습니다. 홈 주민을 누르면 걷는 방향과 위치를 유지하며 짧게 몸을 움직여 반응합니다. 저장 스키마·권한·보상 규칙은 변경하지 않았습니다.",
+          "highlight": false
+        },
+        {
           "version": "0.8.1",
           "date": "2026-11-04",
           "notes": "- 생산 설정을 품목·목표 수량·자동 생산 한 동작 중심으로 정리했습니다. 적용 후 작업 현황으로 이어지며 수동 켜짐·재고·우선순위는 같은 탭의 명시된 펼침 영역에 유지합니다. 잠긴 시설도 생산 준비를 미리 설정할 수 있습니다.\n- 주민 상세의 중복 이름·중첩 카드를 줄이고 특기 설명과 이름 편집을 필요할 때 펼치도록 정리했습니다. 팝업이 아래로 붙던 CSS 우선순위 오류를 수정해 실제 중앙에 표시합니다.\n- 무료 초대권 상점에 묶음 그림·큰 지급량·보유량·화면 안의 수령 안내를 배치했습니다. 지급 안내 공간을 미리 확보해 반복 클릭할 때 버튼이 움직이지 않도록 했습니다.\n- 편지의 고정 600토큰 제한을 최대 2,048토큰으로 늘리되 연결의 출력 한도와 문맥 크기를 지킵니다. 짧은 JSON 계약을 명시하고 전체 JSON 코드블록 응답을 추가 모델 호출 없이 해석합니다.\n- 빈 응답·출력 잘림·연결 실패·형식 오류를 구분해 안내하고 편지 화면에서 모델 설정과 명시적 재시도로 연결합니다. 이미 실패한 편지를 열기만 해서 모델을 다시 호출하지 않습니다.\n- 활동 요약과 동일한 시스템 우편은 요약을 활동 기록에 보존한 채 AI 편지 저장 칸으로 재사용합니다. 원문이 다른 우편은 덮어쓰지 않고 기존 보관함 선택도 유지합니다. 기존 200개 우편/100개 활동 한도 자체는 변경하지 않습니다.\n- 저장 스키마·권한·기존 AI 편지는 변경하지 않습니다. 실패 시 원본 활동과 편지는 보존합니다.",
@@ -115,12 +121,6 @@
           "version": "0.6.6",
           "date": "2026-10-28",
           "notes": "- Exploration episodes can be selected directly to inspect their status and requirements; today’s delivery board shows three selectable requests and the chosen request’s usable and protected stock.\n- When no new report is waiting, Home shows one active production task and its remaining time; tapping it opens the work report. This is an estimated countdown.\n- Home resident name labels are hidden and existing resident pictures turn when moving. Dialogue and narration have a stable panel height; longer text is shown in consecutive parts. Emotion position uses the same setting in the picture preview and story. Actual Android layout, long text at enlarged sizes and the wider production journey remain unverified.",
-          "highlight": false
-        },
-        {
-          "version": "0.6.5",
-          "date": "2026-10-28",
-          "notes": "- Resident, storage, invite and story-history lists allow direct group selection; profile history uses the same control. Small ordering buttons have larger touch targets and keyboard focus is visible.\n- Work screens offer direct product selection, draft application, recommendations and facility upgrades; queue and priority selection no longer require paging. Home residents move slightly within their spots.\n- Read episodes appear in history immediately. The reader has a compact dialogue panel, placement-aware emotion marks and direct answers for shorter questions.\n- Completed stories no longer silently discard older arcs at 50. The 1,000-arc per-pair limit and 1,000-scene backup limit remain; older discarded progress is not recovered. Older package versions cannot load worlds with more than 50 completed arcs.\n- Android installation and device layout remain unverified; at 320×640 the work screen can require vertical scrolling. Home movement is not a walking animation.",
           "highlight": false
         }
       ]

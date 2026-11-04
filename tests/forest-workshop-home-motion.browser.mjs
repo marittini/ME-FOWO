@@ -164,6 +164,26 @@ try {
   await resident.click({ force: true });
   assert.equal(await page.evaluate(() => window.selected), undefined);
   assert.equal(await page.locator(".resident-reaction").isVisible(), true);
+  const body = resident.locator(".figure-body");
+  assert.equal(await body.evaluate((node) => getComputedStyle(node).animationName), "fw-greeting");
+  const greeting = await body.evaluate((node) => {
+    const animation = node.getAnimations().find((item) => item.animationName === "fw-greeting");
+    const delay = animation.effect.getTiming().delay;
+    animation.pause();
+    animation.currentTime = 0;
+    const start = getComputedStyle(node).transform;
+    animation.currentTime = 200;
+    const middle = getComputedStyle(node).transform;
+    animation.play();
+    return { delay, changesBody: start !== middle };
+  });
+  assert.deepEqual(
+    greeting,
+    { delay: 0, changesBody: true },
+    "greeting visibly morphs rather than inheriting the walking negative delay",
+  );
+  await page.waitForTimeout(650);
+  assert.equal(await body.evaluate((node) => getComputedStyle(node).animationName), "fw-footsteps");
   assert.equal(await page.getByRole("button", { name: "프로필", exact: true }).count(), 0);
   assert.equal(await resident.evaluate((node) => getComputedStyle(node.parentElement).animationPlayState), "running");
   assert.equal(
@@ -189,6 +209,8 @@ try {
   await page.emulateMedia({ reducedMotion: "reduce" });
   assert.equal(await resident.locator(".figure").evaluate((node) => getComputedStyle(node).animationName), "none");
   assert.equal(await resident.locator("..").evaluate((node) => getComputedStyle(node).animationName), "none");
+  await resident.click({ force: true });
+  assert.equal(await body.evaluate((node) => getComputedStyle(node).animationName), "none");
   const weatherKeys = await page.evaluate(() => {
     const state = window.homeTestState,
       controller = window.homeTestController;

@@ -21,6 +21,18 @@ try {
     platform: "browser",
     format: "iife",
     logLevel: "silent",
+    plugins: [
+      {
+        name: "host",
+        setup(b) {
+          b.onResolve({ filter: /^marinara:host$/ }, () => ({ path: "host", namespace: "test" }));
+          b.onLoad({ filter: /.*/, namespace: "test" }, () => ({
+            contents: "export const host={api:{api:{get:(...a)=>window.mockApi.get(...a)}}};",
+            loader: "js",
+          }));
+        },
+      },
+    ],
   });
   browser = await chromium.launch({
     executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ?? "/usr/bin/chromium",
@@ -34,9 +46,21 @@ try {
       body: await readFile(resolve("packages/forest-workshop/assets", relative)),
     });
   });
-  await page.setContent(
-    '<base href="http://forest.test/"><meta name="viewport" content="width=device-width,initial-scale=1"><div id="host" style="width:320px;height:640px"></div>',
+  await page.route("http://forest.test/", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: '<meta name="viewport" content="width=device-width,initial-scale=1"><div id="host" style="width:320px;height:640px"></div>',
+    }),
   );
+  await page.goto("http://forest.test/");
+  await page.evaluate(() => {
+    window.mockApi = {
+      get: async () => [
+        { id: "letter-model", name: "편지용", model: "test-letter" },
+        { id: "profile-model", name: "설정용", model: "test-profile" },
+      ],
+    };
+  });
   await page.addScriptTag({ content: await readFile(bundle, "utf8") });
   await page.evaluate(() => {
     const root = document.querySelector("#host").attachShadow({ mode: "open" });
@@ -154,8 +178,30 @@ try {
     root.replaceChildren(window.renderMailboxSheet(state, controller));
   });
   assert.equal(await page.getByText("출력 길이를 늘려 주세요.", { exact: true }).isVisible(), true);
+  await page.getByText("편지 모델 설정", { exact: true }).click();
+  await page.getByRole("combobox", { name: "주민 편지", exact: true }).selectOption("letter-model");
+  assert.equal(await page.getByRole("combobox", { name: "이야기 생성", exact: true }).count(), 0);
+  assert.equal(await page.getByRole("combobox", { name: "주민 설정 제안", exact: true }).count(), 0);
+  assert.equal(
+    await page.evaluate(() => JSON.parse(localStorage.getItem("forest-workshop:model-connections")).letter),
+    "letter-model",
+  );
   await page.getByRole("button", { name: "편지 다시 불러오기" }).click();
   assert.equal(await page.evaluate(() => window.requestedActivity), "test-activity");
+  await page.evaluate(() => {
+    window.activityMailState.letterErrors["mail-world:test-activity"].purpose = "profile";
+    document
+      .querySelector("#host")
+      .shadowRoot.replaceChildren(window.renderMailboxSheet(window.activityMailState, window.activityMailController));
+  });
+  await page.getByText("주민 설정 연결 확인", { exact: true }).click();
+  await page.getByRole("combobox", { name: "주민 설정 제안", exact: true }).selectOption("profile-model");
+  assert.equal(await page.getByRole("combobox", { name: "주민 편지", exact: true }).count(), 0);
+  assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("forest-workshop:model-connections"))), {
+    story: null,
+    profile: "profile-model",
+    letter: "letter-model",
+  });
   await page.evaluate(() => {
     window.activityMailState.busy["letter:test-activity"] = true;
     document
