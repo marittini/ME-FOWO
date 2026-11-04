@@ -89,9 +89,12 @@ try {
     render();
   });
   async function choose(label, index) {
-    const summary = page.getByLabel(label, { exact: true });
-    await summary.click();
-    await summary.locator("..").locator("button").nth(index).click();
+    const picker = page.getByLabel(label, { exact: true });
+    const current = Number((await picker.locator("strong").innerText()).split(" /")[0]) - 1;
+    const direction = index >= current ? "다음" : "이전";
+    for (let step = 0; step < Math.abs(index - current); step++) {
+      await picker.getByRole("button", { name: `${label} · ${direction} 페이지`, exact: true }).click();
+    }
   }
   assert.equal(await page.getByText("A만의 비밀", { exact: true }).count(), 0);
   await choose("기억 상태 필터", 3);

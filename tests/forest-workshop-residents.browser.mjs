@@ -80,7 +80,10 @@ try {
     window.testState = {
       route: "residents",
       residentsView: { tab: "all", query: "", filter: "all", selectedId: null },
-      world: { state: "ready", value: { state: { residents, production: { facilities: {} } } } },
+      world: {
+        state: "ready",
+        value: { state: { residents, production: { facilities: {} }, pairs: {}, stories: { pairs: {} } } },
+      },
       content: null,
       sheet: null,
       notice: null,
