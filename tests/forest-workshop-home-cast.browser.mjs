@@ -126,63 +126,96 @@ window.renderHomeScene=renderHomeScene;window.readCount=readHomeDisplayCount;win
       window.castState.homeDisplayCount = displayCount;
       window.renderCast();
       const stage = window.castRoot.querySelector(".ground-stage"),
-        spot = stage.querySelector(".resident-spot.filled"),
+        spots = [...stage.querySelectorAll(".resident-spot.filled")],
         ground = stage.getBoundingClientRect(),
         groundStyle = stage.style,
-        motions = spot.getAnimations().filter((animation) => animation.effect?.target === spot);
+        motions = spots.map((spot) => spot.getAnimations().find((animation) => animation.effect?.target === spot));
       for (const motion of motions) motion.pause();
-      const frames = [0, 8100, 13000].map((time) => {
-        for (const motion of motions) motion.currentTime = time;
-        const rect = spot.getBoundingClientRect();
-        return { time, foot: [rect.left + rect.width / 2, rect.bottom] };
+      const frames = [15000, 21000, 27000, 33000, 39000].map((time) => {
+        for (const [index, motion] of motions.entries()) {
+          const delay = Number.parseFloat(spots[index].style.animationDelay) * 1000;
+          motion.currentTime = time + delay;
+        }
+        return spots.map((spot) => {
+          const rect = spot.getBoundingClientRect();
+          return {
+            foot: [rect.left + rect.width / 2, rect.bottom],
+            size: [rect.width, rect.height],
+            z: Number.parseInt(getComputedStyle(spot).zIndex, 10),
+          };
+        });
       });
       return {
-        dimensions: [spot.getBoundingClientRect().width, spot.getBoundingClientRect().height],
+        count: spots.length,
         ground: [ground.width, ground.height, ground.left, ground.top, ground.right, ground.bottom],
         groundStyle: [groundStyle.left, groundStyle.top, groundStyle.width, groundStyle.height],
         frames,
-        animationCount: motions.length,
+        animationCount: motions.filter(Boolean).length,
       };
     }, count);
+    assert.equal(sample.count, count, `count ${count} displays its configured number of residents`);
     assert.equal(sample.animationCount > 0, true, `count ${count} has a CSS movement animation`);
-    assert.equal(sample.dimensions[0] > 0 && sample.dimensions[1] > 0, true);
+    assert.equal(sample.animationCount, count, `count ${count} animates every resident`);
     assert.deepEqual(sample.groundStyle, ["8%", "45%", "84%", "50%"], "changed saved ground rectangle is applied");
     assert.equal(
-      sample.frames.every(
-        ({ foot: [x, y] }) =>
-          x >= sample.ground[2] - 2 &&
-          x <= sample.ground[4] + 2 &&
-          y >= sample.ground[3] - 2 &&
-          y <= sample.ground[5] + 2,
-      ),
+      sample.frames
+        .flat()
+        .every(
+          ({ foot: [x, y], size: [width, height] }) =>
+            width > 0 &&
+            height > 0 &&
+            x >= sample.ground[2] - 2 &&
+            x <= sample.ground[4] + 2 &&
+            y >= sample.ground[3] - 2 &&
+            y <= sample.ground[5] + 2,
+        ),
       true,
-      `count ${count} keeps every sampled foot inside its saved ground: ${JSON.stringify(sample.frames)}`,
+      `count ${count} keeps all resident feet inside its saved ground: ${JSON.stringify(sample.frames)}`,
     );
+    for (const frame of sample.frames) {
+      for (let i = 0; i < frame.length; i++) {
+        for (let j = i + 1; j < frame.length; j++) {
+          if (Math.abs(frame[i].foot[1] - frame[j].foot[1]) > 1) {
+            const lower = frame[i].foot[1] > frame[j].foot[1] ? frame[i] : frame[j];
+            const higher = lower === frame[i] ? frame[j] : frame[i];
+            assert.ok(lower.z > higher.z, "resident lower on screen paints in front");
+          }
+        }
+      }
+    }
     castSamples.push(sample);
   }
-  for (const sample of castSamples.slice(1)) {
-    assert.ok(Math.abs(sample.dimensions[0] - castSamples[0].dimensions[0]) < 0.5, "resident width stays constant");
-    assert.ok(Math.abs(sample.dimensions[1] - castSamples[0].dimensions[1]) < 0.5, "resident height stays constant");
+  for (const sample of castSamples) {
     assert.deepEqual(sample.ground, castSamples[0].ground, "ground rectangle size stays constant by cast count");
-    assert.deepEqual(
-      sample.frames.map(({ foot }) => foot),
-      castSamples[0].frames.map(({ foot }) => foot),
-      "cast counts share the same sampled foot path",
-    );
+    for (const frame of sample.frames) {
+      for (const resident of frame) {
+        assert.ok(Math.abs(resident.size[0] - frame[0].size[0]) < 0.5, "resident width stays constant");
+        assert.ok(Math.abs(resident.size[1] - frame[0].size[1]) < 0.5, "resident height stays constant");
+        assert.ok(
+          Math.abs(resident.size[0] - castSamples[0].frames[0][0].size[0]) < 0.5,
+          "width stays constant across cast counts",
+        );
+        assert.ok(
+          Math.abs(resident.size[1] - castSamples[0].frames[0][0].size[1]) < 0.5,
+          "height stays constant across cast counts",
+        );
+      }
+    }
   }
-  assert.notEqual(castSamples[0].frames[0].foot[0], castSamples[0].frames[1].foot[0], "movement changes X");
-  assert.notEqual(castSamples[0].frames[0].foot[1], castSamples[0].frames[1].foot[1], "movement changes Y");
-  assert.notDeepEqual(
-    castSamples[0].frames[1].foot,
-    castSamples[0].frames[2].foot,
-    "shared movement continues along the path",
+  const routeSignatures = Array.from({ length: 6 }, (_, index) =>
+    JSON.stringify(castSamples.at(-1).frames.map((frame) => frame[index].foot)),
+  );
+  assert.equal(
+    new Set(routeSignatures).size,
+    6,
+    `all six residents follow distinct paths across sampled phases: ${routeSignatures}`,
   );
   const depthSamples = await page.evaluate(() => {
     window.castState.homeDisplayCount = 2;
     window.renderCast();
     const spots = [...window.castRoot.querySelectorAll(".resident-spot.filled")];
     const motion = (spot) =>
-      spot.getAnimations().find((animation) => animation.animationName === "fw-home-cast-wander");
+      spot.getAnimations().find((animation) => animation.animationName.startsWith("fw-home-cast-route-"));
     const sample = (phases) => {
       spots.forEach((spot, index) => {
         const animation = motion(spot);
@@ -206,23 +239,40 @@ window.renderHomeScene=renderHomeScene;window.readCount=readHomeDisplayCount;win
     assert.ok(lower.z > higher.z, "the resident lower on screen paints in front");
   }
   const facing = await page.evaluate(() => {
+    window.castState.homeDisplayCount = 6;
+    window.renderCast();
     const spots = [...window.castRoot.querySelectorAll(".resident-spot.filled")];
     return spots.map((spot) => {
       const figure = spot.querySelector(".figure");
-      const animation = figure.getAnimations().find((a) => a.effect.target === figure);
-      animation.pause();
-      const delay = Number.parseFloat(getComputedStyle(figure).animationDelay) * 1000;
-      const turns = [0.2, 0.6].map((phase) => {
-        animation.currentTime = phase * 42000 + delay;
-        return new DOMMatrix(getComputedStyle(figure).transform).a;
-      });
-      return { delay: getComputedStyle(figure).animationDelay, parentDelay: spot.style.animationDelay, turns };
+      const route = spot.getAnimations().find((a) => a.effect?.target === spot);
+      const facing = figure.getAnimations().find((a) => a.effect?.target === figure);
+      const delay = Number.parseFloat(spot.style.animationDelay) * 1000;
+      route.pause();
+      facing.pause();
+      const samples = [];
+      for (const time of [15000, 21000, 27000, 33000, 39000]) {
+        route.currentTime = time + delay;
+        const x = spot.getBoundingClientRect().left + spot.getBoundingClientRect().width / 2;
+        facing.currentTime = time + delay;
+        const direction = Math.sign(new DOMMatrix(getComputedStyle(figure).transform).a);
+        route.currentTime = time + delay + 250;
+        const nextX = spot.getBoundingClientRect().left + spot.getBoundingClientRect().width / 2;
+        if (Math.abs(nextX - x) > 0.1) samples.push({ time, direction, actual: Math.sign(nextX - x) });
+      }
+      return { slot: spot.className, samples };
     });
   });
-  for (const value of facing) {
-    assert.equal(value.delay, value.parentDelay, "facing follows each resident's movement phase");
-    assert.deepEqual(value.turns, [1, -1], "facing turns when the path changes horizontal direction");
-  }
+  assert.ok(
+    facing.flatMap(({ samples }) => samples).length >= 12,
+    "facing check samples horizontal segments across all residents",
+  );
+  for (const { slot, samples } of facing)
+    for (const sample of samples)
+      assert.equal(
+        sample.direction,
+        sample.actual,
+        `resident ${slot} faces the direction of horizontal travel at ${sample.time}ms`,
+      );
   const editMotion = await page.evaluate(() => {
     window.castState.homeDisplayCount = 6;
     window.renderCast();

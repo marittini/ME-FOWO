@@ -10,7 +10,7 @@
   },
   "id": "forest-workshop",
   "name": "Forest Workshop",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "description": "A portrait forest workshop game with automatically prepared resident profiles and letters, per-pair three-episode story plans, five production fields with every recipe already listed, daily deliveries from a home bulletin board, real weather by city, Jua typography, and backups carrying pictures and stories. Resident artwork is uploaded by the player; original character and persona cards are read only. Install it, restart Marinara Engine when prompted, then open Home → 숲결 공방.",
   "engine": {
     "min": "2.5.1",
@@ -150,13 +150,13 @@
     },
     {
       "path": "server.mjs",
-      "sha256": "d366262639260109efbbfd62d31ac1d2cdd393b7d56dac70953dd231e152be36",
+      "sha256": "3b477e14eeee2845bef4f697e62dd4295fae6970f88bd7c25205813881709da9",
       "bytes": 184117
     },
     {
       "path": "client.js",
-      "sha256": "b10e0bd571d5fa0e882077959daa5c94bbebdf2bee71e64fe2a4b9f1f7285946",
-      "bytes": 398272
+      "sha256": "cd045ed0b74d9e9edc9bfd1e224ffe2e2e9602b5b55f72fc00b17bb642a7c5c3",
+      "bytes": 401561
     },
     {
       "path": "assets/asset-manifest.json",

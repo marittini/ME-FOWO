@@ -4,6 +4,12 @@
     "forest-workshop": {
       "versions": [
         {
+          "version": "0.9.5",
+          "date": "2026-11-04",
+          "notes": "- 홈 주민이 서로 다른 경로를 따라 이동합니다. 주민 크기와 설정한 지면 범위는 유지하며, 발 위치에 따른 앞뒤 순서와 이동 방향에 따른 반전도 함께 적용합니다.",
+          "highlight": false
+        },
+        {
           "version": "0.9.4",
           "date": "2026-11-04",
           "notes": "- 새 주민 프로필 생성 지침을 종족, 성격·특징·말투, 관계·과거 중심의 1,500자 이내 요약으로 조정합니다. 기존 프로필과 저장 한도는 유지합니다.",
@@ -115,12 +121,6 @@
           "version": "0.6.12",
           "date": "2026-10-29",
           "notes": "- Inbox and archive for a fixed workshop welcome letter, with unread count and persistent read/archive state. No rewards, expiry or automatic model calls. Letters are included in world backups. Schema 10 worlds cannot be opened by older packages. Resident-generated letters remain in development.",
-          "highlight": false
-        },
-        {
-          "version": "0.6.11",
-          "date": "2026-10-29",
-          "notes": "- Configure world and pair writing preferences for newly generated stories. Existing stories and memory visibility remain unchanged. Generation records store applied guideline revisions. Schema 9 worlds cannot be opened by older packages.",
           "highlight": false
         }
       ]
