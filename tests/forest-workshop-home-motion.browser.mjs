@@ -313,6 +313,32 @@ try {
   assert.equal(await page.locator(".scene-night .weather-moon").count(), 1);
   assert.equal(await page.locator(".weather-sun").count(), 0);
   assert.match(await page.locator(".scene-scenery").evaluate((n) => getComputedStyle(n).filter), /brightness\(0.62\)/);
+  // The visible home backdrop is on the column, not the hidden scene image.
+  const canvas = await page.evaluate(() => {
+    const root = document.querySelector("#host").shadowRoot;
+    const fixture = document.createElement("div");
+    fixture.id = "evening-proof";
+    fixture.className = "season-autumn home-layout";
+    fixture.style.cssText = "position:relative;width:390px;height:300px";
+    fixture.innerHTML =
+      '<div class="column"><section class="scene scene-day"><img class="scene-art" src="/api/capability-packages/forest-workshop/assets/assets/backgrounds/workshop-scene-autumn.webp"></section></div>';
+    root.append(fixture);
+    return getComputedStyle(fixture.querySelector(".column")).backgroundColor;
+  });
+  assert.equal(canvas, "rgba(0, 0, 0, 0)", "daytime keeps the painted backdrop bright");
+  await page.locator("#evening-proof img").evaluate((img) => img.decode());
+  await page.locator("#evening-proof").screenshot({ path: "/tmp/fw-evening-day.png" });
+  const nightCanvas = await page.locator("#evening-proof").evaluate((fixture) => {
+    fixture.querySelector(".scene").className = "scene scene-night";
+    const style = getComputedStyle(fixture.querySelector(".column"));
+    return { color: style.backgroundColor, blend: style.backgroundBlendMode };
+  });
+  assert.deepEqual(
+    nightCanvas,
+    { color: "rgb(153, 153, 153)", blend: "multiply" },
+    "night tint reaches the visible painted column",
+  );
+  await page.locator("#evening-proof").screenshot({ path: "/tmp/fw-evening-night.png" });
   console.log("Home motion, scene bulletin board, resident foreground and reduced motion: OK");
 } finally {
   await browser?.close();

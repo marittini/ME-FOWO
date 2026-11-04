@@ -23,7 +23,7 @@ export const ART_STYLES = `
 ${seasonBases}
 ${homeScenes}
 .home-layout .column:has(> .scene img.scene-art) > .scene img.scene-art { visibility: hidden; }
-.home-layout .column:has(> .scene-night img.scene-art) { background-color: #999; background-blend-mode: multiply; }
+.home-layout .column:has(> .scene.scene-night img.scene-art) { background-color: #999; background-blend-mode: multiply; }
 .art-base:is(.backdrop-forest, .backdrop-wood) .scroll { background: transparent; }
 
 /* Item, facility and emotion pictures: drawn straight on the panel like the mockups, no tile frame around them. */
