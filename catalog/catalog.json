@@ -702,13 +702,13 @@
         "restartRequired": true
       },
       "category": "misc",
-      "iconUrl": "https://raw.githubusercontent.com/marittini/ME-personal-A/main/artwork/agent-covers/forest-workshop.png",
+      "iconUrl": "https://raw.githubusercontent.com/marittini/ME-FOWO/main/artwork/agent-covers/forest-workshop.png",
       "artifact": {
-        "url": "https://raw.githubusercontent.com/marittini/ME-personal-A/main/artifacts/forest-workshop-0.9.5.zip",
+        "url": "https://raw.githubusercontent.com/marittini/ME-FOWO/main/artifacts/forest-workshop-0.9.5.zip",
         "sha256": "ace8b29d941b8706fbcc25e934d99cb0b8e46b9cddf06ea9439132386e4be06e",
         "bytes": 6754471
       },
-      "documentationUrl": "https://github.com/marittini/ME-personal-A/blob/main/packages/forest-workshop/README.md"
+      "documentationUrl": "https://github.com/marittini/ME-FOWO/blob/main/packages/forest-workshop/README.md"
     }
   ]
 }

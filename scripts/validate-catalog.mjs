@@ -54,11 +54,11 @@ const { catalog, catalogsByMajor, legacyCatalog, previewCatalogsByMajor, preview
 const MIN_ENGINE_VERSION = "2.3.0";
 const REQUIRED_MAX_ENGINE_EXCLUSIVE = "4.0.0";
 const ENGINE_CAPABILITY_API = Object.freeze({ major: 1, minor: 9 });
-// Packages owned by this fork (marittini/ME-personal-A) publish their artifact, cover and documentation from the fork.
+// Packages owned by this fork (marittini/ME-FOWO) publish their artifact, cover and documentation from the fork.
 // The rule is limited to these ids: every official package keeps the canonical Pasta-Devs URLs checked below.
 const FORK_OWNED_PACKAGE_IDS = new Set(["forest-workshop"]);
-const FORK_RAW_ROOT = "https://raw.githubusercontent.com/marittini/ME-personal-A/main";
-const FORK_BLOB_ROOT = "https://github.com/marittini/ME-personal-A/blob/main";
+const FORK_RAW_ROOT = "https://raw.githubusercontent.com/marittini/ME-FOWO/main";
+const FORK_BLOB_ROOT = "https://github.com/marittini/ME-FOWO/blob/main";
 if (catalog.schemaVersion !== 1 || !Array.isArray(catalog.packages)) throw new Error("Invalid catalog envelope");
 // Held-back packages (catalog-incomplete.mjs) keep their source, payload, and
 // artifact in the tree, but each tier must land in exactly one place: an
